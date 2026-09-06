@@ -2,6 +2,7 @@ import type {
   Binding,
   DeviceDriver,
   DeviceFailure,
+  DeviceInfo,
   OpenRequest,
   SettleOptions,
 } from '../src/core/driver.ts';
@@ -11,6 +12,8 @@ import { loadRaw, type FixtureName } from './fixtures.ts';
 
 export type FakeDriver = DeviceDriver & {
   readonly calls: string[];
+  /** What `listDevices` reports. */
+  devices: DeviceInfo[];
   /** Each entry is consumed by one `open`. A `DeviceFailure` is thrown, anything else succeeds. */
   readonly openOutcomes: DeviceFailure[];
   screens: FixtureName[];
@@ -35,6 +38,14 @@ export function createFakeDriver(options?: { screens?: FixtureName[] }): FakeDri
     fillOutcomes,
     screens: options?.screens ?? ['home'],
     staleRefs: 0,
+    devices: [
+      { id: '2A141E2F-5FD1-4F16-86FB-E9A5835F2166', name: 'iPhone 17 Pro Max', booted: true },
+    ],
+
+    listDevices: (): Promise<readonly DeviceInfo[]> => {
+      calls.push('listDevices');
+      return Promise.resolve(driver.devices);
+    },
 
     open: (request: OpenRequest): Promise<Binding> => {
       calls.push(`open ${request.app} relaunch=${String(request.relaunch)}`);

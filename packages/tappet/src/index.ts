@@ -14,6 +14,9 @@ export { expect } from './playwright/expect.ts';
 export { TappetError } from './core/errors.ts';
 export type { ErrorInfo } from './core/errors.ts';
 
+export { preflight } from './preflight.ts';
+export type { PreflightDevice, PreflightReport } from './preflight.ts';
+
 export type { App, Locator } from './core/app.ts';
 export type { DeviceOptions, ReadyQuery } from './core/config.ts';
 export type { Query, Role } from './core/query.ts';

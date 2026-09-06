@@ -3,8 +3,9 @@
  * session per worker slot, build an `App` per test over its own `ActionSink`,
  * and turn `Check` names into matchers via `probe`.
  *
- * Nothing in here imports `@playwright/test` or `agent-device`, and no
- * agent-device type crosses this line.
+ * No module under `core/` imports `@playwright/test` or `agent-device`, and no
+ * agent-device type crosses this line. The one exception is this entry's
+ * re-export of `preflight`, which needs a concrete driver.
  */
 
 export { createApp } from './app.ts';
@@ -20,6 +21,7 @@ export type {
   Binding,
   DeviceDriver,
   DeviceFailure,
+  DeviceInfo,
   DeviceSelection,
   OpenRequest,
   ScrollDirection,
@@ -30,6 +32,9 @@ export { TappetError } from './errors.ts';
 export type { ErrorInfo } from './errors.ts';
 
 export { captureEvidence } from './evidence.ts';
+
+export { preflight } from '../preflight.ts';
+export type { PreflightDevice, PreflightReport } from '../preflight.ts';
 
 export { formatFailure, probe } from './probe.ts';
 export type { ProbeOptions, ProbeResult, ProbeTarget } from './probe.ts';

@@ -288,3 +288,34 @@ test('a fill that never lands names the locator, both values, and the attempts',
   expect(error.message).toContain(`Actual value: "r@example.com"`);
   expect(error.message).toMatch(/after \d+ attempts/);
 });
+
+test('textContent reads the matched node off exactly one capture', async () => {
+  const driver = createFakeDriver();
+  const session = await open(driver);
+  const app = createApp(session, silentSink);
+  driver.calls.length = 0;
+  expect(await app.getByText('GET STARTED').textContent()).toBe('GET STARTED');
+  expect(driver.calls).toEqual(['capture']);
+});
+
+test('textContent is null when the locator matches nothing', async () => {
+  const driver = createFakeDriver();
+  const session = await open(driver);
+  const app = createApp(session, silentSink);
+  expect(await app.getByText('Sign out').textContent()).toBe(null);
+});
+
+test('textContent refuses an ambiguous locator and lists every match', async () => {
+  const driver = createFakeDriver({ screens: ['explore'] });
+  const session = await open(driver, { readyWhen: { text: 'Expo documentation' } });
+  const app = createApp(session, silentSink);
+  const error = await app
+    .getByText('Explore')
+    .textContent()
+    .catch((thrown: unknown) => thrown);
+  expect(error).toBeInstanceOf(TappetError);
+  if (!(error instanceof TappetError)) return;
+  expect(error.info.kind).toBe('strict-mode');
+  expect(error.message).toContain(`@e12 [text] "Explore"`);
+  expect(error.message).toContain(`@e35 [button] "Explore"`);
+});

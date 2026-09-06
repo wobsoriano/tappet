@@ -6,6 +6,9 @@ const shared = {
   readyWhen: { testId: 'home' },
 } as const;
 
+const ios = { ...shared, platform: 'ios', name: 'iPhone 17 Pro Max' } as const;
+const android = { ...shared, platform: 'android', name: 'ci api34' } as const;
+
 export default defineConfig<DeviceTestOptions>({
   // The specs are .mts because agent-device is ESM only and this app is CommonJS.
   testDir: 'e2e',
@@ -16,7 +19,10 @@ export default defineConfig<DeviceTestOptions>({
   expect: { timeout: 10_000 },
   reporter: [['list'], ['html', { open: 'never' }]],
   projects: [
-    { name: 'ios', use: { device: { ...shared, platform: 'ios', name: 'iPhone 17 Pro Max' } } },
-    { name: 'android', use: { device: { ...shared, platform: 'android', name: 'ci api34' } } },
+    // The setup project carries its own device because a Playwright setup project has one `use`,
+    // and this workspace only runs the iOS project.
+    { name: 'setup', testMatch: /preflight\.setup\.mts/, use: { device: ios } },
+    { name: 'ios', dependencies: ['setup'], use: { device: ios } },
+    { name: 'android', dependencies: ['setup'], use: { device: android } },
   ],
 });

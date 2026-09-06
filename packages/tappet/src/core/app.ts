@@ -55,6 +55,8 @@ export type Locator = {
   fill(text: string, options?: ActionOptions): Promise<void>;
   longPress(durationMs?: number, options?: ActionOptions): Promise<void>;
   count(): Promise<number>;
+  /** The matched node's text off one fresh screen. Null when nothing matches; ambiguity fails the way an action does. */
+  textContent(): Promise<string | null>;
   /** The retrying assertion primitive every adapter's matchers are built on. */
   expect(check: Check, options: ProbeOptions): Promise<ProbeResult>;
 };
@@ -120,6 +122,27 @@ function createLocator(session: DeviceSession, sink: ActionSink, query: Query): 
         : resolution.outcome === 'one'
           ? 1
           : 0;
+    },
+    textContent: async () => {
+      const screen = await session.screen();
+      const resolution = resolve(screen, query);
+      switch (resolution.outcome) {
+        case 'many':
+          throw new TappetError({
+            kind: 'strict-mode',
+            locator: description,
+            matches: resolution.nodes.map((node) => describeNode(node)),
+            screen: renderScreen(screen),
+          });
+        case 'none':
+          return null;
+        case 'one':
+          return resolution.node.name ?? resolution.node.value;
+        default: {
+          const never: never = resolution;
+          throw new Error(`unhandled resolution ${JSON.stringify(never)}`);
+        }
+      }
     },
     expect: (check, options) =>
       probe(

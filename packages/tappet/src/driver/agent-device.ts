@@ -3,6 +3,7 @@ import type {
   Binding,
   DeviceDriver,
   DeviceFailure,
+  DeviceInfo,
   DeviceSelection,
   OpenRequest,
   ScrollDirection,
@@ -49,6 +50,17 @@ export function createAgentDeviceDriver(
   }
 
   return {
+    listDevices: (): Promise<readonly DeviceInfo[]> =>
+      run('listDevices', async () => {
+        // Only the platform crosses: naming the session here would bind it, and preflight must bind nothing.
+        const devices = await client.devices.list({ platform: selection.platform });
+        return devices.map((device) => ({
+          id: device.id,
+          name: device.name,
+          booted: device.booted ?? false,
+        }));
+      }),
+
     open: (request: OpenRequest): Promise<Binding> =>
       run('open', async () => {
         const result = await client.apps.open({

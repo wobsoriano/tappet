@@ -13,6 +13,13 @@ export type DeviceSelection = {
   readonly name: string | null;
 };
 
+/** One device the driver can see. Only the fields preflight needs, so no agent-device device shape crosses here. */
+export type DeviceInfo = {
+  readonly id: string;
+  readonly name: string;
+  readonly booted: boolean;
+};
+
 /** The session name and the device selection ride on the driver itself, so an open cannot name a different one. */
 export type OpenRequest = {
   readonly app: string;
@@ -72,6 +79,8 @@ export type SettleOptions = {
  * meant; every failure throws a `TappetError` carrying a `DeviceFailure`.
  */
 export type DeviceDriver = {
+  /** Lists every device of the driver's selected platform, booted or not. It takes no session, so it is the one call that binds nothing. */
+  listDevices(): Promise<readonly DeviceInfo[]>;
   open(request: OpenRequest): Promise<Binding>;
   capture(options: { readonly timeoutMs: number }): Promise<RawSnapshot>;
   screenshot(path: string): Promise<string>;
