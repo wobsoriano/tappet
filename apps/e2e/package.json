@@ -1,0 +1,29 @@
+{
+  "name": "pwad-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "expo start",
+    "ios": "expo run:ios",
+    "test:e2e": "playwright test --project=ios"
+  },
+  "dependencies": {
+    "expo": "~57.0.20",
+    "expo-constants": "~57.0.17",
+    "expo-linking": "~57.0.9",
+    "expo-router": "~57.0.19",
+    "expo-status-bar": "~57.0.1",
+    "react": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-screens": "~4.26.2"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@types/react": "~19.2.2",
+    "agent-device": "0.20.10",
+    "playwright-agent-device": "workspace:*",
+    "typescript": "~6.0.3"
+  }
+}
