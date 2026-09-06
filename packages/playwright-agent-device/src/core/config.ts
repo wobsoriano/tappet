@@ -158,7 +158,7 @@ function parseReadyWhen(raw: unknown): Query {
   if (typeof raw !== "object" || raw === null) {
     throw fail(
       "device.readyWhen",
-      "is required. Name something that only appears once the bundle has loaded, such as { text: 'GET STARTED' }.",
+      "is required. Name something that only appears once the bundle has loaded, such as { text: 'Welcome' }.",
     );
   }
   const wanted = read(raw, "text");

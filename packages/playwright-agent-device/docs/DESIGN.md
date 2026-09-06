@@ -1,6 +1,6 @@
 # playwright-agent-device design
 
-Native mobile end-to-end tests with `@playwright/test` as the runner and Callstack `agent-device` as the driver. No browser is launched. This document is the contract the implementation is built against. It was synthesized from three parallel design candidates and a set of live probes against the sample app (`awesome-todo`, Expo SDK 57) on an iPhone 17 Pro Max simulator.
+Native mobile end-to-end tests with `@playwright/test` as the runner and Callstack `agent-device` as the driver. No browser is launched. This document is the contract the implementation is built against. It was synthesized from three parallel design candidates and a set of live probes against a sample Expo SDK 57 app on an iOS simulator.
 
 ## What a test looks like
 
@@ -23,7 +23,7 @@ test("explore tab and back", async ({ app }) => {
 import { defineConfig } from "@playwright/test";
 import type { DeviceTestOptions } from "playwright-agent-device";
 
-const shared = { app: "com.wobsoriano.awesometodo", readyWhen: { text: "GET STARTED" } };
+const shared = { app: "com.example.app", readyWhen: { text: "Welcome" } };
 
 export default defineConfig<DeviceTestOptions>({
   testDir: "e2e",
@@ -32,13 +32,15 @@ export default defineConfig<DeviceTestOptions>({
   expect: { timeout: 10_000 },
   reporter: [["list"], ["html", { open: "never" }]],
   projects: [
-    { name: "ios", use: { device: { ...shared, platform: "ios", name: "iPhone 17 Pro Max" } } },
-    { name: "android", use: { device: { ...shared, platform: "android", name: "ci api34" } } },
+    { name: "ios", use: { device: { ...shared, platform: "ios" } } },
+    { name: "android", use: { device: { ...shared, platform: "android" } } },
   ],
 });
 ```
 
 Nothing in a test names a session, a ref, a generation, a selector string, or `test.step`. `device` is the only key the library adds to `use`. Playwright merges `use` one key at a time, so a project that sets `device` replaces it whole; spread a shared constant.
+
+The `apps/e2e` app in this workspace is the reference consumer. Its `playwright.config.ts` is the same shape against a real app, and it pins a device name per project because more than one simulator is usually booted.
 
 ## Facts the shape rests on
 
@@ -183,4 +185,4 @@ Three candidates were produced in parallel on three models and cross-judged by a
 ## Verification plan
 
 1. Unit tests (vitest via `vp test`) for `parseScreen`, `resolve`, `evaluate`, `formatFailure` against the JSON captured from the real Home and Explore screens, covering the "Live from the cloud" absorption case, the "Explore" ambiguity case, and the "Home" wrapper case.
-2. A `playwright.config.ts` and `e2e/` in this repo pointed at `awesome-todo` on the booted simulator with Metro running: home title, tab round trip, absence, and one deliberately failing test to read the message and confirm `screen.png` and `screen.txt` attach.
+2. A `playwright.config.ts` and `e2e/` in `apps/e2e` pointed at that app on a booted simulator with Metro running: home content, a sign-in round trip, absence, and one deliberately failing test to read the message and confirm `screen.png` and `screen.txt` attach.

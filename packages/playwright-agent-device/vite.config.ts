@@ -1,9 +1,6 @@
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({
-  staged: {
-    "*": "vp check --fix",
-  },
   pack: {
     entry: ["src/index.ts", "src/core/index.ts"],
     dts: {
@@ -18,7 +15,4 @@ export default defineConfig({
     },
   },
   fmt: {},
-  test: {
-    exclude: ["**/node_modules/**", "**/dist/**", "e2e/**"],
-  },
 });

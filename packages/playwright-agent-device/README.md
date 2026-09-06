@@ -23,7 +23,7 @@ test("explore tab and back", async ({ app }) => {
 import { defineConfig } from "@playwright/test";
 import type { DeviceTestOptions } from "playwright-agent-device";
 
-const shared = { app: "com.wobsoriano.awesometodo", readyWhen: { text: "GET STARTED" } };
+const shared = { app: "com.example.app", readyWhen: { text: "Welcome" } };
 
 export default defineConfig<DeviceTestOptions>({
   testDir: "e2e",
@@ -32,13 +32,15 @@ export default defineConfig<DeviceTestOptions>({
   expect: { timeout: 10_000 },
   reporter: [["list"], ["html", { open: "never" }]],
   projects: [
-    { name: "ios", use: { device: { ...shared, platform: "ios", name: "iPhone 17 Pro Max" } } },
-    { name: "android", use: { device: { ...shared, platform: "android", name: "ci api34" } } },
+    { name: "ios", use: { device: { ...shared, platform: "ios" } } },
+    { name: "android", use: { device: { ...shared, platform: "android" } } },
   ],
 });
 ```
 
 Nothing in a test names a session, a ref, a generation, a selector string, or a step. `device` is the only key this package adds to `use`. Playwright merges `use` one key at a time, so a project that sets `device` replaces it whole. Spread a shared constant, as above.
+
+The `apps/e2e` app in this workspace is the reference consumer. Its `playwright.config.ts` is the same shape against a real app, and it pins a device name per project because more than one simulator is usually booted.
 
 ## Prerequisites
 
