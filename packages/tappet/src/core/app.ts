@@ -4,7 +4,14 @@ import { TappetError } from './errors.ts';
 import { probe, type ProbeOptions, type ProbeResult } from './probe.ts';
 import { describeQuery, textMatch, type Query, type Role } from './query.ts';
 import { renderTitle, type ActionRecord, type ActionSink } from './report.ts';
-import { pin, renderScreen, resolve, type PinnedRef, type Screen } from './screen.ts';
+import {
+  pin,
+  renderScreen,
+  resolve,
+  type PinnedRef,
+  type Screen,
+  type ScreenNode,
+} from './screen.ts';
 import { failureOf, sleep, type DeviceSession, type SessionDevice } from './session.ts';
 
 const ACTION_POLL_MS = 250;
@@ -184,9 +191,10 @@ function perform(
       const deadline = Date.now() + timeout;
       let retriedStaleRef = false;
       let attempts = 0;
+      let target: Query = record.query;
       let screen: Screen = await device.capture();
       for (;;) {
-        const resolution = resolve(screen, record.query);
+        const resolution = resolve(screen, target);
         if (resolution.outcome === 'many') {
           throw new TappetError({
             kind: 'strict-mode',
@@ -210,9 +218,13 @@ function perform(
             sink.note('settle', `${renderTitle(record)} finished before the screen went quiet`);
           }
           if (expectedValue === undefined) return;
+          // The locator names the field until the first write lands, after which the
+          // written node names itself, because Android reports a text field's
+          // accessible name as its contents.
+          target = identityOf(screen, resolution.node);
 
           screen = await device.capture();
-          const written = resolve(screen, record.query);
+          const written = resolve(screen, target);
           const actual = written.outcome === 'one' ? (written.node.value ?? '') : null;
           if (actual === expectedValue) return;
           const left = deadline - Date.now();
@@ -245,4 +257,23 @@ function perform(
       }
     });
   });
+}
+
+/**
+ * How the written node is found again on the next snapshot.
+ *
+ * A testId is the app's own name for the node, but the driver copies an
+ * ancestor's identifier onto every descendant that inherits it, so it names
+ * this node alone only when it resolves to this node alone. Two inheriting
+ * siblings would otherwise turn a landed fill into a strict-mode failure
+ * listing a node the author's locator never matched. Position in the tree is
+ * all a snapshot carries once the testId is ambiguous.
+ */
+function identityOf(screen: Screen, node: ScreenNode): Query {
+  if (node.testId !== null) {
+    const byTestId: Query = { testId: textMatch(node.testId, true) };
+    const resolution = resolve(screen, byTestId);
+    if (resolution.outcome === 'one' && resolution.node === node) return byTestId;
+  }
+  return { where: (other) => other.index === node.index };
 }

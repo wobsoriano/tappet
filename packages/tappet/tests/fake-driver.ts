@@ -25,6 +25,12 @@ export type FakeDriver = DeviceDriver & {
    * that drops keystrokes on the first tries and then behaves.
    */
   readonly fillOutcomes: string[];
+  /**
+   * Models Android, where a text field reports its contents as its
+   * accessibility label as well as its value, so a locator that names the
+   * field by its label stops matching once a write lands.
+   */
+  contentsBecomeLabel: boolean;
 };
 
 export function createFakeDriver(options?: { screens?: FixtureName[] }): FakeDriver {
@@ -38,6 +44,7 @@ export function createFakeDriver(options?: { screens?: FixtureName[] }): FakeDri
     fillOutcomes,
     screens: options?.screens ?? ['home'],
     staleRefs: 0,
+    contentsBecomeLabel: false,
     devices: [
       { id: '2A141E2F-5FD1-4F16-86FB-E9A5835F2166', name: 'iPhone 17 Pro Max', booted: true },
     ],
@@ -73,7 +80,8 @@ export function createFakeDriver(options?: { screens?: FixtureName[] }): FakeDri
         ...raw,
         nodes: raw.nodes.map((node) => {
           const value = written.get(node.ref);
-          return value === undefined ? node : { ...node, value };
+          if (value === undefined) return node;
+          return driver.contentsBecomeLabel ? { ...node, value, label: value } : { ...node, value };
         }),
       });
     },

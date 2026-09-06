@@ -289,6 +289,45 @@ test('a fill that never lands names the locator, both values, and the attempts',
   expect(error.message).toMatch(/after \d+ attempts/);
 });
 
+test('a fill confirms against the node it wrote when the write changes the label it matched on', async () => {
+  const driver = createFakeDriver({ screens: ['android-login'] });
+  driver.contentsBecomeLabel = true;
+  const session = await open(driver, {
+    platform: 'android',
+    name: 'Pixel 9',
+    readyWhen: { text: 'Sign in' },
+  });
+  const app = createApp(session, silentSink);
+
+  await app.getByRole('text-field', { name: 'Email' }).fill('rob@example.com');
+
+  expect(driver.calls.filter((call) => call.startsWith('fill')).length).toBe(1);
+});
+
+test('a fill whose label follows its contents still re-dispatches and still reports what landed', async () => {
+  const driver = createFakeDriver({ screens: ['android-login'] });
+  driver.contentsBecomeLabel = true;
+  driver.fillOutcomes.push(...Array<string>(50).fill('r@example.com'));
+  const session = await open(driver, {
+    platform: 'android',
+    name: 'Pixel 9',
+    readyWhen: { text: 'Sign in' },
+  });
+  const app = createApp(session, silentSink);
+
+  const error = await app
+    .getByRole('text-field', { name: 'Email' })
+    .fill('rob@example.com')
+    .catch((thrown: unknown) => thrown);
+
+  expect(driver.calls.filter((call) => call.startsWith('fill')).length).toBeGreaterThan(1);
+  expect(error).toBeInstanceOf(TappetError);
+  if (!(error instanceof TappetError)) return;
+  expect(error.info.kind).toBe('fill-unconfirmed');
+  expect(error.message).toContain(`Locator: getByRole('text-field', { name: 'Email' })`);
+  expect(error.message).toContain(`Actual value: "r@example.com"`);
+});
+
 test('textContent reads the matched node off exactly one capture', async () => {
   const driver = createFakeDriver();
   const session = await open(driver);
