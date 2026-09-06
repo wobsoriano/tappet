@@ -1,0 +1,152 @@
+name: e2e
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ios:
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      TAPPET_IOS_DEVICE: iPhone 17 Pro
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: voidzero-dev/setup-vp@49c3e4e92c52e7f8392712a9267bbe71c5ab30e5 # v1.19.0
+        with:
+          cache: true
+
+      - run: vp run -r build
+
+      - id: simulator
+        uses: futureware-tech/simulator-action@e89aa8f93d3aec35083ff49d2854d07f7186f7f5 # v5
+        with:
+          model: 'iPhone 17 Pro'
+          erase_before_boot: true
+          wait_for_boot: true
+
+      - name: Read the agent-device and Xcode versions for the cache key
+        id: versions
+        run: |
+          echo "agent_device=$(pnpm exec agent-device --version)" >> "$GITHUB_OUTPUT"
+          echo "xcode=$(xcodebuild -version | head -1 | tr ' ' '-')" >> "$GITHUB_OUTPUT"
+        working-directory: packages/tappet
+
+      # The XCTest runner takes minutes to build the first time it drives a device.
+      - uses: actions/cache@v4
+        with:
+          path: ~/.agent-device/apple-runner/derived
+          key: apple-runner-${{ steps.versions.outputs.agent_device }}-${{ steps.versions.outputs.xcode }}
+
+      # Release bundles the JavaScript into the app, so no Metro server has to stay alive for the run.
+      - name: Build the app in Release for the simulator
+        working-directory: apps/e2e
+        run: |
+          npx expo prebuild --clean --platform ios
+          xcodebuild \
+            -workspace ios/tappete2e.xcworkspace \
+            -scheme tappete2e \
+            -configuration Release \
+            -sdk iphonesimulator \
+            -derivedDataPath ios/build \
+            -destination "id=${{ steps.simulator.outputs.udid }}" \
+            build
+
+      - name: Install the app
+        run: |
+          xcrun simctl install "${{ steps.simulator.outputs.udid }}" \
+            apps/e2e/ios/build/Build/Products/Release-iphonesimulator/tappete2e.app
+
+      # The test run reuses this daemon, because both sides are the workspace's pinned agent-device.
+      - name: Prepare the iOS runner
+        working-directory: packages/tappet
+        run: pnpm exec agent-device prepare ios-runner --platform ios --timeout 240000
+
+      - run: vp run -F tappet-e2e test:e2e --project=ios
+
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-ios
+          path: apps/e2e/playwright-report
+          retention-days: 7
+
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      TAPPET_ANDROID_DEVICE: ci-api34
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: voidzero-dev/setup-vp@49c3e4e92c52e7f8392712a9267bbe71c5ab30e5 # v1.19.0
+        with:
+          cache: true
+
+      - run: vp run -r build
+
+      - name: Let the emulator use KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Build the app in Release
+        working-directory: apps/e2e
+        run: |
+          npx expo prebuild --clean --platform android
+          ./android/gradlew -p android assembleRelease
+
+      - id: avd-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: avd-34-google_apis-x86_64
+
+      - name: Create the AVD
+        if: steps.avd-cache.outputs.cache-hit != 'true'
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          avd-name: ci-api34
+          force-avd-creation: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: false
+          script: echo "the AVD is created and cached"
+
+      - name: Run the suite
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          avd-name: ci-api34
+          force-avd-creation: false
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: |
+            adb install -r apps/e2e/android/app/build/outputs/apk/release/app-release.apk
+            vp run -F tappet-e2e test:e2e --project=android
+
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-android
+          path: apps/e2e/playwright-report
+          retention-days: 7

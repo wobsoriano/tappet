@@ -60,11 +60,13 @@ npx expo start --port 8081
 
 Leave Metro running. No other project's Metro may hold port 8081. A development build loads whichever bundle answers, so a stray server means the tests drive someone else's app.
 
-Then run the suite.
+Then run the suite. The script takes the project from the caller, so one script serves both platforms and CI.
 
 ```sh
-pnpm test:e2e                                   # playwright test --project=ios
+pnpm test:e2e --project=ios
 ```
+
+A `setup-ios` or `setup-android` project runs first and checks that the device the project names is booted. `TAPPET_IOS_DEVICE` and `TAPPET_ANDROID_DEVICE` override those names, which is how CI points the suite at whatever its runner booted.
 
 ## The specs
 

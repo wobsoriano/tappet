@@ -70,7 +70,7 @@ One worker gets one device. To run more than one, give `name` an array with an e
 npx playwright test --project=ios
 ```
 
-A wrong device name is worth catching before the launch timeout does. `preflight` reads a project's `device` option and answers whether that device is booted, so a missing simulator fails once in a second rather than once per test. Wire it as a setup project the device projects depend on. [Basics](docs/basics.md) has the spec, and `apps/e2e/e2e/preflight.setup.mts` is a working one.
+A wrong device name is worth catching before the launch timeout does. `preflight` reads a project's `device` option and answers whether that device is booted, so a missing simulator fails once in a second rather than once per test. Wire it as a setup project per platform that the device projects depend on. [Basics](docs/basics.md) has the spec, and `apps/e2e/e2e/preflight.setup.mts` is a working one.
 
 ## Run the sample project
 

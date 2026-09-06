@@ -6,8 +6,18 @@ const shared = {
   readyWhen: { testId: 'home' },
 } as const;
 
-const ios = { ...shared, platform: 'ios', name: 'iPhone 17 Pro Max' } as const;
-const android = { ...shared, platform: 'android', name: 'ci api34' } as const;
+// The device names are overridable because CI boots whatever model its runner image carries, which
+// is not the one on a developer's machine. Preflight turns a mismatch into one readable failure.
+const ios = {
+  ...shared,
+  platform: 'ios',
+  name: process.env['TAPPET_IOS_DEVICE'] ?? 'iPhone 17 Pro Max',
+} as const;
+const android = {
+  ...shared,
+  platform: 'android',
+  name: process.env['TAPPET_ANDROID_DEVICE'] ?? 'ci-api34',
+} as const;
 
 export default defineConfig<DeviceTestOptions>({
   // The specs are .mts because agent-device is ESM only and this app is CommonJS.
@@ -19,10 +29,12 @@ export default defineConfig<DeviceTestOptions>({
   expect: { timeout: 10_000 },
   reporter: [['list'], ['html', { open: 'never' }]],
   projects: [
-    // The setup project carries its own device because a Playwright setup project has one `use`,
-    // and this workspace only runs the iOS project.
-    { name: 'setup', testMatch: /preflight\.setup\.mts/, use: { device: ios } },
-    { name: 'ios', dependencies: ['setup'], use: { device: ios } },
-    { name: 'android', dependencies: ['setup'], use: { device: android } },
+    // One setup project per platform, off the same spec. A Playwright setup project has a single
+    // `use`, so a shared one could only ever check one platform's device, and running the other
+    // platform would gate on a device that run has no reason to have booted.
+    { name: 'setup-ios', testMatch: /preflight\.setup\.mts/, use: { device: ios } },
+    { name: 'setup-android', testMatch: /preflight\.setup\.mts/, use: { device: android } },
+    { name: 'ios', dependencies: ['setup-ios'], use: { device: ios } },
+    { name: 'android', dependencies: ['setup-android'], use: { device: android } },
   ],
 });

@@ -94,7 +94,9 @@ setup('the project names a booted device', async ({ device }) => {
 });
 ```
 
-It returns `{ ok: true, device }` or `{ ok: false, problems }`, where every problem is one line ending in something to do about it. Run it as a Playwright setup project that the device projects depend on, so a missing simulator reads as one short failure rather than a launch timeout in every test. [Configuration](configuration.md) shows the wiring.
+It returns `{ ok: true, device }` or `{ ok: false, problems }`, where every problem is one line ending in something to do about it. Run it as a Playwright setup project that the device projects depend on, so a missing simulator reads as one short failure rather than a launch timeout in every test.
+
+Give each platform its own setup project off this one spec. A setup project has a single `use`, so a shared one could only check one platform's device, and running the other platform would gate on a device that run has no reason to have booted. [Configuration](configuration.md) shows the wiring.
 
 ## Specs must load as ES modules
 

@@ -7,7 +7,7 @@
   "scripts": {
     "start": "expo start",
     "ios": "expo run:ios",
-    "test:e2e": "playwright test --project=ios"
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "expo": "~57.0.20",

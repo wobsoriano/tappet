@@ -22,9 +22,10 @@ export default defineConfig<DeviceTestOptions>({
   expect: { timeout: 10_000 },
   reporter: [['list'], ['html', { open: 'never' }]],
   projects: [
-    { name: 'setup', testMatch: /preflight\.setup\.mts/, use: { device: ios } },
-    { name: 'ios', dependencies: ['setup'], use: { device: ios } },
-    { name: 'android', dependencies: ['setup'], use: { device: android } },
+    { name: 'setup-ios', testMatch: /preflight\.setup\.mts/, use: { device: ios } },
+    { name: 'setup-android', testMatch: /preflight\.setup\.mts/, use: { device: android } },
+    { name: 'ios', dependencies: ['setup-ios'], use: { device: ios } },
+    { name: 'android', dependencies: ['setup-android'], use: { device: android } },
   ],
 });
 ```

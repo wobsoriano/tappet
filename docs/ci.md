@@ -41,9 +41,11 @@ Both jobs upload `apps/e2e/playwright-report` when they fail, with seven day ret
 The e2e script takes the project flag from the caller, so one script serves both jobs.
 
 ```sh
-vp run -F tappet-e2e test:e2e -- --project=ios
-vp run -F tappet-e2e test:e2e -- --project=android
+vp run -F tappet-e2e test:e2e --project=ios
+vp run -F tappet-e2e test:e2e --project=android
 ```
+
+Do not put a `--` before the flag. Vite Plus 0.3.0 takes trailing arguments as plain positionals after the task name, and a `--` is swallowed rather than forwarded, so the run silently covers every project instead of the one you asked for.
 
 ## What is not covered
 
