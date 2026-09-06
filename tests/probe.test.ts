@@ -91,3 +91,45 @@ test("a broken session ends the loop at once with the root cause", async () => {
   expect(result.message).toContain(`by session "lex"`);
   expect(subject.polls).toBe(0);
 });
+
+test("an ambiguous locator fails an assertion at once, and .not cannot invert it into a pass", async () => {
+  const plain = target({ name: textMatch("Explore") }, ["explore"]);
+  const result = await probe(plain, { name: "toBeVisible" }, { negate: false, timeoutMs: 3000 });
+  expect(result.pass).toBe(false);
+  expect(plain.polls).toBe(1);
+  expect(result.message).toContain("2 nodes matched");
+
+  const negated = target({ name: textMatch("Explore") }, ["explore"]);
+  const inverted = await probe(negated, { name: "toBeVisible" }, { negate: true, timeoutMs: 3000 });
+  expect(inverted.pass).toBe(true);
+  expect(negated.polls).toBe(1);
+  expect(inverted.message).toContain("2 nodes matched");
+});
+
+test("toHaveCount is the one check an ambiguous locator can still satisfy", async () => {
+  const subject = target({ name: textMatch("Explore") }, ["explore"]);
+  const result = await probe(
+    subject,
+    { name: "toHaveCount", expected: 2 },
+    { negate: false, timeoutMs: 3000 },
+  );
+  expect(result.pass).toBe(true);
+});
+
+test("a broken session fails a negated assertion too", async () => {
+  const subject = target({ name: textMatch("Sign out") }, ["home"], {
+    kind: "device-missing",
+    detail: "simulator shut down",
+  });
+  const result = await probe(subject, { name: "toBeVisible" }, { negate: true, timeoutMs: 3000 });
+  expect(result.pass).toBe(true);
+  expect(result.message).toContain("no matching device is booted");
+  expect(subject.polls).toBe(0);
+});
+
+test("the loop keeps polling right up to the deadline", async () => {
+  const subject = target({ name: textMatch("Sign out") }, ["home"]);
+  const started = Date.now();
+  await probe(subject, { name: "toBeVisible" }, { negate: false, timeoutMs: 200, intervalMs: 50 });
+  expect(Date.now() - started).toBeGreaterThanOrEqual(200);
+});

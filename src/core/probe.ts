@@ -3,6 +3,7 @@ import type { DeviceFailure } from "./driver.ts";
 import { describeFailure } from "./errors.ts";
 import type { Query } from "./query.ts";
 import { renderScreen, resolve, type Resolution, type Screen } from "./screen.ts";
+import { sleep } from "./session.ts";
 
 const POLL_INTERVAL_MS = 250;
 const SCREEN_LISTING_NODES = 60;
@@ -43,6 +44,11 @@ export type ProbeResult = {
  *
  * Never throws for a failed expectation. It returns `{ pass, message }` and
  * the adapter hands that to its assertion library.
+ *
+ * Every early exit reports `pass: options.negate`, which is the value that
+ * fails the assertion whether or not the caller wrote `.not`. An ambiguous
+ * locator and a dead session are wrong under `.not` too, so neither may become
+ * a pass by inversion.
  */
 export async function probe(
   target: ProbeTarget,
@@ -59,7 +65,7 @@ export async function probe(
     const broken = target.failure();
     if (broken !== null) {
       return {
-        pass: false,
+        pass: options.negate,
         message: `Device session is unusable: ${describeFailure(broken)}`,
         actual: null,
         expected: describeCheck(check),
@@ -68,6 +74,22 @@ export async function probe(
     screen = await target.capture();
     polls += 1;
     resolution = resolve(screen, target.query);
+    if (resolution.outcome === "many" && check.name !== "toHaveCount") {
+      return {
+        pass: options.negate,
+        actual: `${String(resolution.nodes.length)} matching nodes`,
+        expected: describeCheck(check),
+        message: formatFailure({
+          locator: target.description,
+          check,
+          negate: options.negate,
+          resolution,
+          screen,
+          timeoutMs: options.timeoutMs,
+          polls,
+        }),
+      };
+    }
     const verdict = evaluate(check, resolution);
     if (verdict.pass !== options.negate) {
       return {
@@ -77,8 +99,9 @@ export async function probe(
         expected: describeCheck(check),
       };
     }
-    if (Date.now() + interval >= deadline) break;
-    await sleep(interval);
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) break;
+    await sleep(Math.min(interval, remaining));
   }
 
   const verdict = evaluate(check, resolution);
@@ -96,10 +119,6 @@ export async function probe(
       polls,
     }),
   };
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((done) => setTimeout(done, ms));
 }
 
 /**
