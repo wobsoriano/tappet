@@ -1,23 +1,30 @@
 {
   "name": "playwright-agent-device",
   "version": "0.0.0",
-  "description": "A starter for creating a TypeScript package.",
-  "homepage": "https://github.com/author/library#readme",
+  "description": "Native mobile end-to-end tests with @playwright/test as the runner and agent-device as the driver.",
+  "homepage": "https://github.com/wobsoriano/playwright-agent-device#readme",
   "bugs": {
-    "url": "https://github.com/author/library/issues"
+    "url": "https://github.com/wobsoriano/playwright-agent-device/issues"
   },
   "license": "MIT",
-  "author": "Author Name <author.name@mail.com>",
+  "author": "Robert Soriano",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/author/library.git"
+    "url": "git+https://github.com/wobsoriano/playwright-agent-device.git"
   },
   "files": [
     "dist"
   ],
   "type": "module",
   "exports": {
-    ".": "./dist/index.mjs",
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    },
+    "./core": {
+      "types": "./dist/core/index.d.mts",
+      "import": "./dist/core/index.mjs"
+    },
     "./package.json": "./package.json"
   },
   "publishConfig": {
@@ -27,6 +34,7 @@
     "build": "vp pack",
     "dev": "vp pack --watch",
     "test": "vp test",
+    "test:e2e": "playwright test",
     "check": "vp check",
     "prepublishOnly": "vp run build",
     "prepare": "vp config"
@@ -40,11 +48,18 @@
     "vite": "catalog:",
     "vite-plus": "catalog:"
   },
+  "peerDependencies": {
+    "@playwright/test": ">=1.63",
+    "agent-device": ">=0.20.10"
+  },
   "devEngines": {
     "packageManager": {
       "name": "pnpm",
       "version": "12.3.4",
       "onFail": "download"
     }
+  },
+  "engines": {
+    "node": ">=22.12"
   }
 }

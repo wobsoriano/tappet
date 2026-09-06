@@ -5,6 +5,7 @@ export default defineConfig({
     "*": "vp check --fix",
   },
   pack: {
+    entry: ["src/index.ts", "src/core/index.ts"],
     dts: {
       tsgo: true,
     },
@@ -17,4 +18,7 @@ export default defineConfig({
     },
   },
   fmt: {},
+  test: {
+    exclude: ["**/node_modules/**", "**/dist/**", "e2e/**"],
+  },
 });

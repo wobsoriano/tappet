@@ -1,0 +1,530 @@
+{
+  "success": true,
+  "data": {
+    "nodes": [
+      {
+        "rect": {
+          "x": 0,
+          "width": 440,
+          "y": 0,
+          "height": 956
+        },
+        "enabled": true,
+        "index": 0,
+        "type": "Application",
+        "depth": 0,
+        "label": "awesome-todo",
+        "hittable": true,
+        "ref": "e1"
+      },
+      {
+        "hittable": true,
+        "parentIndex": 0,
+        "type": "Window",
+        "index": 1,
+        "rect": {
+          "x": 0,
+          "width": 440,
+          "y": 0,
+          "height": 956
+        },
+        "enabled": true,
+        "depth": 1,
+        "ref": "e2"
+      },
+      {
+        "hittable": true,
+        "parentIndex": 1,
+        "index": 2,
+        "type": "Other",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 440,
+          "height": 956
+        },
+        "enabled": true,
+        "depth": 2,
+        "ref": "e3"
+      },
+      {
+        "label": "Tab Bar",
+        "hittable": false,
+        "parentIndex": 2,
+        "index": 3,
+        "type": "Other",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 440,
+          "height": 956
+        },
+        "enabled": true,
+        "depth": 3,
+        "ref": "e4"
+      },
+      {
+        "label": "Live from the cloud",
+        "hittable": false,
+        "parentIndex": 3,
+        "index": 4,
+        "type": "Other",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 440,
+          "height": 956
+        },
+        "enabled": true,
+        "depth": 4,
+        "ref": "e5"
+      },
+      {
+        "rect": {
+          "x": 24,
+          "y": 62,
+          "width": 392,
+          "height": 538.6666870117188
+        },
+        "type": "Other",
+        "index": 5,
+        "depth": 5,
+        "enabled": true,
+        "hittable": false,
+        "parentIndex": 4,
+        "ref": "e6"
+      },
+      {
+        "rect": {
+          "x": 156,
+          "y": 203.3333282470703,
+          "width": 128,
+          "height": 128.00001525878906
+        },
+        "type": "Other",
+        "index": 6,
+        "depth": 5,
+        "enabled": true,
+        "hittable": false,
+        "parentIndex": 4,
+        "ref": "e7"
+      },
+      {
+        "rect": {
+          "x": 82.9460114665315,
+          "y": 130.27934453212123,
+          "width": 274.44131294340184,
+          "height": 274.4413185651521
+        },
+        "type": "Other",
+        "index": 7,
+        "depth": 6,
+        "enabled": true,
+        "hittable": false,
+        "parentIndex": 6,
+        "ref": "e8"
+      },
+      {
+        "rect": {
+          "x": 82.9460114665315,
+          "y": 130.27934453212123,
+          "width": 274.44130533725706,
+          "height": 274.4413053372571
+        },
+        "type": "Image",
+        "index": 8,
+        "depth": 7,
+        "enabled": true,
+        "hittable": false,
+        "parentIndex": 7,
+        "ref": "e9"
+      },
+      {
+        "rect": {
+          "height": 128,
+          "x": 156,
+          "y": 203.3333282470703,
+          "width": 128
+        },
+        "type": "Other",
+        "enabled": true,
+        "index": 9,
+        "depth": 6,
+        "hittable": false,
+        "parentIndex": 6,
+        "ref": "e10"
+      },
+      {
+        "rect": {
+          "x": 182,
+          "width": 76,
+          "y": 231.9999942779541,
+          "height": 71.00001525878906
+        },
+        "type": "Other",
+        "index": 10,
+        "depth": 6,
+        "enabled": true,
+        "hittable": false,
+        "parentIndex": 6,
+        "ref": "e11"
+      },
+      {
+        "rect": {
+          "width": 76,
+          "height": 71,
+          "y": 231.9999942779541,
+          "x": 182
+        },
+        "type": "Image",
+        "index": 11,
+        "depth": 7,
+        "enabled": true,
+        "hittable": false,
+        "parentIndex": 10,
+        "ref": "e12"
+      },
+      {
+        "rect": {
+          "width": 344,
+          "height": 104,
+          "y": 355.3333435058594,
+          "x": 48
+        },
+        "type": "StaticText",
+        "label": "Live from the cloud",
+        "index": 12,
+        "enabled": true,
+        "depth": 5,
+        "hittable": false,
+        "parentIndex": 4,
+        "ref": "e13"
+      },
+      {
+        "rect": {
+          "width": 81.66665649414062,
+          "height": 14.33331298828125,
+          "y": 616.6666870117188,
+          "x": 179
+        },
+        "type": "StaticText",
+        "label": "GET STARTED",
+        "index": 13,
+        "enabled": true,
+        "depth": 5,
+        "hittable": false,
+        "parentIndex": 4,
+        "ref": "e14"
+      },
+      {
+        "rect": {
+          "width": 392,
+          "height": 160,
+          "y": 647,
+          "x": 24
+        },
+        "type": "Other",
+        "index": 14,
+        "depth": 5,
+        "enabled": true,
+        "hittable": false,
+        "parentIndex": 4,
+        "ref": "e15"
+      },
+      {
+        "rect": {
+          "width": 70.66666412353516,
+          "height": 28,
+          "y": 671,
+          "x": 40
+        },
+        "type": "StaticText",
+        "label": "Try editing",
+        "index": 15,
+        "enabled": true,
+        "depth": 5,
+        "hittable": false,
+        "parentIndex": 4,
+        "ref": "e16"
+      },
+      {
+        "rect": {
+          "width": 142.33334350585938,
+          "height": 28,
+          "y": 671,
+          "x": 257.6666717529297
+        },
+        "type": "Other",
+        "index": 16,
+        "depth": 5,
+        "enabled": true,
+        "hittable": false,
+        "parentIndex": 4,
+        "ref": "e17"
+      },
+      {
+        "rect": {
+          "width": 126.33334350585938,
+          "height": 24,
+          "y": 673,
+          "x": 265.6666717529297
+        },
+        "type": "StaticText",
+        "label": "src/app/index.tsx",
+        "index": 17,
+        "enabled": true,
+        "depth": 5,
+        "hittable": false,
+        "parentIndex": 4,
+        "ref": "e18"
+      },
+      {
+        "rect": {
+          "width": 62,
+          "height": 24,
+          "y": 715,
+          "x": 40
+        },
+        "type": "StaticText",
+        "label": "Dev tools",
+        "index": 18,
+        "enabled": true,
+        "depth": 5,
+        "hittable": false,
+        "parentIndex": 4,
+        "ref": "e19"
+      },
+      {
+        "rect": {
+          "width": 93.33334350585938,
+          "height": 24,
+          "y": 715,
+          "x": 306.6666564941406
+        },
+        "type": "Other",
+        "index": 19,
+        "depth": 5,
+        "enabled": true,
+        "hittable": false,
+        "parentIndex": 4,
+        "ref": "e20"
+      },
+      {
+        "rect": {
+          "y": 717,
+          "height": 20,
+          "width": 77.33334350585938,
+          "x": 314.6666564941406
+        },
+        "type": "StaticText",
+        "label": "press cmd+d",
+        "enabled": true,
+        "index": 20,
+        "depth": 5,
+        "hittable": false,
+        "parentIndex": 4,
+        "ref": "e21"
+      },
+      {
+        "rect": {
+          "y": 755,
+          "height": 28,
+          "width": 72,
+          "x": 40
+        },
+        "type": "StaticText",
+        "label": "Fresh start",
+        "enabled": true,
+        "index": 21,
+        "depth": 5,
+        "hittable": false,
+        "parentIndex": 4,
+        "ref": "e22"
+      },
+      {
+        "rect": {
+          "y": 755,
+          "height": 28,
+          "width": 172,
+          "x": 228
+        },
+        "type": "Other",
+        "enabled": true,
+        "depth": 5,
+        "index": 22,
+        "hittable": false,
+        "parentIndex": 4,
+        "ref": "e23"
+      },
+      {
+        "rect": {
+          "y": 757,
+          "height": 24,
+          "width": 156,
+          "x": 236
+        },
+        "type": "StaticText",
+        "label": "npm run reset-project",
+        "enabled": true,
+        "index": 23,
+        "depth": 5,
+        "hittable": false,
+        "parentIndex": 4,
+        "ref": "e24"
+      },
+      {
+        "rect": {
+          "y": 873,
+          "width": 440,
+          "height": 83,
+          "x": 0
+        },
+        "type": "Other",
+        "label": "Tab Bar",
+        "enabled": true,
+        "index": 24,
+        "depth": 4,
+        "hittable": false,
+        "parentIndex": 3,
+        "ref": "e25"
+      },
+      {
+        "rect": {
+          "width": 440,
+          "height": 83,
+          "y": 873,
+          "x": 0
+        },
+        "type": "TabBar",
+        "label": "Tab Bar",
+        "enabled": true,
+        "index": 25,
+        "depth": 5,
+        "hittable": false,
+        "parentIndex": 24,
+        "ref": "e26"
+      },
+      {
+        "hittable": false,
+        "label": "Home",
+        "index": 26,
+        "parentIndex": 25,
+        "depth": 6,
+        "type": "Other",
+        "enabled": true,
+        "rect": {
+          "x": 126,
+          "y": 873,
+          "width": 188,
+          "height": 62
+        },
+        "ref": "e27"
+      },
+      {
+        "hittable": false,
+        "index": 27,
+        "parentIndex": 26,
+        "depth": 7,
+        "type": "Other",
+        "enabled": true,
+        "rect": {
+          "x": 126,
+          "y": 873,
+          "width": 94,
+          "height": 54
+        },
+        "ref": "e28"
+      },
+      {
+        "rect": {
+          "x": 130,
+          "y": 877,
+          "width": 94,
+          "height": 54
+        },
+        "label": "Home",
+        "hittable": false,
+        "index": 28,
+        "parentIndex": 26,
+        "depth": 7,
+        "type": "Button",
+        "enabled": true,
+        "selected": true,
+        "ref": "e29"
+      },
+      {
+        "hittable": false,
+        "label": "Explore",
+        "index": 29,
+        "parentIndex": 26,
+        "depth": 7,
+        "type": "Button",
+        "enabled": true,
+        "rect": {
+          "x": 216,
+          "y": 877,
+          "width": 94,
+          "height": 54
+        },
+        "ref": "e30"
+      },
+      {
+        "hittable": false,
+        "index": 30,
+        "parentIndex": 26,
+        "depth": 7,
+        "type": "Other",
+        "enabled": true,
+        "rect": {
+          "width": 94,
+          "x": 130,
+          "y": 877,
+          "height": 54
+        },
+        "ref": "e31"
+      },
+      {
+        "hittable": false,
+        "index": 31,
+        "parentIndex": 24,
+        "depth": 5,
+        "type": "Other",
+        "enabled": true,
+        "rect": {
+          "width": 440,
+          "x": 0,
+          "y": 873,
+          "height": 83
+        },
+        "ref": "e32"
+      }
+    ],
+    "truncated": false,
+    "appName": "com.wobsoriano.awesometodo",
+    "appBundleId": "com.wobsoriano.awesometodo",
+    "visibility": {
+      "partial": false,
+      "visibleNodeCount": 32,
+      "totalNodeCount": 32,
+      "reasons": []
+    },
+    "snapshotQuality": {
+      "state": "healthy",
+      "backend": "tree"
+    },
+    "snapshotDiagnostics": {
+      "stats": {
+        "count": 516,
+        "p50Ms": 67,
+        "p95Ms": 73,
+        "maxMs": 118,
+        "slowThresholdMs": 1500,
+        "platform": "ios",
+        "backends": {
+          "xctest": 516
+        }
+      }
+    },
+    "refsGeneration": 776575
+  }
+}

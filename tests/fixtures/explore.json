@@ -1,0 +1,612 @@
+{
+  "success": true,
+  "data": {
+    "nodes": [
+      {
+        "index": 0,
+        "type": "Application",
+        "depth": 0,
+        "hittable": true,
+        "label": "awesome-todo",
+        "enabled": true,
+        "rect": {
+          "width": 440,
+          "height": 956,
+          "y": 0,
+          "x": 0
+        },
+        "ref": "e1"
+      },
+      {
+        "index": 1,
+        "type": "Window",
+        "depth": 1,
+        "parentIndex": 0,
+        "hittable": true,
+        "enabled": true,
+        "rect": {
+          "width": 440,
+          "height": 956,
+          "y": 0,
+          "x": 0
+        },
+        "ref": "e2"
+      },
+      {
+        "index": 2,
+        "type": "Other",
+        "depth": 2,
+        "parentIndex": 1,
+        "hittable": true,
+        "enabled": true,
+        "rect": {
+          "width": 440,
+          "height": 956,
+          "y": 0,
+          "x": 0
+        },
+        "ref": "e3"
+      },
+      {
+        "index": 3,
+        "type": "Other",
+        "depth": 3,
+        "parentIndex": 2,
+        "hittable": false,
+        "label": "Tab Bar",
+        "enabled": true,
+        "rect": {
+          "width": 440,
+          "height": 956,
+          "y": 0,
+          "x": 0
+        },
+        "ref": "e4"
+      },
+      {
+        "index": 4,
+        "type": "Other",
+        "depth": 4,
+        "parentIndex": 3,
+        "hittable": false,
+        "label": "Vertical scroll bar, 1 page",
+        "enabled": true,
+        "rect": {
+          "width": 440,
+          "height": 956,
+          "y": 0,
+          "x": 0
+        },
+        "ref": "e5"
+      },
+      {
+        "index": 5,
+        "type": "Other",
+        "depth": 5,
+        "parentIndex": 4,
+        "hittable": false,
+        "label": "Explore",
+        "enabled": true,
+        "rect": {
+          "width": 440,
+          "height": 956,
+          "y": 0,
+          "x": 0
+        },
+        "ref": "e6"
+      },
+      {
+        "parentIndex": 5,
+        "type": "ScrollView",
+        "depth": 6,
+        "enabled": true,
+        "index": 6,
+        "rect": {
+          "width": 440,
+          "height": 956,
+          "y": 0,
+          "x": 0
+        },
+        "hittable": false,
+        "label": "Explore",
+        "ref": "e7"
+      },
+      {
+        "parentIndex": 6,
+        "type": "Other",
+        "depth": 7,
+        "enabled": true,
+        "index": 7,
+        "rect": {
+          "width": 440,
+          "height": 147.79999999999995,
+          "y": 808.2,
+          "x": 0
+        },
+        "hittable": false,
+        "ref": "e8"
+      },
+      {
+        "parentIndex": 6,
+        "type": "Other",
+        "depth": 7,
+        "enabled": true,
+        "index": 8,
+        "rect": {
+          "width": 440,
+          "height": 562,
+          "y": 124,
+          "x": 0
+        },
+        "hittable": false,
+        "label": "Explore",
+        "ref": "e9"
+      },
+      {
+        "parentIndex": 8,
+        "type": "Other",
+        "depth": 8,
+        "enabled": true,
+        "index": 9,
+        "rect": {
+          "width": 440,
+          "height": 298,
+          "y": 124,
+          "x": 0
+        },
+        "hittable": false,
+        "ref": "e10"
+      },
+      {
+        "parentIndex": 8,
+        "type": "Other",
+        "depth": 8,
+        "enabled": true,
+        "index": 10,
+        "rect": {
+          "width": 440,
+          "height": 562,
+          "y": 124,
+          "x": 0
+        },
+        "hittable": false,
+        "ref": "e11"
+      },
+      {
+        "parentIndex": 8,
+        "type": "StaticText",
+        "depth": 8,
+        "enabled": true,
+        "index": 11,
+        "rect": {
+          "width": 108.66667175292969,
+          "height": 44,
+          "y": 188,
+          "x": 165.6666717529297
+        },
+        "hittable": false,
+        "label": "Explore",
+        "ref": "e12"
+      },
+      {
+        "parentIndex": 8,
+        "type": "StaticText",
+        "depth": 8,
+        "enabled": true,
+        "index": 12,
+        "rect": {
+          "width": 250.33334350585938,
+          "height": 48,
+          "y": 248,
+          "x": 94.66666412353516
+        },
+        "hittable": false,
+        "label": "This starter app includes example\ncode to help you get started.",
+        "ref": "e13"
+      },
+      {
+        "parentIndex": 8,
+        "type": "Link",
+        "depth": 8,
+        "enabled": true,
+        "index": 13,
+        "rect": {
+          "width": 197,
+          "height": 46,
+          "y": 312,
+          "x": 121.66666412353516
+        },
+        "hittable": false,
+        "label": "Expo documentation, arrow.up.right.square",
+        "ref": "e14"
+      },
+      {
+        "parentIndex": 8,
+        "type": "Other",
+        "depth": 8,
+        "enabled": true,
+        "index": 14,
+        "rect": {
+          "width": 440,
+          "height": 264,
+          "y": 422,
+          "x": 0
+        },
+        "hittable": false,
+        "ref": "e15"
+      },
+      {
+        "parentIndex": 8,
+        "type": "Other",
+        "depth": 8,
+        "enabled": true,
+        "index": 15,
+        "rect": {
+          "width": 392,
+          "height": 24,
+          "y": 438,
+          "x": 24
+        },
+        "hittable": false,
+        "ref": "e16"
+      },
+      {
+        "parentIndex": 8,
+        "type": "Other",
+        "depth": 8,
+        "enabled": true,
+        "index": 16,
+        "rect": {
+          "width": 392,
+          "height": 24,
+          "y": 438,
+          "x": 24
+        },
+        "hittable": false,
+        "label": "Forward, File-based routing",
+        "ref": "e17"
+      },
+      {
+        "parentIndex": 8,
+        "type": "Other",
+        "depth": 8,
+        "enabled": true,
+        "index": 17,
+        "rect": {
+          "width": 392,
+          "height": 24,
+          "y": 494,
+          "x": 24
+        },
+        "hittable": false,
+        "ref": "e18"
+      },
+      {
+        "parentIndex": 8,
+        "type": "Other",
+        "depth": 8,
+        "enabled": true,
+        "index": 18,
+        "rect": {
+          "width": 392,
+          "height": 24,
+          "y": 494,
+          "x": 24
+        },
+        "hittable": false,
+        "label": "Forward, Android, iOS, and web support",
+        "ref": "e19"
+      },
+      {
+        "parentIndex": 8,
+        "type": "Other",
+        "depth": 8,
+        "enabled": true,
+        "index": 19,
+        "rect": {
+          "width": 392,
+          "height": 24,
+          "y": 550,
+          "x": 24
+        },
+        "hittable": false,
+        "ref": "e20"
+      },
+      {
+        "parentIndex": 8,
+        "type": "Other",
+        "depth": 8,
+        "enabled": true,
+        "index": 20,
+        "rect": {
+          "width": 392,
+          "height": 24,
+          "y": 550,
+          "x": 24
+        },
+        "hittable": false,
+        "label": "Forward, Images",
+        "ref": "e21"
+      },
+      {
+        "parentIndex": 8,
+        "type": "Other",
+        "depth": 8,
+        "enabled": true,
+        "index": 21,
+        "rect": {
+          "width": 392,
+          "height": 24,
+          "y": 606,
+          "x": 24
+        },
+        "hittable": false,
+        "ref": "e22"
+      },
+      {
+        "parentIndex": 8,
+        "type": "Other",
+        "depth": 8,
+        "enabled": true,
+        "index": 22,
+        "rect": {
+          "width": 392,
+          "height": 24,
+          "y": 606,
+          "x": 24
+        },
+        "hittable": false,
+        "label": "Forward, Light and dark mode components",
+        "ref": "e23"
+      },
+      {
+        "parentIndex": 8,
+        "type": "Other",
+        "depth": 8,
+        "enabled": true,
+        "index": 23,
+        "rect": {
+          "width": 392,
+          "height": 24,
+          "y": 662,
+          "x": 24
+        },
+        "hittable": false,
+        "ref": "e24"
+      },
+      {
+        "parentIndex": 8,
+        "type": "Other",
+        "depth": 8,
+        "enabled": true,
+        "index": 24,
+        "rect": {
+          "width": 392,
+          "height": 24,
+          "y": 662,
+          "x": 24
+        },
+        "hittable": false,
+        "label": "Forward, Animations",
+        "ref": "e25"
+      },
+      {
+        "parentIndex": 6,
+        "type": "Other",
+        "value": "0%",
+        "enabled": true,
+        "depth": 7,
+        "index": 25,
+        "rect": {
+          "width": 30,
+          "height": 811,
+          "y": 62,
+          "x": 407
+        },
+        "label": "Vertical scroll bar, 1 page",
+        "hittable": false,
+        "ref": "e26"
+      },
+      {
+        "parentIndex": 25,
+        "type": "Other",
+        "depth": 8,
+        "enabled": true,
+        "index": 26,
+        "rect": {
+          "width": 3,
+          "height": 718,
+          "y": 152,
+          "x": 434
+        },
+        "hittable": false,
+        "ref": "e27"
+      },
+      {
+        "value": "0%",
+        "index": 27,
+        "enabled": true,
+        "label": "Horizontal scroll bar, 1 page",
+        "rect": {
+          "width": 316,
+          "height": 30,
+          "y": 840,
+          "x": 62
+        },
+        "type": "Other",
+        "depth": 7,
+        "hittable": false,
+        "parentIndex": 6,
+        "ref": "e28"
+      },
+      {
+        "index": 28,
+        "enabled": true,
+        "rect": {
+          "width": 310,
+          "height": 3,
+          "y": 867,
+          "x": 65
+        },
+        "type": "Other",
+        "depth": 8,
+        "hittable": false,
+        "parentIndex": 27,
+        "ref": "e29"
+      },
+      {
+        "index": 29,
+        "enabled": true,
+        "label": "Tab Bar",
+        "rect": {
+          "width": 440,
+          "height": 83,
+          "y": 873,
+          "x": 0
+        },
+        "type": "Other",
+        "depth": 4,
+        "hittable": false,
+        "parentIndex": 3,
+        "ref": "e30"
+      },
+      {
+        "index": 30,
+        "enabled": true,
+        "label": "Tab Bar",
+        "rect": {
+          "width": 440,
+          "height": 83,
+          "y": 873,
+          "x": 0
+        },
+        "type": "TabBar",
+        "depth": 5,
+        "hittable": false,
+        "parentIndex": 29,
+        "ref": "e31"
+      },
+      {
+        "index": 31,
+        "enabled": true,
+        "label": "Home",
+        "rect": {
+          "width": 188,
+          "height": 62,
+          "y": 873,
+          "x": 126
+        },
+        "type": "Other",
+        "depth": 6,
+        "hittable": false,
+        "parentIndex": 30,
+        "ref": "e32"
+      },
+      {
+        "index": 32,
+        "enabled": true,
+        "rect": {
+          "width": 94,
+          "height": 54,
+          "y": 873,
+          "x": 126
+        },
+        "type": "Other",
+        "depth": 7,
+        "hittable": false,
+        "parentIndex": 31,
+        "ref": "e33"
+      },
+      {
+        "index": 33,
+        "enabled": true,
+        "label": "Home",
+        "rect": {
+          "width": 94,
+          "height": 54,
+          "y": 877,
+          "x": 130
+        },
+        "type": "Button",
+        "depth": 7,
+        "hittable": false,
+        "parentIndex": 31,
+        "ref": "e34"
+      },
+      {
+        "parentIndex": 31,
+        "index": 34,
+        "enabled": true,
+        "label": "Explore",
+        "rect": {
+          "width": 94,
+          "height": 54,
+          "y": 877,
+          "x": 216
+        },
+        "type": "Button",
+        "depth": 7,
+        "hittable": false,
+        "selected": true,
+        "ref": "e35"
+      },
+      {
+        "index": 35,
+        "enabled": true,
+        "rect": {
+          "width": 94,
+          "height": 54,
+          "y": 877,
+          "x": 216
+        },
+        "type": "Other",
+        "depth": 7,
+        "hittable": false,
+        "parentIndex": 31,
+        "ref": "e36"
+      },
+      {
+        "index": 36,
+        "enabled": true,
+        "rect": {
+          "width": 440,
+          "height": 83,
+          "y": 873,
+          "x": 0
+        },
+        "type": "Other",
+        "depth": 5,
+        "hittable": false,
+        "parentIndex": 29,
+        "ref": "e37"
+      }
+    ],
+    "truncated": false,
+    "appName": "com.wobsoriano.awesometodo",
+    "appBundleId": "com.wobsoriano.awesometodo",
+    "visibility": {
+      "partial": true,
+      "visibleNodeCount": 37,
+      "totalNodeCount": 37,
+      "reasons": ["scroll-hidden-below"]
+    },
+    "snapshotQuality": {
+      "state": "healthy",
+      "backend": "tree"
+    },
+    "snapshotDiagnostics": {
+      "stats": {
+        "count": 5,
+        "p50Ms": 86,
+        "p95Ms": 100,
+        "maxMs": 100,
+        "slowThresholdMs": 1500,
+        "platform": "ios",
+        "backends": {
+          "xctest": 5
+        }
+      }
+    },
+    "refsGeneration": 355823
+  }
+}
