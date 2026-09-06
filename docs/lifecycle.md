@@ -1,0 +1,65 @@
+# Lifecycle
+
+## One session per worker slot
+
+tappet opens one `agent-device` session per Playwright worker slot and names it `${sessionPrefix}-${project}-${parallelIndex}`. The name is deterministic on purpose. Playwright discards a worker after any test failure and starts a replacement that reuses the same `parallelIndex`, so the replacement reconnects to the session the failed worker left behind instead of stranding it.
+
+Startup is convergent. Running it twice settles on one ready session.
+
+1. Close any leftover session of that exact name.
+2. Launch the app with a relaunch, carrying the device selection on that first command.
+3. Recover once from a device claimed by one of tappet's own leftovers, or by any owner when `onDeviceInUse` is `'reclaim'`.
+4. Recover once from a session already bound to a different device.
+5. Hold until `readyWhen` resolves, or fail with the screen listing.
+
+A session binds to a device on its first command, even a read-only one, which is why the selection rides on the launch rather than on a separate call.
+
+## Every command runs on one queue
+
+Reads included. The driver advances a reference generation on every snapshot, and a reference pinned to an older generation is rejected before it dispatches. A read landing between a resolution and the action pinned to it would invalidate that pin, so one queue is what makes "snapshot, resolve, pin, act" atomic.
+
+Each action is therefore one unit. Capture a screen, resolve the locator, pin the node's reference to that screen's generation, dispatch, and re-capture and retry once if the driver reports the generation was superseded. A second rejection means the screen is changing faster than we can act on it, which is a real finding and is reported as one rather than retried forever.
+
+## Relaunch
+
+`relaunch` defaults to `'per-test'`. Before every test after the worker's first, the app is relaunched and the ready gate runs again, so no test inherits the previous test's screen. The worker's own launch already relaunched, so the first test in a worker does not pay for a second one.
+
+`'per-worker'` skips that. Use it when your app is expensive to launch and your tests genuinely do not care what came before.
+
+`app.restart()` does the same thing on demand inside a test.
+
+## DEVICE_IN_USE
+
+A device claim is a file in the `agent-device` state directory, and it outlives the process that made it. A claim made in another workspace does not show up in a session listing run from yours, but it still blocks a launch.
+
+Leftovers whose session name starts with your `sessionPrefix` are always reclaimed, because those are yours. Anything else fails by default with the owner and the command to release it.
+
+```
+Device iPhone 17 Pro Max is held by session "lex".
+Release it with: agent-device close --session lex
+Or set use.device.onDeviceInUse to 'reclaim'.
+```
+
+Set `onDeviceInUse: 'reclaim'` when a shared CI device should always be taken over.
+
+## Evidence
+
+`evidence` defaults to `'on-failure'`. When a test does not end in the status it expected, the `app` fixture captures `screen.png` and a `screen.txt` listing and attaches both to that test, before the worker fixture closes the session. That teardown runs in the separate budget Playwright grants after a test finishes, so a test that timed out still gets its screenshot.
+
+A capture that itself fails records an annotation and returns. Masking the test's real error with a screenshot error would be worse than having no screenshot.
+
+`'always'` captures on every test. `'off'` never does.
+
+No `trace.zip` is produced, because no browser is involved. The HTML report is the evidence surface.
+
+## Shutdown
+
+The worker fixture closes the session when the worker exits. `close` is idempotent, it reaches the closed state even when the driver call fails, and it never shuts the simulator down. tappet does not boot, build, install, or tear down devices.
+
+## Running the CLI alongside a test run
+
+The `agent-device` CLI and the client tappet uses share one daemon, and a version mismatch makes each side restart it, which drops every open session. tappet pins `agent-device` as a dependency, so run the CLI through your workspace rather than a global install.
+
+```sh
+pnpm exec agent-device sessions list
+```

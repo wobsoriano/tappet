@@ -1,6 +1,14 @@
 # tappet design
 
-The package was renamed from `playwright-agent-device` to `tappet`, and `DeviceTestError` to `TappetError`, after this document was written. Nothing else about the design changed.
+The package was renamed from `playwright-agent-device` to `tappet`, and `DeviceTestError` to `TappetError`, after this document was written.
+
+## Where the code has since deviated
+
+`agent-device` is a dependency pinned to exactly `0.20.10`, not a peer dependency. The driver is an implementation detail behind the `DeviceDriver` port, so a consumer should not have to install it or hold an opinion about its version. The pin is the version the error classifier and the role tables were tested against, and matching it to what the workspace CLI resolves removes the daemon restart that a version mismatch causes, which drops every open session.
+
+`Locator.textContent()` and `preflight(options)` were added to the public surface after the module map below was written. `preflight` lists devices through a `listDevices` method on the `DeviceDriver` port and reports whether the device a config names is booted.
+
+`preflight` lives in `src/preflight.ts` rather than under `core/`, because it is the one function that has to construct a concrete driver. No module under `core/` imports `agent-device`, and the port stays testable against a fake, but `core/index.ts` re-exports `preflight`, so the `tappet/core` entry does pull the driver in.
 
 Native mobile end-to-end tests with `@playwright/test` as the runner and Callstack `agent-device` as the driver. No browser is launched. This document is the contract the implementation is built against. It was synthesized from three parallel design candidates and a set of live probes against a sample Expo SDK 57 app on an iOS simulator.
 

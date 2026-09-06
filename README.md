@@ -1,33 +1,109 @@
-# tappet workspace
+# tappet
 
-A Vite Plus pnpm workspace holding one library and the app it is proven against.
+tappet is experimental. The API will change between minor versions, so pin the version you install. Android is configuration only so far, and every run behind this repository has been an iOS simulator. Cloud device farms are not supported.
+
+tappet runs end-to-end tests for mobile apps on the Playwright test runner. It drives a booted simulator or emulator through Callstack [`agent-device`](https://agent-device.dev/) and launches no browser. Locators keep Playwright semantics, so `getByRole`, `getByText`, and `getByTestId` resolve against the accessibility tree, a locator that matches two things is an error rather than a guess, and matchers retry until they hold. A test that fails prints the screen it was looking at and attaches a screenshot and a tree listing to the HTML report.
+
+```ts
+import { expect, test } from 'tappet';
+
+test('the right credentials land on the profile', async ({ app }) => {
+  await app.getByTestId('sign-in-link').tap();
+  await app.getByRole('text-field', { name: 'Email' }).fill('rob@example.com');
+  await app.getByTestId('password').fill('hunter2');
+  await app.getByRole('button', { name: 'Sign in' }).tap();
+
+  await expect(app.getByTestId('signing-in')).toBeVisible();
+  await expect(app.getByTestId('profile-email')).toHaveText('rob@example.com', { exact: true });
+});
+```
+
+## Usage
+
+### Requirements
+
+- Node 22.12 or newer.
+- A booted simulator or emulator. Boot it yourself or with `agent-device device boot`.
+- Your app already installed on that device. tappet never builds, installs, or boots anything.
+- Your bundler running if the build needs one. For a React Native development build that means Metro on port 8081, and no other project's Metro may hold that port.
+- Specs that load as ES modules. `agent-device` is ESM only, so inside a package without `"type": "module"`, such as an Expo app, name them `*.spec.mts`.
+
+### Install
+
+```sh
+pnpm add -D tappet @playwright/test
+```
+
+### Configure
+
+```ts
+// playwright.config.ts
+import { defineConfig } from '@playwright/test';
+import type { DeviceTestOptions } from 'tappet';
+
+const shared = {
+  app: 'com.example.app',
+  readyWhen: { testId: 'home' },
+} as const;
+
+export default defineConfig<DeviceTestOptions>({
+  testDir: 'e2e',
+  workers: 1,
+  expect: { timeout: 10_000 },
+  reporter: [['list'], ['html', { open: 'never' }]],
+  projects: [
+    { name: 'ios', use: { device: { ...shared, platform: 'ios', name: 'iPhone 17 Pro Max' } } },
+    { name: 'android', use: { device: { ...shared, platform: 'android', name: 'ci api34' } } },
+  ],
+});
+```
+
+`device` is the only key tappet adds to `use`. Playwright merges `use` one key at a time, so a project that sets `device` replaces the whole object. Spread a shared constant, as above.
+
+`readyWhen` is required. The driver returns from a launch as soon as the native process starts, while the JavaScript bundle is still loading, so tappet holds until that locator resolves before the first test runs.
+
+One worker gets one device. To run more than one, give `name` an array with an entry per worker.
+
+### Run
+
+```sh
+npx playwright test --project=ios
+```
+
+A wrong device name is worth catching before the launch timeout does. `preflight` reads a project's `device` option and answers whether that device is booted, so a missing simulator fails once in a second rather than once per test. Wire it as a setup project the device projects depend on. [Basics](docs/basics.md) has the spec, and `apps/e2e/e2e/preflight.setup.mts` is a working one.
+
+## Run the sample project
+
+`apps/e2e` is an Expo app with four screens and a fake sign-in, and it is the app tappet is proven against. Build the library first with `vp run -r build`, so the app resolves its `dist`. Then, from `apps/e2e`:
+
+```sh
+npx expo run:ios --device 'iPhone 17 Pro Max' --no-bundler
+npx expo start --port 8081
+npx playwright test --project=ios
+```
+
+Leave Metro running for the whole suite. The first command takes several minutes the first time.
+
+## Docs
+
+- [Basics](docs/basics.md)
+- [Configuration](docs/configuration.md)
+- [Locators](docs/locators.md)
+- [Assertions](docs/assertions.md)
+- [Lifecycle](docs/lifecycle.md)
+- [Continuous integration](docs/ci.md)
+- [Design](docs/DESIGN.md)
+
+## The workspace
 
 ```
 packages/tappet/   the library, published to npm
 apps/e2e/          tappet-e2e, an Expo SDK 57 app, private
+docs/              the documentation linked above
 ```
 
-The library runs native mobile end-to-end tests with `@playwright/test` as the runner and Callstack `agent-device` as the driver. Read [its README](packages/tappet/README.md) for the API, the options, and the device prerequisites. Read [the app's README](apps/e2e/README.md) for what it puts on screen and how to build it.
+`vp check`, `vp test`, and `vp run -r build` at the root cover every package. The end-to-end suite is separate because it needs a device.
 
-## Commands
+## License
 
-Run these from the repository root.
-
-```sh
-vp check          # format, lint, and type check every package
-vp test           # the library's unit tests, one aggregated vitest run
-vp run -r build   # build every package in dependency order
-```
-
-The end-to-end suite is a separate command because it needs a booted simulator, the app installed on it, and Metro running. Build the library first so the app resolves its `dist`.
-
-```sh
-vp run -r build
-vp run -F tappet-e2e test:e2e
-```
-
-## Prerequisites
-
-Node 22.12 or newer and pnpm. The workspace pins its own pnpm through `devEngines`, so `pnpm install` at the root is enough to get going.
-
-Everything the end-to-end suite needs beyond that is device setup, and the library README's Prerequisites section is the list.
+MIT
