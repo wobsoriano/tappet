@@ -2,6 +2,9 @@ node_modules
 dist
 test-results
 playwright-report
+.expo
+ios
+android
 *.log
 .DS_Store
 

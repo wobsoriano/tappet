@@ -4,18 +4,21 @@ export default defineConfig({
   staged: {
     "*": "vp check --fix",
   },
-  fmt: {},
+  pack: {
+    entry: ["src/index.ts", "src/core/index.ts"],
+    dts: {
+      tsgo: true,
+    },
+    exports: true,
+  },
   lint: {
     options: {
       typeAware: true,
       typeCheck: true,
     },
   },
-  run: {
-    cache: true,
-  },
+  fmt: {},
   test: {
-    // Playwright specs live in e2e/ and are run by `playwright test`, not vitest.
-    exclude: ["**/node_modules/**", "**/dist/**", "**/e2e/**"],
+    exclude: ["**/node_modules/**", "**/dist/**", "e2e/**"],
   },
 });

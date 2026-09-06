@@ -1,50 +1,18 @@
 {
-  "name": "playwright-agent-device",
+  "name": "playwright-agent-device-monorepo",
   "version": "0.0.0",
-  "description": "Native mobile end-to-end tests with @playwright/test as the runner and agent-device as the driver.",
-  "homepage": "https://github.com/wobsoriano/playwright-agent-device#readme",
-  "bugs": {
-    "url": "https://github.com/wobsoriano/playwright-agent-device/issues"
-  },
-  "license": "MIT",
-  "author": "Robert Soriano",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/wobsoriano/playwright-agent-device.git"
-  },
-  "files": [
-    "dist"
-  ],
+  "private": true,
   "type": "module",
-  "exports": {
-    ".": "./dist/index.mjs",
-    "./core": "./dist/core/index.mjs",
-    "./package.json": "./package.json"
-  },
-  "publishConfig": {
-    "access": "public"
-  },
   "scripts": {
-    "build": "vp pack",
-    "dev": "vp pack --watch",
-    "test": "vp test",
-    "test:e2e": "playwright test",
     "check": "vp check",
-    "prepublishOnly": "vp run build",
+    "test": "vp test",
+    "build": "vp run -r build",
+    "test:e2e": "vp run -F pwad-e2e test:e2e",
     "prepare": "vp config"
   },
   "devDependencies": {
-    "@playwright/test": "1.63.0",
-    "@types/node": "^26.1.1",
-    "agent-device": "0.20.10",
-    "bumpp": "^11.1.0",
-    "typescript": "^7.0.2",
     "vite": "catalog:",
     "vite-plus": "catalog:"
-  },
-  "peerDependencies": {
-    "@playwright/test": ">=1.63",
-    "agent-device": ">=0.20.10"
   },
   "devEngines": {
     "packageManager": {
