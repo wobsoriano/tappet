@@ -15,6 +15,7 @@ import type { PinnedRef, RawSnapshot } from "../core/screen.ts";
 /** agent-device's root entry exports values only, so the client type is derived here and nowhere else. */
 type Client = ReturnType<typeof createAgentDeviceClient>;
 
+/** `full` is explicit because a digest-level response omits `nodes`, and the whole library matches on nodes. */
 export function createClient(): Client {
   return createAgentDeviceClient({ responseLevel: "full" });
 }
