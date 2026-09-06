@@ -14,7 +14,7 @@ export { describeCheck, evaluate } from "./checks.ts";
 export type { Check, CheckName, Verdict } from "./checks.ts";
 
 export { deviceNameForSlot, parseDeviceOptions, UNCONFIGURED_DEVICE } from "./config.ts";
-export type { DeviceOptions, ReadyQuery, ResolvedOptions } from "./config.ts";
+export type { DeviceChoice, DeviceOptions, ReadyQuery, ResolvedOptions } from "./config.ts";
 
 export type {
   Binding,

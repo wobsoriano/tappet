@@ -14,7 +14,7 @@ test("parse fills every default", () => {
   expect(options.dismissDevOverlay).toBe(false);
   expect(options.evidence).toBe("on-failure");
   expect(options.sessionPrefix).toBe("pwad");
-  expect(options.names).toEqual([]);
+  expect(options.device).toEqual({ kind: "first-booted" });
 });
 
 test("the option fixture's unconfigured default is rejected by name", () => {
@@ -56,15 +56,26 @@ test("readyWhen accepts text, testId, and role forms", () => {
 });
 
 test("a device pool is indexed by worker slot and a short pool is a config error", () => {
-  const single = parseDeviceOptions({ ...minimal, name: "iPhone 17 Pro Max" });
-  expect(deviceNameForSlot(single, 0)).toBe("iPhone 17 Pro Max");
-  expect(deviceNameForSlot(single, 3)).toBe("iPhone 17 Pro Max");
-
   const pool = parseDeviceOptions({ ...minimal, name: ["one", "two"] });
+  expect(deviceNameForSlot(pool, 0)).toBe("one");
   expect(deviceNameForSlot(pool, 1)).toBe("two");
   expect(() => deviceNameForSlot(pool, 2)).toThrow(/worker slot 2/);
+});
 
-  expect(deviceNameForSlot(parseDeviceOptions(minimal), 0)).toBe(null);
+test("one device never serves a second worker, because the second would reclaim the first's session", () => {
+  const named = parseDeviceOptions({ ...minimal, name: "iPhone 17 Pro Max" });
+  expect(deviceNameForSlot(named, 0)).toBe("iPhone 17 Pro Max");
+  expect(() => deviceNameForSlot(named, 1)).toThrow(/one device, "iPhone 17 Pro Max"/);
+  expect(() => deviceNameForSlot(named, 1)).toThrow(/workers: 1/);
+
+  const booted = parseDeviceOptions(minimal);
+  expect(deviceNameForSlot(booted, 0)).toBe(null);
+  expect(() => deviceNameForSlot(booted, 1)).toThrow(
+    /every worker would target the same booted device/,
+  );
+
+  const onePool = parseDeviceOptions({ ...minimal, name: ["only"] });
+  expect(() => deviceNameForSlot(onePool, 1)).toThrow(/lists 1 devices/);
 });
 
 test("session names are deterministic so a replacement worker reuses one", () => {

@@ -42,12 +42,23 @@ export type ReadyQuery =
   | { testId: string }
   | { role: Role; name?: string };
 
+/**
+ * Which device this configuration names. The three cases are separate because
+ * only a pool can serve more than one worker slot: a single name and "whatever
+ * is booted" both resolve to the same device for every worker, and two workers
+ * on one device fight over the claim.
+ */
+export type DeviceChoice =
+  | { readonly kind: "first-booted" }
+  | { readonly kind: "named"; readonly name: string }
+  | { readonly kind: "pool"; readonly names: readonly string[] };
+
 /** Every optional field resolved. Constructed only by `parseDeviceOptions`, so internal code trusts it. */
 export type ResolvedOptions = {
   readonly platform: Platform;
   readonly app: string;
   readonly readyWhen: Query;
-  readonly names: readonly string[];
+  readonly device: DeviceChoice;
   readonly relaunch: "per-test" | "per-worker";
   readonly onDeviceInUse: "fail" | "reclaim";
   readonly actionTimeout: number;
@@ -112,7 +123,7 @@ export function parseDeviceOptions(raw: unknown): ResolvedOptions {
     platform,
     app,
     readyWhen: parseReadyWhen(read(raw, "readyWhen")),
-    names: parseNames(read(raw, "name")),
+    device: parseDeviceChoice(read(raw, "name")),
     relaunch: oneOf(
       "device.relaunch",
       read(raw, "relaunch"),
@@ -173,30 +184,62 @@ function parseReadyWhen(raw: unknown): Query {
   return { role, name: textMatch(name) };
 }
 
-function parseNames(raw: unknown): readonly string[] {
-  if (raw === undefined) return [];
-  if (typeof raw === "string") return [raw];
-  if (!Array.isArray(raw) || raw.length === 0 || raw.some((entry) => typeof entry !== "string")) {
+function parseDeviceChoice(raw: unknown): DeviceChoice {
+  if (raw === undefined) return { kind: "first-booted" };
+  if (typeof raw === "string") {
+    if (raw.length === 0) throw fail("device.name", "must not be empty.");
+    return { kind: "named", name: raw };
+  }
+  if (!isStringArray(raw) || raw.length === 0) {
     throw fail("device.name", "must be a device name or a non-empty array of device names.");
   }
-  return raw;
+  return { kind: "pool", names: raw };
+}
+
+function isStringArray(raw: unknown): raw is readonly string[] {
+  return Array.isArray(raw) && raw.every((entry) => typeof entry === "string");
 }
 
 /**
- * The device for one worker slot. A pool shorter than the slot is a config
- * error rather than two workers sharing a device.
+ * The device for one worker slot.
+ *
+ * Anything but a pool serves slot 0 only. Two workers pointed at one device
+ * both try to claim it, and because leftovers carrying our own session prefix
+ * are always reclaimed, the second worker would close the first worker's live
+ * session mid-test. That has to be a config error, not a race.
  */
 export function deviceNameForSlot(options: ResolvedOptions, slot: number): string | null {
-  if (options.names.length === 0) return null;
-  if (options.names.length === 1) return options.names[0] ?? null;
-  const name = options.names[slot];
-  if (name === undefined) {
-    throw fail(
-      "device.name",
-      `lists ${String(options.names.length)} devices but Playwright asked for worker slot ${String(slot)}. Add a device or lower \`workers\`.`,
-    );
+  const choice = options.device;
+  switch (choice.kind) {
+    case "first-booted":
+      if (slot > 0)
+        throw tooFewDevices(
+          "device.name is unset, so every worker would target the same booted device",
+          slot,
+        );
+      return null;
+    case "named":
+      if (slot > 0) throw tooFewDevices(`device.name is one device, "${choice.name}"`, slot);
+      return choice.name;
+    case "pool": {
+      const name = choice.names[slot];
+      if (name === undefined) {
+        throw tooFewDevices(`device.name lists ${String(choice.names.length)} devices`, slot);
+      }
+      return name;
+    }
+    default: {
+      const never: never = choice;
+      throw new Error(`unhandled device choice ${JSON.stringify(never)}`);
+    }
   }
-  return name;
+}
+
+function tooFewDevices(problem: string, slot: number): DeviceTestError {
+  return fail(
+    "device.name",
+    `${problem}, but Playwright asked for worker slot ${String(slot)}. List one device name per worker, or set \`workers: 1\`.`,
+  );
 }
 
 function oneOf<T extends string>(
