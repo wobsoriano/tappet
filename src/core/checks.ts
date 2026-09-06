@@ -1,4 +1,4 @@
-import { matchesText, normalizeText, type TextMatch } from "./query.ts";
+import { matchesText, type TextMatch } from "./query.ts";
 import type { Resolution, ScreenNode } from "./screen.ts";
 
 /**
@@ -111,6 +111,6 @@ function describeExpected(match: TextMatch): string {
 }
 
 export function describeNode(node: ScreenNode): string {
-  const name = node.name === null ? "" : ` "${normalizeText(node.name)}"`;
+  const name = node.name === null ? "" : ` "${node.name}"`;
   return `${node.ref} [${node.role}]${name}`;
 }

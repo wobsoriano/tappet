@@ -49,6 +49,7 @@ This package drives an app you already built and installed. It never builds, ins
 - Your bundler running if the build needs one. For a React Native development build that means Metro on port 8081.
 - No other project's Metro on that port. A development build silently loads whichever bundle answers, so a stray server means your tests drive someone else's app.
 - `@playwright/test` 1.63 or newer and `agent-device` 0.20.10 or newer, both peer dependencies. Node 22.12 or newer.
+- One device per worker. Running more than one worker needs `name` to be an array with an entry per worker. Two workers pointed at one device would fight over its claim, so that is a configuration error rather than a race.
 
 `readyWhen` is required for this reason. `agent-device` returns from `open` as soon as the native process launches, while the JavaScript bundle is still loading, so the first assertion of the first test would otherwise race the bundle.
 
@@ -58,7 +59,7 @@ This package drives an app you already built and installed. It never builds, ins
 
 Text matching follows Playwright. The default is a case-insensitive substring after whitespace is collapsed. `exact: true` compares the whole string, case-sensitively, still after collapsing. A `RegExp` is tested against the collapsed name.
 
-A locator that resolves to more than one node is an error, both for an action and for an assertion. Take one deliberately with `.first()` or `.nth(n)`, or narrow with a role. One case is handled for you. When several matches sit on one ancestor chain and carry the same text, only the deepest survives, so a labelled container and the text node inside it count as one thing on screen.
+A locator that resolves to more than one node is an error, both for an action and for an assertion, and `.not` cannot turn that into a pass. Take one deliberately with `.first()` or `.nth(n)`, or narrow with a role. One case is handled for you. When several matches sit on one ancestor chain and carry the same text, only the deepest survives, so a labelled container and the text node inside it count as one thing on screen.
 
 Roles are normalized to one vocabulary across iOS and Android, spelled the way `agent-device snapshot` prints them: `application`, `window`, `button`, `text`, `text-field`, `secure-text-field`, `link`, `image`, `switch`, `slider`, `tab-bar`, `scroll-area`, `cell`, `alert`, `other`.
 
@@ -66,7 +67,7 @@ Roles are normalized to one vocabulary across iOS and Android, spelled the way `
 
 `Locator.tap()`, `Locator.fill(text)`, `Locator.longPress(ms)`, and `Locator.count()`. On the app itself: `App.scroll(direction)`, `App.restart()`, `App.dismissDevOverlay()`, and `App.screen()` for the parsed tree.
 
-Actions wait for their target the way Playwright actions do, up to `actionTimeout`. Each one is reported as a single step.
+Actions wait for their target the way Playwright actions do. `actionTimeout` is the whole budget for one action, so waiting for the target and waiting for the screen to settle afterwards share it. Each action is reported as a single step.
 
 ## Matchers
 
@@ -82,7 +83,7 @@ Seven retrying matchers, all on this package's own `expect`, all accepting `{ ti
 | `toBeFocused()`                    | that node is focused                       |
 | `toHaveCount(n)`                   | the locator resolves to `n` distinct nodes |
 
-`.not` polls for the opposite condition rather than checking once, so `not.toBeVisible()` waits for a control to leave.
+`.not` polls for the opposite condition rather than checking once, so `not.toBeVisible()` waits for a control to leave. An ambiguous locator and a device session that has died both fail the assertion whichever way you write it.
 
 A failed assertion prints the locator as written, what was expected, what the screen actually held, how many snapshots were taken, and a listing of the screen in `agent-device`'s own `[role] "label"` vocabulary. `screen.png` and `screen.txt` are attached to the test, so the HTML report carries the same evidence.
 

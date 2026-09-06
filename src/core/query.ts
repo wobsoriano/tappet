@@ -53,7 +53,7 @@ export type Query = {
   readonly index?: number;
 };
 
-/** Collapse whitespace runs to one space and trim. Applied to both sides of every comparison. */
+/** Applied to both sides of every string comparison, so a label wrapped across lines still matches one typed on one line. */
 export function normalizeText(raw: string): string {
   return raw.replace(/\s+/g, " ").trim();
 }

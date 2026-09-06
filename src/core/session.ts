@@ -42,8 +42,8 @@ export function createQueue(): Queue {
   let tail: Promise<unknown> = Promise.resolve();
   return {
     enqueue<T>(body: () => Promise<T>): Promise<T> {
-      // The tail advances whether `body` settled or rejected, so one failed command never wedges the queue.
-      const next = tail.then(body, body);
+      const next = tail.then(body);
+      // One failed command must not wedge the queue, so the tail swallows what the caller receives.
       tail = next.catch(() => undefined);
       return next;
     },
@@ -68,7 +68,6 @@ export type SessionDevice = {
 export type DeviceSession = {
   readonly name: string;
   readonly options: ResolvedOptions;
-  readonly binding: Binding;
   state(): SessionState;
   /** The failure that broke this session, or null while it is usable. */
   failure(): DeviceFailure | null;
@@ -226,7 +225,6 @@ function createSession(
   return {
     name,
     options,
-    binding,
     state: () => state,
     failure: () => (state.phase === "broken" ? state.failure : null),
     run,

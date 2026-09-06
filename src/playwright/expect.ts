@@ -79,16 +79,17 @@ export const expect = base.extend({
     );
   },
 
+  // Whole-string, like Playwright's own `toHaveValue`. A field's value is not prose to search.
   toHaveValue(
     this: ExpectMatcherState,
     locator: Locator,
     expected: string | RegExp,
-    options?: TextMatcherOptions,
+    options?: MatcherOptions,
   ) {
     return runCheck(
       this,
       locator,
-      { name: "toHaveValue", expected: textMatch(expected, options?.exact) },
+      { name: "toHaveValue", expected: textMatch(expected, true) },
       options?.timeout,
     );
   },

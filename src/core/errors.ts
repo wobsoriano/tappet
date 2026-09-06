@@ -52,7 +52,7 @@ export class DeviceTestError extends Error {
   }
 }
 
-export function formatError(info: ErrorInfo): string {
+function formatError(info: ErrorInfo): string {
   switch (info.kind) {
     case "config":
       return `Invalid use.device: ${info.field} ${info.detail}`;

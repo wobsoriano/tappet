@@ -60,7 +60,7 @@ declare const pinnedRefBrand: unique symbol;
 export type PinnedRef = string & { readonly [pinnedRefBrand]: true };
 
 export type Resolution =
-  | { readonly outcome: "one"; readonly node: ScreenNode; readonly absorbed: number }
+  | { readonly outcome: "one"; readonly node: ScreenNode }
   | { readonly outcome: "none"; readonly nearest: readonly ScreenNode[] }
   | { readonly outcome: "many"; readonly nodes: readonly ScreenNode[] };
 
@@ -137,7 +137,7 @@ const ANDROID_ROLES: Readonly<Record<string, Role>> = {
   "android.widget.LinearLayout": "other",
 };
 
-export function roleOf(rawType: string, platform: Platform): Role {
+function roleOf(rawType: string, platform: Platform): Role {
   const table = platform === "ios" ? IOS_ROLES : ANDROID_ROLES;
   const direct = table[rawType];
   if (direct !== undefined) return direct;
@@ -209,24 +209,24 @@ function inherited(
  * `index`.
  *
  * Ancestor absorption drops a match when a descendant match carries the same
- * text identity. On the sample app "Live from the cloud" is carried both by an
- * `[other]` container and by its `[text]` child, and "Home" by an `[other]`
- * wrapper and the `[button]` inside it; each pair is one thing on screen.
- * Matches in disjoint subtrees stay distinct, so "Explore" on the Explore
- * screen is still the heading and the tab button.
+ * string the query matched on. On the sample app "Live from the cloud" is
+ * carried both by an `[other]` container and by its `[text]` child, and "Home"
+ * by an `[other]` wrapper and the `[button]` inside it. Each pair is one thing
+ * on screen. Matches in disjoint subtrees stay distinct, so "Explore" on the
+ * Explore screen is still the heading and the tab button.
  */
 export function resolve(screen: Screen, query: Query): Resolution {
   const matched = screen.nodes.filter((node) => matchesQuery(node, query));
-  const distinct = absorbAncestors(matched);
+  const distinct = absorbAncestors(matched, query);
   if (query.index !== undefined) {
     const picked = distinct.at(query.index);
     if (picked === undefined) return { outcome: "none", nearest: nearestTo(screen, query) };
-    return { outcome: "one", node: picked, absorbed: absorbedCount(matched, picked) };
+    return { outcome: "one", node: picked };
   }
   const first = distinct[0];
   if (first === undefined) return { outcome: "none", nearest: nearestTo(screen, query) };
   if (distinct.length > 1) return { outcome: "many", nodes: distinct };
-  return { outcome: "one", node: first, absorbed: absorbedCount(matched, first) };
+  return { outcome: "one", node: first };
 }
 
 function matchesQuery(node: ScreenNode, query: Query): boolean {
@@ -247,28 +247,30 @@ function matchesQuery(node: ScreenNode, query: Query): boolean {
   return true;
 }
 
-/** The text a node is identified by. Two nodes on one ancestor chain sharing it are one thing on screen. */
-function identity(node: ScreenNode): string {
-  return `${node.name ?? ""} ${node.value ?? ""} ${node.testId ?? ""}`;
+/**
+ * The string the query matched this node on. Two nodes on one ancestor chain
+ * sharing it are one thing on screen. A query that constrains no text falls
+ * back to the node's name, so `getByRole('button')` does not collapse two
+ * nested buttons that say different things.
+ */
+function matchedText(node: ScreenNode, query: Query): string {
+  const parts: string[] = [];
+  if (query.testId !== undefined) parts.push(node.testId ?? "");
+  if (query.value !== undefined) parts.push(node.value ?? "");
+  if (query.name !== undefined) parts.push(node.name ?? node.value ?? "");
+  return parts.length === 0 ? (node.name ?? "") : parts.join(" ");
 }
 
-function absorbAncestors(matched: readonly ScreenNode[]): readonly ScreenNode[] {
+function absorbAncestors(matched: readonly ScreenNode[], query: Query): readonly ScreenNode[] {
   return matched.filter(
     (candidate) =>
       !matched.some(
         (other) =>
           other !== candidate &&
           isDescendant(other, candidate) &&
-          identity(other) === identity(candidate),
+          matchedText(other, query) === matchedText(candidate, query),
       ),
   );
-}
-
-function absorbedCount(matched: readonly ScreenNode[], survivor: ScreenNode): number {
-  return matched.filter(
-    (node) =>
-      node !== survivor && isDescendant(survivor, node) && identity(node) === identity(survivor),
-  ).length;
 }
 
 export function isDescendant(node: ScreenNode, ancestor: ScreenNode): boolean {
@@ -312,14 +314,18 @@ function overlap(wanted: string, candidate: string): number {
   return candidate.includes(wanted) || wanted.includes(candidate) ? 0.5 : 0;
 }
 
-/** Mints a generation-pinned ref. A screen with no generation cannot pin, so the caller must re-capture. */
+/**
+ * Mints a ref bound to the screen it came from.
+ *
+ * With a generation this is the driver's `@e12~s776575` form, which the driver
+ * rejects once that generation is superseded. Without one the bare ref is
+ * still correct, because the caller acts on the very next command and a frame
+ * authorizes the refs it just emitted. It is weaker, not wrong, so this cannot
+ * fail.
+ */
 export function pin(screen: Screen, node: ScreenNode): PinnedRef {
-  if (screen.generation === null) {
-    throw new Error(
-      `cannot pin ${node.ref}: the driver returned no ref generation for this snapshot`,
-    );
-  }
-  return `${node.ref}~s${String(screen.generation)}` as PinnedRef;
+  const ref = screen.generation === null ? node.ref : `${node.ref}~s${String(screen.generation)}`;
+  return ref as PinnedRef;
 }
 
 /**
@@ -336,7 +342,7 @@ export function renderScreen(screen: Screen, options?: { readonly maxNodes?: num
   return lines.join("\n");
 }
 
-export function renderNode(node: ScreenNode): string {
+function renderNode(node: ScreenNode): string {
   const indent = "  ".repeat(node.depth);
   const name = node.name === null ? "" : ` "${node.name}"`;
   const testId = node.testId === null ? "" : ` #${node.testId}`;

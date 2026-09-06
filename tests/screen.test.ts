@@ -35,7 +35,6 @@ test("a container and its text child carrying one label resolve to one node", ()
   if (resolution.outcome !== "one") return;
   expect(resolution.node.ref).toBe("@e13");
   expect(resolution.node.role).toBe("text");
-  expect(resolution.absorbed).toBe(1);
 });
 
 test("a wrapper around a button collapses into the button", () => {
@@ -173,4 +172,44 @@ test("describeQuery renders the factory call the author wrote", () => {
   expect(describeQuery({ testId: textMatch("id", true), value: textMatch("on") })).toBe(
     "locator({ testId: 'id', value: 'on' })",
   );
+});
+
+test("absorption keys on the string the query matched, not on the whole node", () => {
+  const raw: RawSnapshot = {
+    refsGeneration: 9,
+    nodes: [
+      { ref: "e1", index: 0, type: "Other" },
+      { ref: "e2", index: 1, parentIndex: 0, type: "Other", identifier: "row", label: "Submit" },
+      { ref: "e3", index: 2, parentIndex: 1, type: "Button", label: "Submit" },
+    ],
+  };
+  const screen = parseScreen(raw, "ios");
+
+  const byText = resolve(screen, { name: textMatch("Submit") });
+  expect(byText.outcome).toBe("one");
+  if (byText.outcome !== "one") return;
+  expect(byText.node.ref).toBe("@e3");
+});
+
+test("a query with no text does not collapse nested nodes that say different things", () => {
+  const raw: RawSnapshot = {
+    refsGeneration: 9,
+    nodes: [
+      { ref: "e1", index: 0, type: "Other" },
+      { ref: "e2", index: 1, parentIndex: 0, type: "Button", label: "Outer" },
+      { ref: "e3", index: 2, parentIndex: 1, type: "Button", label: "Inner" },
+    ],
+  };
+  expect(resolve(parseScreen(raw, "ios"), { role: "button" }).outcome).toBe("many");
+});
+
+test("pin falls back to a bare ref when the driver reported no generation", () => {
+  const screen = parseScreen(
+    { nodes: [{ ref: "e1", index: 0, type: "Button", label: "Go" }] },
+    "ios",
+  );
+  const node = screen.nodes[0];
+  expect(node).toBeDefined();
+  if (node === undefined) return;
+  expect(pin(screen, node)).toBe("@e1");
 });
