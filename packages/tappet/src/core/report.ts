@@ -18,7 +18,8 @@ export type ActionRecord =
   | { readonly kind: 'fill'; readonly query: Query; readonly text: string }
   | { readonly kind: 'scroll'; readonly direction: ScrollDirection }
   | { readonly kind: 'restart'; readonly app: string }
-  | { readonly kind: 'dismiss-overlay' };
+  | { readonly kind: 'dismiss-overlay' }
+  | { readonly kind: 'screenshot'; readonly path: string };
 
 /**
  * The runner port. A runner with no step concept calls `body()` directly and
@@ -55,6 +56,8 @@ export function renderTitle(record: ActionRecord): string {
       return `restart ${record.app}`;
     case 'dismiss-overlay':
       return 'dismiss the React Native dev overlay';
+    case 'screenshot':
+      return `screenshot ${record.path}`;
     default: {
       const never: never = record;
       throw new Error(`unhandled action record ${JSON.stringify(never)}`);

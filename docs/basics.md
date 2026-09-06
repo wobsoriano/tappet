@@ -73,6 +73,20 @@ const labels = screen.nodes.filter((node) => node.role === 'button').map((node) 
 
 Each `ScreenNode` carries `ref`, `role`, `rawType`, `name`, `value`, `testId`, `rect`, `enabled`, `selected`, `focused`, a `parent` link, and its `depth`. The tree is frozen. It is one observation of the device, never refreshed in place, because every command the driver runs invalidates the refs a previous snapshot handed out.
 
+## Screenshots
+
+`app.screenshot()` saves a PNG of the device and returns the path the driver wrote it to.
+
+```ts
+const path = await app.screenshot();
+await app.screenshot({ path: 'card.png' });
+```
+
+The default path is numbered per call and goes through the same output directory the runner gives the test, so it is unique per test and per retry attempt. An explicit path is used as given. Nothing is attached to the report, so the caller decides whether the file belongs in the run's output. Each call is reported as one step.
+
+The agent-device CLI equivalent is `agent-device screenshot ./card.png`, which also takes `--scale` and `--overlay-refs`.
+Element screenshots are not supported through tappet yet.
+
 ## Preflight
 
 `preflight` answers one question before any test opens a session. Is the device this project names actually booted?

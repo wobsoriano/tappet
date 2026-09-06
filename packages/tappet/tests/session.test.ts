@@ -328,6 +328,32 @@ test('a fill whose label follows its contents still re-dispatches and still repo
   expect(error.message).toContain(`Actual value: "r@example.com"`);
 });
 
+test('a defaulted screenshot numbers its own path and returns what the driver resolved', async () => {
+  const driver = createFakeDriver();
+  const session = await open(driver);
+  const app = createApp(session, silentSink);
+
+  expect(await app.screenshot()).toBe('screenshot-1.png');
+  expect(await app.screenshot()).toBe('screenshot-2.png');
+  expect(driver.calls.filter((call) => call.startsWith('screenshot'))).toEqual([
+    'screenshot screenshot-1.png',
+    'screenshot screenshot-2.png',
+  ]);
+});
+
+test('an explicit screenshot path is passed through and does not consume a counter value', async () => {
+  const driver = createFakeDriver();
+  const session = await open(driver);
+  const app = createApp(session, silentSink);
+
+  expect(await app.screenshot({ path: 'card.png' })).toBe('card.png');
+  expect(await app.screenshot()).toBe('screenshot-1.png');
+  expect(driver.calls.filter((call) => call.startsWith('screenshot'))).toEqual([
+    'screenshot card.png',
+    'screenshot screenshot-1.png',
+  ]);
+});
+
 test('textContent reads the matched node off exactly one capture', async () => {
   const driver = createFakeDriver();
   const session = await open(driver);

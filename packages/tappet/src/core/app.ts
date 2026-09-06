@@ -45,6 +45,8 @@ export type App = {
   dismissDevOverlay(): Promise<void>;
   /** The parsed tree, for an assertion this library does not model. */
   screen(): Promise<Screen>;
+  /** Saves a screenshot and returns its path. Nothing is attached to the report, so the caller decides whether to. */
+  screenshot(options?: { path?: string }): Promise<string>;
 };
 
 /**
@@ -70,6 +72,7 @@ export type Locator = {
 
 export function createApp(session: DeviceSession, sink: ActionSink): App {
   const build = (query: Query): Locator => createLocator(session, sink, query);
+  let screenshots = 0;
   return {
     getByText: (text, options) => build({ name: textMatch(text, options?.exact) }),
     getByRole: (role, options) =>
@@ -88,6 +91,11 @@ export function createApp(session: DeviceSession, sink: ActionSink): App {
     dismissDevOverlay: () =>
       sink.step(renderTitle({ kind: 'dismiss-overlay' }), () => session.dismissDevOverlay()),
     screen: () => session.screen(),
+    screenshot: (options) => {
+      if (options?.path === undefined) screenshots += 1;
+      const path = options?.path ?? sink.outputPath(`screenshot-${String(screenshots)}.png`);
+      return sink.step(renderTitle({ kind: 'screenshot', path }), () => session.screenshot(path));
+    },
   };
 }
 
