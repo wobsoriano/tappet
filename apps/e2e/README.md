@@ -83,7 +83,7 @@ A `setup-ios` or `setup-android` project runs first and checks that the device t
 
 ## The specs
 
-`e2e/` holds them. They are `.mts` rather than `.ts` because `agent-device` is ESM only and this app is a CommonJS package, so a spec Node loads as CommonJS cannot resolve it.
+`e2e/` holds them. They are `.mts` rather than `.ts` only because this app consumes tappet through a workspace link. Playwright transpiles the linked `dist` as source and then cannot `require` `agent-device`, which ships only ES modules. A project that installs tappet from npm keeps plain `.spec.ts` files, which was verified with a packed tarball on Node 22.
 
 - `home.spec.mts` reads the signed-out home through `getByRole`.
 - `login.spec.mts` covers a rejected attempt, then a successful one through the pending state to the profile.

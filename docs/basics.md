@@ -3,7 +3,7 @@
 A tappet test is a Playwright test. You import `test` and `expect` from `tappet` instead of from `@playwright/test`, and you get one extra fixture called `app`.
 
 ```ts
-// e2e/home.spec.mts
+// e2e/home.spec.ts
 import { expect, test } from 'tappet';
 
 test('the signed-out home screen offers a way in', async ({ app }) => {
