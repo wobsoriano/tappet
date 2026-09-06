@@ -16,7 +16,7 @@ const ios = {
 const android = {
   ...shared,
   platform: 'android',
-  name: process.env['TAPPET_ANDROID_DEVICE'] ?? 'ci-api34',
+  name: process.env['TAPPET_ANDROID_DEVICE'] ?? 'Expo API 36',
 } as const;
 
 export default defineConfig<DeviceTestOptions>({
