@@ -24,6 +24,11 @@ export type ProbeOptions = {
 };
 
 export type ProbeResult = {
+  /**
+   * Whether the check holds, always from the un-negated point of view. The
+   * adapter hands this to its assertion library, which inverts it for `.not`,
+   * so a `.not` that got what it wanted returns `false` here.
+   */
   readonly pass: boolean;
   /** Fully rendered, including the screen listing. Empty when the probe passed. */
   readonly message: string;

@@ -13,12 +13,10 @@ export type DeviceSelection = {
   readonly name: string | null;
 };
 
+/** The session name and the device selection ride on the driver itself, so an open cannot name a different one. */
 export type OpenRequest = {
   readonly app: string;
-  readonly selection: DeviceSelection;
-  readonly session: string;
   readonly relaunch: boolean;
-  readonly timeoutMs: number;
 };
 
 /**
@@ -80,7 +78,8 @@ export type DeviceDriver = {
   tap(ref: PinnedRef, options: SettleOptions): Promise<Settled>;
   longPress(ref: PinnedRef, durationMs: number, options: SettleOptions): Promise<Settled>;
   fill(ref: PinnedRef, text: string, options: SettleOptions): Promise<Settled>;
-  scroll(direction: ScrollDirection, options: SettleOptions): Promise<Settled>;
+  /** Returns nothing because the driver's scroll response carries no settle observation. */
+  scroll(direction: ScrollDirection, options: SettleOptions): Promise<void>;
   dismissDevOverlay(): Promise<void>;
   /** Ends a session. Names one explicitly so a leftover owned by another run can be reclaimed. */
   close(session: string): Promise<void>;
