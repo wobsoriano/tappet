@@ -1,0 +1,58 @@
+{
+  "name": "tappet",
+  "version": "0.0.0",
+  "description": "End-to-end testing for mobile apps with the Playwright test runner.",
+  "homepage": "https://github.com/wobsoriano/tappet#readme",
+  "bugs": {
+    "url": "https://github.com/wobsoriano/tappet/issues"
+  },
+  "license": "MIT",
+  "author": "Robert Soriano",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wobsoriano/tappet.git"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "exports": {
+    ".": "./dist/index.mjs",
+    "./core": "./dist/core/index.mjs",
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "vp pack",
+    "dev": "vp pack --watch",
+    "test": "vp test",
+    "check": "vp check",
+    "prepublishOnly": "vp run build"
+  },
+  "dependencies": {
+    "agent-device": "0.20.10"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@types/node": "^26.1.1",
+    "bumpp": "^11.1.0",
+    "typescript": "^7.0.2",
+    "vite": "catalog:",
+    "vite-plus": "catalog:"
+  },
+  "peerDependencies": {
+    "@playwright/test": ">=1.63"
+  },
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "12.3.4",
+      "onFail": "download"
+    }
+  },
+  "engines": {
+    "node": ">=22.12"
+  }
+}

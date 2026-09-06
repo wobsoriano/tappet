@@ -1,15 +1,15 @@
 {
   "expo": {
-    "name": "pwad-e2e",
-    "slug": "pwad-e2e",
+    "name": "tappet-e2e",
+    "slug": "tappet-e2e",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "scheme": "pwade2e",
+    "scheme": "tappete2e",
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "dev.pwad.e2e"
+      "bundleIdentifier": "dev.tappet.e2e"
     },
     "android": {
       "adaptiveIcon": {
@@ -19,7 +19,7 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "dev.pwad.e2e"
+      "package": "dev.tappet.e2e"
     },
     "web": {
       "favicon": "./assets/favicon.png"

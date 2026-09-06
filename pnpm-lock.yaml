@@ -164,17 +164,18 @@ importers:
       '@types/react':
         specifier: ~19.2.2
         version: 19.2.18
-      agent-device:
-        specifier: 0.20.10
-        version: 0.20.10(supports-color@8.1.1)
-      playwright-agent-device:
+      tappet:
         specifier: workspace:*
-        version: link:../../packages/playwright-agent-device
+        version: link:../../packages/tappet
       typescript:
         specifier: ~6.0.3
         version: 6.0.3
 
-  packages/playwright-agent-device:
+  packages/tappet:
+    dependencies:
+      agent-device:
+        specifier: 0.20.10
+        version: 0.20.10(supports-color@8.1.1)
     devDependencies:
       '@playwright/test':
         specifier: 1.63.0
@@ -182,9 +183,6 @@ importers:
       '@types/node':
         specifier: ^26.1.1
         version: 26.4.1
-      agent-device:
-        specifier: 0.20.10
-        version: 0.20.10(supports-color@8.1.1)
       bumpp:
         specifier: ^11.1.0
         version: 11.1.0

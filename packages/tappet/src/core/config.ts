@@ -1,0 +1,281 @@
+import { TappetError } from './errors.ts';
+import { textMatch, type Query, type Role } from './query.ts';
+import type { Platform } from './screen.ts';
+
+/**
+ * The one object a test author writes in `use.device`. Parsed once by
+ * `parseDeviceOptions` at worker start; nothing downstream re-validates it.
+ */
+export type DeviceOptions = {
+  platform: Platform;
+  /** Bundle id on iOS, package name on Android. Never a path to an artifact. */
+  app: string;
+  /**
+   * The locator that means the JavaScript bundle finished loading. Required,
+   * because `open` returns as soon as the native process launches and the
+   * first assertion would otherwise race the bundle.
+   */
+  readyWhen: ReadyQuery;
+  /** Device name. An array is a pool indexed by the runner's worker slot. Omitted means the first booted device. */
+  name?: string | readonly string[];
+  /** @default 'per-test' */
+  relaunch?: 'per-test' | 'per-worker';
+  /** @default 'fail'. Sessions carrying this library's own prefix are always reclaimed. */
+  onDeviceInUse?: 'fail' | 'reclaim';
+  /** @default 10_000 */
+  actionTimeout?: number;
+  /** @default 500 */
+  settleQuietMs?: number;
+  /** @default 90_000. Covers `open` plus the ready gate. */
+  launchTimeout?: number;
+  /** @default false. Sends agent-device's `react-native dismiss-overlay` after every launch. */
+  dismissDevOverlay?: boolean;
+  /** @default 'on-failure' */
+  evidence?: 'on-failure' | 'always' | 'off';
+  /** @default 'tappet'. Session names are `${prefix}-${project}-${parallelIndex}`. */
+  sessionPrefix?: string;
+};
+
+/** The config-file friendly subset of a locator. Matched by the same rules as any other query. */
+export type ReadyQuery =
+  | { text: string; exact?: boolean }
+  | { testId: string }
+  | { role: Role; name?: string };
+
+/**
+ * Which device this configuration names. The three cases are separate because
+ * only a pool can serve more than one worker slot: a single name and "whatever
+ * is booted" both resolve to the same device for every worker, and two workers
+ * on one device fight over the claim.
+ */
+export type DeviceChoice =
+  | { readonly kind: 'first-booted' }
+  | { readonly kind: 'named'; readonly name: string }
+  | { readonly kind: 'pool'; readonly names: readonly string[] };
+
+/** Every optional field resolved. Constructed only by `parseDeviceOptions`, so internal code trusts it. */
+export type ResolvedOptions = {
+  readonly platform: Platform;
+  readonly app: string;
+  readonly readyWhen: Query;
+  readonly device: DeviceChoice;
+  readonly relaunch: 'per-test' | 'per-worker';
+  readonly onDeviceInUse: 'fail' | 'reclaim';
+  readonly actionTimeout: number;
+  readonly settleQuietMs: number;
+  readonly launchTimeout: number;
+  readonly dismissDevOverlay: boolean;
+  readonly evidence: 'on-failure' | 'always' | 'off';
+  readonly sessionPrefix: string;
+};
+
+/**
+ * The Playwright option fixture needs a default of the declared type, and this
+ * is it. `parseDeviceOptions` rejects it by its empty `app`, which is the same
+ * error a config that forgot the field would get.
+ */
+export const UNCONFIGURED_DEVICE: DeviceOptions = {
+  platform: 'ios',
+  app: '',
+  readyWhen: { text: '' },
+};
+
+const ROLES: readonly Role[] = [
+  'application',
+  'window',
+  'button',
+  'text',
+  'text-field',
+  'secure-text-field',
+  'link',
+  'image',
+  'switch',
+  'slider',
+  'tab-bar',
+  'scroll-area',
+  'cell',
+  'alert',
+  'other',
+];
+
+/**
+ * The config boundary. `use.device` arrives as `unknown` because a project can
+ * omit it entirely or be written in JavaScript, and every message names the
+ * field to fix.
+ */
+export function parseDeviceOptions(raw: unknown): ResolvedOptions {
+  if (typeof raw !== 'object' || raw === null) {
+    throw fail(
+      'device',
+      'must be an object. Set `use: { device: { ... } }` in your Playwright config.',
+    );
+  }
+  const platform = read(raw, 'platform');
+  if (platform !== 'ios' && platform !== 'android')
+    throw fail('device.platform', "must be 'ios' or 'android'.");
+
+  const app = read(raw, 'app');
+  if (typeof app !== 'string' || app.length === 0) {
+    throw fail('device.app', 'must be the bundle id or package name of the app under test.');
+  }
+
+  return {
+    platform,
+    app,
+    readyWhen: parseReadyWhen(read(raw, 'readyWhen')),
+    device: parseDeviceChoice(read(raw, 'name')),
+    relaunch: oneOf(
+      'device.relaunch',
+      read(raw, 'relaunch'),
+      ['per-test', 'per-worker'],
+      'per-test',
+    ),
+    onDeviceInUse: oneOf(
+      'device.onDeviceInUse',
+      read(raw, 'onDeviceInUse'),
+      ['fail', 'reclaim'],
+      'fail',
+    ),
+    actionTimeout: positive('device.actionTimeout', read(raw, 'actionTimeout'), 10_000),
+    settleQuietMs: positive('device.settleQuietMs', read(raw, 'settleQuietMs'), 500),
+    launchTimeout: positive('device.launchTimeout', read(raw, 'launchTimeout'), 90_000),
+    dismissDevOverlay: flag('device.dismissDevOverlay', read(raw, 'dismissDevOverlay')),
+    evidence: oneOf(
+      'device.evidence',
+      read(raw, 'evidence'),
+      ['on-failure', 'always', 'off'],
+      'on-failure',
+    ),
+    sessionPrefix: text('device.sessionPrefix', read(raw, 'sessionPrefix'), 'tappet'),
+  };
+}
+
+function read(source: object, key: string): unknown {
+  return key in source ? Reflect.get(source, key) : undefined;
+}
+
+function parseReadyWhen(raw: unknown): Query {
+  if (typeof raw !== 'object' || raw === null) {
+    throw fail(
+      'device.readyWhen',
+      "is required. Name something that only appears once the bundle has loaded, such as { text: 'Welcome' }.",
+    );
+  }
+  const wanted = read(raw, 'text');
+  if (wanted !== undefined) {
+    if (typeof wanted !== 'string' || wanted.length === 0)
+      throw fail('device.readyWhen.text', 'must be a non-empty string.');
+    return { name: textMatch(wanted, flag('device.readyWhen.exact', read(raw, 'exact'))) };
+  }
+  const testId = read(raw, 'testId');
+  if (testId !== undefined) {
+    if (typeof testId !== 'string' || testId.length === 0)
+      throw fail('device.readyWhen.testId', 'must be a non-empty string.');
+    return { testId: textMatch(testId, true) };
+  }
+  const wantedRole = read(raw, 'role');
+  const role = ROLES.find((candidate) => candidate === wantedRole);
+  if (role === undefined) {
+    throw fail('device.readyWhen', 'must be one of { text }, { testId }, or { role, name }.');
+  }
+  const name = read(raw, 'name');
+  if (name === undefined) return { role };
+  if (typeof name !== 'string') throw fail('device.readyWhen.name', 'must be a string.');
+  return { role, name: textMatch(name) };
+}
+
+function parseDeviceChoice(raw: unknown): DeviceChoice {
+  if (raw === undefined) return { kind: 'first-booted' };
+  if (typeof raw === 'string') {
+    if (raw.length === 0) throw fail('device.name', 'must not be empty.');
+    return { kind: 'named', name: raw };
+  }
+  if (!isStringArray(raw) || raw.length === 0) {
+    throw fail('device.name', 'must be a device name or a non-empty array of device names.');
+  }
+  return { kind: 'pool', names: raw };
+}
+
+function isStringArray(raw: unknown): raw is readonly string[] {
+  return Array.isArray(raw) && raw.every((entry) => typeof entry === 'string');
+}
+
+/**
+ * The device for one worker slot.
+ *
+ * Anything but a pool serves slot 0 only. Two workers pointed at one device
+ * both try to claim it, and because leftovers carrying our own session prefix
+ * are always reclaimed, the second worker would close the first worker's live
+ * session mid-test. That has to be a config error, not a race.
+ */
+export function deviceNameForSlot(options: ResolvedOptions, slot: number): string | null {
+  const choice = options.device;
+  switch (choice.kind) {
+    case 'first-booted':
+      if (slot > 0)
+        throw tooFewDevices(
+          'device.name is unset, so every worker would target the same booted device',
+          slot,
+        );
+      return null;
+    case 'named':
+      if (slot > 0) throw tooFewDevices(`device.name is one device, "${choice.name}"`, slot);
+      return choice.name;
+    case 'pool': {
+      const name = choice.names[slot];
+      if (name === undefined) {
+        throw tooFewDevices(`device.name lists ${String(choice.names.length)} devices`, slot);
+      }
+      return name;
+    }
+    default: {
+      const never: never = choice;
+      throw new Error(`unhandled device choice ${JSON.stringify(never)}`);
+    }
+  }
+}
+
+function tooFewDevices(problem: string, slot: number): TappetError {
+  return fail(
+    'device.name',
+    `${problem}, but Playwright asked for worker slot ${String(slot)}. List one device name per worker, or set \`workers: 1\`.`,
+  );
+}
+
+function oneOf<T extends string>(
+  field: string,
+  value: unknown,
+  allowed: readonly T[],
+  fallback: T,
+): T {
+  if (value === undefined) return fallback;
+  const found = allowed.find((candidate) => candidate === value);
+  if (found === undefined)
+    throw fail(field, `must be one of ${allowed.map((one) => `'${one}'`).join(', ')}.`);
+  return found;
+}
+
+function positive(field: string, value: unknown, fallback: number): number {
+  if (value === undefined) return fallback;
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+    throw fail(field, 'must be a positive number of milliseconds.');
+  }
+  return value;
+}
+
+function flag(field: string, value: unknown): boolean {
+  if (value === undefined) return false;
+  if (typeof value !== 'boolean') throw fail(field, 'must be true or false.');
+  return value;
+}
+
+function text(field: string, value: unknown, fallback: string): string {
+  if (value === undefined) return fallback;
+  if (typeof value !== 'string' || value.length === 0)
+    throw fail(field, 'must be a non-empty string.');
+  return value;
+}
+
+function fail(field: string, detail: string): TappetError {
+  return new TappetError({ kind: 'config', field, detail });
+}

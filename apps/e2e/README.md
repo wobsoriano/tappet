@@ -1,6 +1,6 @@
-# pwad-e2e
+# tappet-e2e
 
-The app `playwright-agent-device` is tested against. An Expo SDK 57 project with expo-router, four screens, and a fake sign-in held in React state. Nothing here is a product. Every screen exists so a spec can name something on it.
+The app `tappet` is tested against. An Expo SDK 57 project with expo-router, four screens, and a fake sign-in held in React state. Nothing here is a product. Every screen exists so a spec can name something on it.
 
 ## Routes
 
@@ -48,7 +48,7 @@ The password field is deliberately not `secureTextEntry`. iOS reads a secure fie
 The library must be built first, because this app imports it by package name and resolves its `dist`.
 
 ```sh
-pnpm --filter playwright-agent-device build     # or: vp run -r build, from the repo root
+pnpm --filter tappet build     # or: vp run -r build, from the repo root
 ```
 
 Then, from this directory, build and install the app on a booted simulator and start Metro. The build takes several minutes the first time.
@@ -74,4 +74,4 @@ pnpm test:e2e                                   # playwright test --project=ios
 - `login.spec.mts` covers a rejected attempt, then a successful one through the pending state to the profile.
 - `profile.spec.mts` signs in, signs out, and expects the signed-out home back.
 - `relaunch.spec.mts` signs in in one test and expects the next test to start signed out, which is what per-test relaunch buys.
-- `failing.spec.mts` fails on purpose so the failure message and the `screen.png` and `screen.txt` attachments can be read. It is excluded from the default run. Include it with `PWAD_INCLUDE_FAILING=1`.
+- `failing.spec.mts` fails on purpose so the failure message and the `screen.png` and `screen.txt` attachments can be read. It is excluded from the default run. Include it with `TAPPET_INCLUDE_FAILING=1`.

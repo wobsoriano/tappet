@@ -1,13 +1,13 @@
-# playwright-agent-device workspace
+# tappet workspace
 
 A Vite Plus pnpm workspace holding one library and the app it is proven against.
 
 ```
-packages/playwright-agent-device/   the library, published to npm
-apps/e2e/                           pwad-e2e, an Expo SDK 57 app, private
+packages/tappet/   the library, published to npm
+apps/e2e/          tappet-e2e, an Expo SDK 57 app, private
 ```
 
-The library runs native mobile end-to-end tests with `@playwright/test` as the runner and Callstack `agent-device` as the driver. Read [its README](packages/playwright-agent-device/README.md) for the API, the options, and the device prerequisites. Read [the app's README](apps/e2e/README.md) for what it puts on screen and how to build it.
+The library runs native mobile end-to-end tests with `@playwright/test` as the runner and Callstack `agent-device` as the driver. Read [its README](packages/tappet/README.md) for the API, the options, and the device prerequisites. Read [the app's README](apps/e2e/README.md) for what it puts on screen and how to build it.
 
 ## Commands
 
@@ -23,7 +23,7 @@ The end-to-end suite is a separate command because it needs a booted simulator, 
 
 ```sh
 vp run -r build
-vp run -F pwad-e2e test:e2e
+vp run -F tappet-e2e test:e2e
 ```
 
 ## Prerequisites

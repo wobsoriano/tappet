@@ -1,16 +1,16 @@
-import { Redirect, useRouter } from "expo-router";
-import { Pressable, StyleSheet, Text, View } from "react-native";
-import { useAuth } from "../src/auth";
+import { Redirect, useRouter } from 'expo-router';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useAuth } from '../src/auth';
 
 export default function Profile() {
   const { session, signOut } = useAuth();
   const router = useRouter();
 
   switch (session.status) {
-    case "signed-out":
-    case "signing-in":
+    case 'signed-out':
+    case 'signing-in':
       return <Redirect href="/login" />;
-    case "signed-in":
+    case 'signed-in':
       return (
         <View testID="profile" style={styles.screen}>
           <Text testID="profile-name" style={styles.heading}>
@@ -25,7 +25,7 @@ export default function Profile() {
             style={styles.button}
             onPress={() => {
               signOut();
-              router.replace("/");
+              router.replace('/');
             }}
           >
             <Text style={styles.buttonLabel}>Sign out</Text>
@@ -36,15 +36,15 @@ export default function Profile() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, padding: 24 },
-  heading: { fontSize: 28, fontWeight: "600" },
-  email: { color: "#57606a", fontSize: 16 },
+  screen: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24 },
+  heading: { fontSize: 28, fontWeight: '600' },
+  email: { color: '#57606a', fontSize: 16 },
   button: {
-    backgroundColor: "#1f6feb",
+    backgroundColor: '#1f6feb',
     borderRadius: 8,
     marginTop: 12,
     paddingHorizontal: 24,
     paddingVertical: 12,
   },
-  buttonLabel: { color: "#ffffff", fontSize: 16, fontWeight: "600" },
+  buttonLabel: { color: '#ffffff', fontSize: 16, fontWeight: '600' },
 });

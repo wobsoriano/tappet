@@ -1,10 +1,10 @@
-import { defineConfig } from "vite-plus";
+import { defineConfig } from 'vite-plus';
 
 export default defineConfig({
   staged: {
-    "*": "vp check --fix",
+    '*': 'vp check --fix',
   },
-  fmt: {},
+  fmt: { singleQuote: true, semi: true },
   lint: {
     options: {
       typeAware: true,
@@ -16,6 +16,6 @@ export default defineConfig({
   },
   test: {
     // Playwright specs live in e2e/ and are run by `playwright test`, not vitest.
-    exclude: ["**/node_modules/**", "**/dist/**", "**/e2e/**"],
+    exclude: ['**/node_modules/**', '**/dist/**', '**/e2e/**'],
   },
 });

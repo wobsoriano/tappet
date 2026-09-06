@@ -1,25 +1,25 @@
-import { useRouter } from "expo-router";
-import { useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
-import { useAuth } from "../src/auth";
+import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useAuth } from '../src/auth';
 
 export default function Login() {
   const { session, signIn } = useAuth();
   const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [failed, setFailed] = useState(false);
-  const pending = session.status === "signing-in";
+  const pending = session.status === 'signing-in';
 
   async function submit() {
     setFailed(false);
     const result = await signIn(email, password);
     if (result.ok) {
-      router.replace("/profile");
+      router.replace('/profile');
       return;
     }
     switch (result.reason) {
-      case "invalid-credentials":
+      case 'invalid-credentials':
         setFailed(true);
         return;
     }
@@ -77,18 +77,18 @@ export default function Login() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, justifyContent: "center", gap: 16, padding: 24 },
-  heading: { fontSize: 28, fontWeight: "600" },
-  input: { borderColor: "#d0d7de", borderRadius: 8, borderWidth: 1, fontSize: 16, padding: 12 },
-  error: { color: "#cf222e", fontSize: 15 },
-  pending: { color: "#57606a", fontSize: 15 },
+  screen: { flex: 1, justifyContent: 'center', gap: 16, padding: 24 },
+  heading: { fontSize: 28, fontWeight: '600' },
+  input: { borderColor: '#d0d7de', borderRadius: 8, borderWidth: 1, fontSize: 16, padding: 12 },
+  error: { color: '#cf222e', fontSize: 15 },
+  pending: { color: '#57606a', fontSize: 15 },
   button: {
-    alignItems: "center",
-    backgroundColor: "#1f6feb",
+    alignItems: 'center',
+    backgroundColor: '#1f6feb',
     borderRadius: 8,
     paddingHorizontal: 24,
     paddingVertical: 12,
   },
-  buttonDisabled: { backgroundColor: "#8fb8f5" },
-  buttonLabel: { color: "#ffffff", fontSize: 16, fontWeight: "600" },
+  buttonDisabled: { backgroundColor: '#8fb8f5' },
+  buttonLabel: { color: '#ffffff', fontSize: 16, fontWeight: '600' },
 });
