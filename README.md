@@ -74,15 +74,15 @@ Actions wait for their target the way Playwright actions do. `actionTimeout` is 
 
 Seven retrying matchers, all on this package's own `expect`, all accepting `{ timeout }`, all working under `.not`.
 
-| matcher                            | asserts                                    |
-| ---------------------------------- | ------------------------------------------ |
-| `toBeVisible()`                    | the locator resolves to exactly one node   |
-| `toHaveText(expected, { exact })`  | that node's name or value matches          |
-| `toHaveValue(expected, { exact })` | that node's value matches                  |
-| `toBeEnabled()`                    | that node is enabled                       |
-| `toBeSelected()`                   | that node is selected                      |
-| `toBeFocused()`                    | that node is focused                       |
-| `toHaveCount(n)`                   | the locator resolves to `n` distinct nodes |
+| matcher                           | asserts                                    |
+| --------------------------------- | ------------------------------------------ |
+| `toBeVisible()`                   | the locator resolves to exactly one node   |
+| `toHaveText(expected, { exact })` | that node's name or value matches          |
+| `toHaveValue(expected)`           | that node's value matches, whole string    |
+| `toBeEnabled()`                   | that node is enabled                       |
+| `toBeSelected()`                  | that node is selected                      |
+| `toBeFocused()`                   | that node is focused                       |
+| `toHaveCount(n)`                  | the locator resolves to `n` distinct nodes |
 
 `.not` polls for the opposite condition rather than checking once, so `not.toBeVisible()` waits for a control to leave. An ambiguous locator and a device session that has died both fail the assertion whichever way you write it.
 
