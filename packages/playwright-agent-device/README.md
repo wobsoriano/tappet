@@ -5,16 +5,17 @@ Native mobile end-to-end tests with `@playwright/test` as the runner and Callsta
 ## A test
 
 ```ts
-// e2e/tabs.spec.ts
+// e2e/login.spec.mts
 import { test, expect } from "playwright-agent-device";
 
-test("explore tab and back", async ({ app }) => {
-  await app.getByRole("button", { name: "Explore" }).tap();
-  await expect(app.getByRole("text", { name: "Explore" })).toBeVisible();
-  await expect(app.getByText("Expo documentation")).toBeVisible();
+test("the right credentials land on the profile", async ({ app }) => {
+  await app.getByTestId("sign-in-link").tap();
+  await app.getByRole("text-field", { name: "Email" }).fill("rob@example.com");
+  await app.getByTestId("password").fill("hunter2");
+  await app.getByRole("button", { name: "Sign in" }).tap();
 
-  await app.getByRole("button", { name: "Home" }).tap();
-  await expect(app.getByText("GET STARTED")).toBeVisible();
+  await expect(app.getByTestId("signing-in")).toBeVisible();
+  await expect(app.getByRole("text", { name: "Rob", exact: true })).toBeVisible();
 });
 ```
 
@@ -40,7 +41,7 @@ export default defineConfig<DeviceTestOptions>({
 
 Nothing in a test names a session, a ref, a generation, a selector string, or a step. `device` is the only key this package adds to `use`. Playwright merges `use` one key at a time, so a project that sets `device` replaces it whole. Spread a shared constant, as above.
 
-The `apps/e2e` app in this workspace is the reference consumer. Its `playwright.config.ts` is the same shape against a real app, and it pins a device name per project because more than one simulator is usually booted.
+That test is a real one. It runs against `apps/e2e` in this workspace, which is the reference consumer and the only app this package is proven against. Its `playwright.config.ts` is the same shape filled in, and it pins a device name per project because more than one simulator is usually booted.
 
 ## Prerequisites
 

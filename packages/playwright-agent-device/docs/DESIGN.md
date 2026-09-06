@@ -5,16 +5,17 @@ Native mobile end-to-end tests with `@playwright/test` as the runner and Callsta
 ## What a test looks like
 
 ```ts
-// e2e/tabs.spec.ts
+// e2e/login.spec.mts
 import { test, expect } from "playwright-agent-device";
 
-test("explore tab and back", async ({ app }) => {
-  await app.getByRole("button", { name: "Explore" }).tap();
-  await expect(app.getByRole("text", { name: "Explore" })).toBeVisible();
-  await expect(app.getByText("Expo documentation")).toBeVisible();
+test("the right credentials land on the profile", async ({ app }) => {
+  await app.getByTestId("sign-in-link").tap();
+  await app.getByRole("text-field", { name: "Email" }).fill("rob@example.com");
+  await app.getByTestId("password").fill("hunter2");
+  await app.getByRole("button", { name: "Sign in" }).tap();
 
-  await app.getByRole("button", { name: "Home" }).tap();
-  await expect(app.getByText("GET STARTED")).toBeVisible();
+  await expect(app.getByTestId("signing-in")).toBeVisible();
+  await expect(app.getByRole("text", { name: "Rob", exact: true })).toBeVisible();
 });
 ```
 
