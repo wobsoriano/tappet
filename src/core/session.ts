@@ -142,6 +142,7 @@ async function openWithRecovery(
           owner,
           device: deviceName ?? options.platform,
           releaseCommand: `agent-device close --session ${owner ?? "<owner>"}`,
+          canReclaim: options.onDeviceInUse === "fail",
         });
       }
       await driver.close(owner);
@@ -193,17 +194,20 @@ function createSession(
   }
 
   async function awaitReady(deadline: number): Promise<void> {
+    const started = Date.now();
     let screen: Screen;
     for (;;) {
       screen = await run((one) => one.capture());
-      if (resolve(screen, options.readyWhen).outcome === "one") return;
-      if (Date.now() + READY_POLL_MS >= deadline) break;
-      await sleep(READY_POLL_MS);
+      // Ambiguity is still ready. This gate asks whether the bundle loaded, not whether a locator is unique.
+      if (resolve(screen, options.readyWhen).outcome !== "none") return;
+      const remaining = deadline - Date.now();
+      if (remaining <= 0) break;
+      await sleep(Math.min(READY_POLL_MS, remaining));
     }
     throw new DeviceTestError({
       kind: "not-ready",
       locator: describeQuery(options.readyWhen),
-      timeoutMs: options.launchTimeout,
+      timeoutMs: Date.now() - started,
       screen: renderScreen(screen),
     });
   }

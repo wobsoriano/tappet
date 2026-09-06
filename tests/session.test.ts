@@ -62,6 +62,7 @@ test("a device held by a foreign session names the owner and the release command
   expect(error.info.kind).toBe("device-in-use");
   expect(error.message).toContain(`session "lex"`);
   expect(error.message).toContain("agent-device close --session lex");
+  expect(error.message).toContain("onDeviceInUse to 'reclaim'");
 });
 
 test("onDeviceInUse reclaim takes over a foreign session instead of failing", async () => {
@@ -225,4 +226,22 @@ test("a device that goes away breaks the session and every later call names the 
   expect(session.state().phase).toBe("broken");
   expect(session.failure()?.kind).toBe("device-missing");
   await expect(session.screen()).rejects.toThrow("no matching device is booted");
+});
+
+test("a readyWhen that matches twice still counts as ready", async () => {
+  const driver = createFakeDriver({ screens: ["explore"] });
+  const session = await open(driver, { readyWhen: { text: "Explore" } });
+  expect(session.state().phase).toBe("ready");
+});
+
+test("a ready gate that times out reports what it actually waited", async () => {
+  const driver = createFakeDriver({ screens: ["explore"] });
+  const error = await open(driver, {
+    readyWhen: { text: "Fresh start" },
+    launchTimeout: 500,
+  }).catch((thrown: unknown) => thrown);
+  expect(error).toBeInstanceOf(DeviceTestError);
+  if (!(error instanceof DeviceTestError) || error.info.kind !== "not-ready") return;
+  expect(error.info.timeoutMs).toBeLessThanOrEqual(600);
+  expect(error.info.timeoutMs).toBeGreaterThan(0);
 });

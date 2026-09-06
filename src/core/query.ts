@@ -94,24 +94,18 @@ export function matchesText(match: TextMatch, candidate: string | null): boolean
 export function describeQuery(query: Query): string {
   const suffix = describeIndex(query.index);
   const fields = describeExtraFields(query);
-  if (
-    query.testId !== undefined &&
-    fields.length === 0 &&
-    query.name === undefined &&
-    query.role === undefined
-  ) {
+  const plain = fields.length === 0 && query.value === undefined;
+  if (plain && query.testId !== undefined && query.name === undefined && query.role === undefined) {
     return `getByTestId(${describeMatch(query.testId)})${suffix}`;
   }
-  if (query.role !== undefined && query.testId === undefined && fields.length === 0) {
-    const name = query.name === undefined ? "" : `, { name: ${describeMatch(query.name)} }`;
+  if (plain && query.role !== undefined && query.testId === undefined) {
+    const name =
+      query.name === undefined
+        ? ""
+        : `, { name: ${describeMatch(query.name)}${describeExact(query.name)} }`;
     return `getByRole('${query.role}'${name})${suffix}`;
   }
-  if (
-    query.name !== undefined &&
-    query.testId === undefined &&
-    query.role === undefined &&
-    fields.length === 0
-  ) {
+  if (plain && query.name !== undefined && query.testId === undefined && query.role === undefined) {
     const exact = query.name.kind === "exact" ? ", { exact: true }" : "";
     return `getByText(${describeMatch(query.name)}${exact})${suffix}`;
   }
@@ -132,6 +126,10 @@ function describeExtraFields(query: Query): string[] {
     query.focused === undefined ? null : `focused: ${String(query.focused)}`,
     query.where === undefined ? null : "where: <predicate>",
   ].filter((part) => part !== null);
+}
+
+function describeExact(match: TextMatch): string {
+  return match.kind === "exact" ? ", exact: true" : "";
 }
 
 function describeMatch(match: TextMatch): string {

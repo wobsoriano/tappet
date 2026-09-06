@@ -12,6 +12,8 @@ export type ErrorInfo =
       readonly owner: string | null;
       readonly device: string;
       readonly releaseCommand: string;
+      /** False once `onDeviceInUse: 'reclaim'` is already set, so the message stops suggesting it. */
+      readonly canReclaim: boolean;
     }
   | {
       readonly kind: "launch-failed";
@@ -58,7 +60,7 @@ export function formatError(info: ErrorInfo): string {
       return [
         `Device ${info.device} is held by ${info.owner === null ? "another session" : `session "${info.owner}"`}.`,
         `Release it with: ${info.releaseCommand}`,
-        `Or set use.device.onDeviceInUse to 'reclaim'.`,
+        ...(info.canReclaim ? ["Or set use.device.onDeviceInUse to 'reclaim'."] : []),
       ].join("\n");
     case "launch-failed":
       return `Could not open ${info.app} on ${info.device}: ${describeFailure(info.failure)}`;

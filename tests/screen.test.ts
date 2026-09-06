@@ -164,4 +164,13 @@ test("describeQuery renders the factory call the author wrote", () => {
   expect(describeQuery({ role: "button", selected: true })).toBe(
     "locator({ role: 'button', selected: true })",
   );
+  expect(describeQuery({ role: "button", name: textMatch("Home", true) })).toBe(
+    "getByRole('button', { name: 'Home', exact: true })",
+  );
+  expect(describeQuery({ role: "button", value: textMatch("on") })).toBe(
+    "locator({ value: 'on', role: 'button' })",
+  );
+  expect(describeQuery({ testId: textMatch("id", true), value: textMatch("on") })).toBe(
+    "locator({ testId: 'id', value: 'on' })",
+  );
 });
