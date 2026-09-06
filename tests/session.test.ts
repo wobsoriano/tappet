@@ -109,7 +109,7 @@ test("a tap resolves against a fresh screen and dispatches a generation-pinned r
   const session = await open(driver);
   const app = createApp(session, silentSink);
   await app.getByRole("button", { name: "Explore" }).tap();
-  expect(driver.calls.at(-1)).toBe("tap @e30~s776575");
+  expect(driver.calls.at(-1)).toMatch(/^tap @e30~s776575 settle=/);
 });
 
 test("an ambiguous locator fails an action at once with every match listed", async () => {
@@ -133,7 +133,7 @@ test("first picks one node out of the same ambiguous locator", async () => {
   const session = await open(driver, { readyWhen: { text: "Expo documentation" } });
   const app = createApp(session, silentSink);
   await app.getByText("Explore").first().tap();
-  expect(driver.calls.at(-1)).toBe("tap @e12~s355823");
+  expect(driver.calls.at(-1)).toMatch(/^tap @e12~s355823 settle=/);
 });
 
 test("a stale ref re-captures and retries once, then reports", async () => {
@@ -189,7 +189,7 @@ test("every command runs on one queue, so a snapshot never lands inside another 
     app.screen(),
     app.getByRole("button", { name: "Explore" }).tap(),
   ]);
-  expect(driver.calls).toEqual([
+  expect(driver.calls.map((call) => call.replace(/ settle=\d+$/, ""))).toEqual([
     "capture",
     "tap @e29~s776575",
     "capture",
@@ -207,7 +207,7 @@ test("a rejected command does not wedge the queue", async () => {
     .tap()
     .catch(() => undefined);
   await app.getByRole("button", { name: "Home" }).tap();
-  expect(driver.calls.at(-1)).toBe("tap @e29~s776575");
+  expect(driver.calls.at(-1)).toMatch(/^tap @e29~s776575 settle=/);
 });
 
 test("a device that goes away breaks the session and every later call names the root cause", async () => {
@@ -244,4 +244,17 @@ test("a ready gate that times out reports what it actually waited", async () => 
   if (!(error instanceof DeviceTestError) || error.info.kind !== "not-ready") return;
   expect(error.info.timeoutMs).toBeLessThanOrEqual(600);
   expect(error.info.timeoutMs).toBeGreaterThan(0);
+});
+
+test("waiting for a target and settling after it share one action budget", async () => {
+  const driver = createFakeDriver({ screens: ["explore", "explore", "home"] });
+  const session = await open(driver, {
+    readyWhen: { text: "Expo documentation" },
+    actionTimeout: 4000,
+    settleQuietMs: 100,
+  });
+  const app = createApp(session, silentSink);
+  await app.getByRole("text", { name: "Fresh start" }).tap();
+  const settle = /settle=(\d+)/.exec(driver.calls.at(-1) ?? "");
+  expect(Number(settle?.[1])).toBeLessThan(3900);
 });

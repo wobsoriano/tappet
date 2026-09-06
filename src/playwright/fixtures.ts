@@ -7,6 +7,10 @@ import { openSession, type DeviceSession } from "../core/session.ts";
 import { createAgentDeviceDriver, createClient } from "../driver/agent-device.ts";
 
 const SESSION_FIXTURE_TIMEOUT_MS = 180_000;
+// The per-test relaunch and the evidence capture run in this fixture, not in the test body, so it
+// needs a budget of its own. Charged to the test timeout, a slow relaunch reads as a test timeout
+// instead of the launch failure it is.
+const APP_FIXTURE_TIMEOUT_MS = 120_000;
 
 /** What `defineConfig<DeviceTestOptions>` types inside `use`. One key. */
 export type DeviceTestOptions = {
@@ -73,7 +77,7 @@ export const test = base.extend<DeviceTestFixtures, DeviceWorkerFixtures>({
 
       if (shouldCapture(testInfo, session.options.evidence)) await captureEvidence(session, sink);
     },
-    { auto: true },
+    { auto: true, timeout: APP_FIXTURE_TIMEOUT_MS },
   ],
 });
 

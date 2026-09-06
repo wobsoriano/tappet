@@ -50,13 +50,19 @@ export function createQueue(): Queue {
   };
 }
 
-/** The device capabilities available inside one queued unit. Settle options come from the session's config. */
+/**
+ * The device capabilities available inside one queued unit.
+ *
+ * Every mutation takes the budget it has left rather than reading
+ * `actionTimeout` again, so waiting for a target and waiting for the screen to
+ * settle share one allowance instead of each getting a full one.
+ */
 export type SessionDevice = {
   capture(): Promise<Screen>;
-  tap(ref: PinnedRef): Promise<Settled>;
-  longPress(ref: PinnedRef, durationMs: number): Promise<Settled>;
-  fill(ref: PinnedRef, text: string): Promise<Settled>;
-  scroll(direction: ScrollDirection): Promise<void>;
+  tap(ref: PinnedRef, budgetMs: number): Promise<Settled>;
+  longPress(ref: PinnedRef, durationMs: number, budgetMs: number): Promise<Settled>;
+  fill(ref: PinnedRef, text: string, budgetMs: number): Promise<Settled>;
+  scroll(direction: ScrollDirection, budgetMs: number): Promise<void>;
 };
 
 export type DeviceSession = {
@@ -168,16 +174,21 @@ function createSession(
   binding: Binding,
 ): DeviceSession {
   const queue = createQueue();
-  const settle = { settleQuietMs: options.settleQuietMs, timeoutMs: options.actionTimeout };
   let state: SessionState = { phase: "ready", binding };
+
+  // The settle is best-effort upstream, so a short remaining budget costs settling, never the action.
+  const settle = (budgetMs: number) => ({
+    settleQuietMs: options.settleQuietMs,
+    timeoutMs: Math.max(budgetMs, options.settleQuietMs),
+  });
 
   const device: SessionDevice = {
     capture: async () =>
       parseScreen(await driver.capture({ timeoutMs: SNAPSHOT_TIMEOUT_MS }), options.platform),
-    tap: (ref) => driver.tap(ref, settle),
-    longPress: (ref, durationMs) => driver.longPress(ref, durationMs, settle),
-    fill: (ref, text) => driver.fill(ref, text, settle),
-    scroll: (direction) => driver.scroll(direction, settle),
+    tap: (ref, budgetMs) => driver.tap(ref, settle(budgetMs)),
+    longPress: (ref, durationMs, budgetMs) => driver.longPress(ref, durationMs, settle(budgetMs)),
+    fill: (ref, text, budgetMs) => driver.fill(ref, text, settle(budgetMs)),
+    scroll: (direction, budgetMs) => driver.scroll(direction, settle(budgetMs)),
   };
 
   function run<T>(body: (device: SessionDevice) => Promise<T>): Promise<T> {

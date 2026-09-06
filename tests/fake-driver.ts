@@ -55,8 +55,8 @@ export function createFakeDriver(options?: { screens?: FixtureName[] }): FakeDri
       return Promise.resolve(path);
     },
 
-    tap: (ref: PinnedRef, _options: SettleOptions) => {
-      calls.push(`tap ${ref}`);
+    tap: (ref: PinnedRef, options: SettleOptions) => {
+      calls.push(`tap ${ref} settle=${String(options.timeoutMs)}`);
       return mutate(driver);
     },
     longPress: (ref: PinnedRef, durationMs: number) => {

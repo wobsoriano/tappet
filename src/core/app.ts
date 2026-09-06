@@ -1,5 +1,5 @@
 import { describeNode, type Check } from "./checks.ts";
-import type { ScrollDirection } from "./driver.ts";
+import type { ScrollDirection, Settled } from "./driver.ts";
 import { DeviceTestError } from "./errors.ts";
 import { probe, type ProbeOptions, type ProbeResult } from "./probe.ts";
 import { describeQuery, textMatch, type Query, type Role } from "./query.ts";
@@ -73,7 +73,7 @@ export function createApp(session: DeviceSession, sink: ActionSink): App {
     locator: build,
     scroll: (direction) =>
       sink.step(renderTitle({ kind: "scroll", direction }), async () => {
-        await session.run((device) => device.scroll(direction));
+        await session.run((device) => device.scroll(direction, session.options.actionTimeout));
       }),
     restart: () => session.relaunch(sink),
     dismissDevOverlay: () =>
@@ -91,10 +91,12 @@ function createLocator(session: DeviceSession, sink: ActionSink, query: Query): 
     first: () => withIndex(0),
     nth: (index) => withIndex(index),
     tap: (options) =>
-      perform(session, sink, { kind: "tap", query }, options, (device, ref) => device.tap(ref)),
+      perform(session, sink, { kind: "tap", query }, options, (device, ref, budget) =>
+        device.tap(ref, budget),
+      ),
     fill: (text, options) =>
-      perform(session, sink, { kind: "fill", query, text }, options, (device, ref) =>
-        device.fill(ref, text),
+      perform(session, sink, { kind: "fill", query, text }, options, (device, ref, budget) =>
+        device.fill(ref, text, budget),
       ),
     longPress: (durationMs, options) => {
       const held = durationMs ?? DEFAULT_LONG_PRESS_MS;
@@ -103,7 +105,7 @@ function createLocator(session: DeviceSession, sink: ActionSink, query: Query): 
         sink,
         { kind: "long-press", query, durationMs: held },
         options,
-        (device, ref) => device.longPress(ref, held),
+        (device, ref, budget) => device.longPress(ref, held, budget),
       );
     },
     count: async () => {
@@ -138,7 +140,7 @@ function perform(
   sink: ActionSink,
   record: Extract<ActionRecord, { query: Query }>,
   options: ActionOptions | undefined,
-  dispatch: (device: SessionDevice, ref: PinnedRef) => Promise<unknown>,
+  dispatch: (device: SessionDevice, ref: PinnedRef, budgetMs: number) => Promise<Settled>,
 ): Promise<void> {
   const timeout = options?.timeout ?? session.options.actionTimeout;
   const locator = describeQuery(record.query);
@@ -159,7 +161,14 @@ function perform(
         }
         if (resolution.outcome === "one") {
           try {
-            await dispatch(device, pin(screen, resolution.node));
+            const outcome = await dispatch(
+              device,
+              pin(screen, resolution.node),
+              deadline - Date.now(),
+            );
+            if (!outcome.settled) {
+              sink.note("settle", `${renderTitle(record)} finished before the screen went quiet`);
+            }
             return;
           } catch (error) {
             if (failureOf(error)?.kind !== "stale-ref" || retriedStaleRef) throw error;
@@ -168,7 +177,8 @@ function perform(
             continue;
           }
         }
-        if (Date.now() + ACTION_POLL_MS >= deadline) {
+        const remaining = deadline - Date.now();
+        if (remaining <= 0) {
           throw new DeviceTestError({
             kind: "not-found",
             locator,
@@ -176,7 +186,7 @@ function perform(
             screen: renderScreen(screen),
           });
         }
-        await sleep(ACTION_POLL_MS);
+        await sleep(Math.min(ACTION_POLL_MS, remaining));
         screen = await device.capture();
       }
     });
