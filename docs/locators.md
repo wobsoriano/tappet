@@ -76,24 +76,39 @@ A query that constrains no text falls back to the node's own name for this compa
 
 Roles are normalized to one vocabulary across iOS and Android, spelled the way `agent-device snapshot` prints them, so a failure message and a manual snapshot read alike.
 
-| role                | iOS types it covers                                   | Android classes it covers                                |
-| ------------------- | ----------------------------------------------------- | -------------------------------------------------------- |
-| `application`       | `Application`                                         |                                                          |
-| `window`            | `Window`                                              |                                                          |
-| `button`            | `Button`, `Tab`                                       | `Button`, `ImageButton`                                  |
-| `text`              | `StaticText`, `TextView`                              | `TextView`                                               |
-| `text-field`        | `TextField`, `SearchField`                            | `EditText`                                               |
-| `secure-text-field` | `SecureTextField`                                     |                                                          |
-| `link`              | `Link`                                                |                                                          |
-| `image`             | `Image`, `Icon`                                       | `ImageView`                                              |
-| `switch`            | `Switch`, `Toggle`                                    | `Switch`, `CheckBox`                                     |
-| `slider`            | `Slider`                                              | `SeekBar`                                                |
-| `tab-bar`           | `TabBar`                                              |                                                          |
-| `scroll-area`       | `ScrollView`, `ScrollArea`, `Table`, `CollectionView` | `ScrollView`, `HorizontalScrollView`, `RecyclerView`     |
-| `cell`              | `Cell`                                                |                                                          |
-| `alert`             | `Alert`, `Sheet`                                      |                                                          |
-| `other`             | `Other`, and anything unrecognized                    | `FrameLayout`, `LinearLayout`, and anything unrecognized |
+| role                | iOS types it covers                                   | Android classes it covers                                             |
+| ------------------- | ----------------------------------------------------- | --------------------------------------------------------------------- |
+| `application`       | `Application`                                         |                                                                       |
+| `window`            | `Window`                                              |                                                                       |
+| `button`            | `Button`, `Tab`                                       | `Button`, `ImageButton`                                               |
+| `text`              | `StaticText`, `TextView`                              | `TextView`                                                            |
+| `text-field`        | `TextField`, `SearchField`                            | `EditText`                                                            |
+| `secure-text-field` | `SecureTextField`                                     |                                                                       |
+| `link`              | `Link`                                                |                                                                       |
+| `image`             | `Image`, `Icon`                                       | `ImageView`                                                           |
+| `switch`            | `Switch`, `Toggle`                                    | `Switch`, `CheckBox`                                                  |
+| `slider`            | `Slider`                                              | `SeekBar`                                                             |
+| `tab-bar`           | `TabBar`                                              |                                                                       |
+| `scroll-area`       | `ScrollView`, `ScrollArea`, `Table`, `CollectionView` | `ScrollView`, `HorizontalScrollView`, `RecyclerView`                  |
+| `cell`              | `Cell`                                                |                                                                       |
+| `alert`             | `Alert`, `Sheet`                                      |                                                                       |
+| `other`             | `Other`, and anything unrecognized                    | `ViewGroup`, `FrameLayout`, `LinearLayout`, and anything unrecognized |
 
 `other` is a real role, not a failure signal. React Native emits many labelled container views with no semantic type. The platform spelling is kept on each node as `rawType` if you need it through `app.screen()`.
 
-The Android table is inference until an Android run confirms it. Anything unrecognized falls through to `other`, which is always legal.
+The Android half of the table was read off a booted API 36 emulator running the sample app. React Native reports fully qualified class names, so the entries are `android.widget.Button`, `android.view.ViewGroup` and so on. Every React Native `View` reports `android.view.ViewGroup`, the containers carrying a `testID` included, which is why most of an Android tree is `other`.
+
+The rows for widgets the sample app never renders, `ImageButton`, `Switch`, `CheckBox`, `SeekBar`, `HorizontalScrollView` and `RecyclerView`, are still a guess. Anything unrecognized falls through to `other`, which is always legal.
+
+## An Android text field is named by its contents
+
+On Android the accessibility name of an `EditText` is its text, or its placeholder while the field is empty. iOS keeps the label and the value apart. Android does not.
+
+```
+empty    @e24 [text-field] "Email"             value "Email"
+filled   @e24 [text-field] "rob@example.com"   value "rob@example.com"
+```
+
+So `getByRole('text-field', { name: 'Email' })` finds that field while it is empty and stops matching the moment anything is typed into it. Name a field by its `testID` when you need a locator that survives the write.
+
+`fill` is unaffected. It confirms what it wrote against the node it wrote to rather than against the locator you named it with, so a name-shaped locator is still a legal way to fill a field.

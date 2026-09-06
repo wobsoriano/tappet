@@ -20,24 +20,26 @@ The app `tappet` is tested against. An Expo SDK 57 project with expo-router, fou
 
 ## Test IDs and the roles they report
 
-A React Native `testID` becomes the iOS accessibility identifier, which is what `getByTestId` matches. These are the roles the XCTest tree actually reports for each one.
+A React Native `testID` becomes the accessibility identifier on both platforms, which is what `getByTestId` matches. These are the roles each tree actually reports, the iOS column from XCTest and the Android column from a booted API 36 emulator.
 
-| test ID         | role         | screen  |
-| --------------- | ------------ | ------- |
-| `home`          | `other`      | home    |
-| `greeting`      | `text`       | home    |
-| `sign-in-link`  | `button`     | home    |
-| `profile-link`  | `button`     | home    |
-| `login`         | `other`      | login   |
-| `email`         | `text-field` | login   |
-| `password`      | `text-field` | login   |
-| `error`         | `text`       | login   |
-| `signing-in`    | `text`       | login   |
-| `sign-in`       | `button`     | login   |
-| `profile`       | `other`      | profile |
-| `profile-name`  | `text`       | profile |
-| `profile-email` | `text`       | profile |
-| `sign-out`      | `button`     | profile |
+| test ID         | iOS role     | Android role | Android class             | screen  |
+| --------------- | ------------ | ------------ | ------------------------- | ------- |
+| `home`          | `other`      | `other`      | `android.view.ViewGroup`  | home    |
+| `greeting`      | `text`       | `text`       | `android.widget.TextView` | home    |
+| `sign-in-link`  | `button`     | `button`     | `android.widget.Button`   | home    |
+| `profile-link`  | `button`     | `button`     | `android.widget.Button`   | home    |
+| `login`         | `other`      | `other`      | `android.view.ViewGroup`  | login   |
+| `email`         | `text-field` | `text-field` | `android.widget.EditText` | login   |
+| `password`      | `text-field` | `text-field` | `android.widget.EditText` | login   |
+| `error`         | `text`       | `text`       | `android.widget.TextView` | login   |
+| `signing-in`    | `text`       | `text`       | `android.widget.TextView` | login   |
+| `sign-in`       | `button`     | `button`     | `android.widget.Button`   | login   |
+| `profile`       | `other`      | `other`      | `android.view.ViewGroup`  | profile |
+| `profile-name`  | `text`       | `text`       | `android.widget.TextView` | profile |
+| `profile-email` | `text`       | `text`       | `android.widget.TextView` | profile |
+| `sign-out`      | `button`     | `button`     | `android.widget.Button`   | profile |
+
+The roles agree across the platforms. Two Android differences do not show in this table. An Android snapshot also carries the system status bar, `com.android.systemui` clock and battery nodes at the top of the tree, and an `EditText` reports its own contents as its accessibility name, so `getByRole('text-field', { name: 'Email' })` matches that field only while it is empty. [Locators](../../docs/locators.md) has the detail.
 
 Two details the tree makes visible. A `Text` renders as a `text` node wrapped in another `text` node carrying the same string, and the library collapses that pair to the deepest one, so `getByRole('text', { name: 'Rob' })` finds one node rather than two. Matching is a case-insensitive substring by default, so `{ name: 'Rob' }` also matches `rob@example.com` on the profile screen and needs `exact: true` to separate them.
 
@@ -58,12 +60,23 @@ npx expo run:ios --device "iPhone 17 Pro Max" --no-bundler
 npx expo start --port 8081
 ```
 
+For Android, pass the AVD's own name with its underscores, which is not the spaced name the Playwright config uses, and point the emulator at the host's Metro.
+
+```sh
+npx expo run:android --device Expo_API_36 --no-bundler
+adb reverse tcp:8081 tcp:8081
+npx expo start --port 8081
+```
+
+`expo run:android` rejects an adb serial such as `emulator-5554`, so give it the AVD name. `adb devices` lists the serials and `adb -s <serial> emu avd name` says which AVD each one is.
+
 Leave Metro running. No other project's Metro may hold port 8081. A development build loads whichever bundle answers, so a stray server means the tests drive someone else's app.
 
 Then run the suite. The script takes the project from the caller, so one script serves both platforms and CI.
 
 ```sh
 pnpm test:e2e --project=ios
+pnpm test:e2e --project=android
 ```
 
 A `setup-ios` or `setup-android` project runs first and checks that the device the project names is booted. `TAPPET_IOS_DEVICE` and `TAPPET_ANDROID_DEVICE` override those names, which is how CI points the suite at whatever its runner booted.

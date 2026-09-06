@@ -1,6 +1,6 @@
 # tappet
 
-tappet is experimental. The API will change between minor versions, so pin the version you install. Android is configuration only so far, and every run behind this repository has been an iOS simulator. Cloud device farms are not supported.
+tappet is experimental. The API will change between minor versions, so pin the version you install. Every run behind this repository has been an iOS simulator or an Android emulator. Physical devices and cloud device farms are untested.
 
 tappet runs end-to-end tests for mobile apps on the Playwright test runner. It drives a booted simulator or emulator through Callstack [`agent-device`](https://agent-device.dev/) and launches no browser. Locators keep Playwright semantics, so `getByRole`, `getByText`, and `getByTestId` resolve against the accessibility tree, a locator that matches two things is an error rather than a guess, and matchers retry until they hold. A test that fails prints the screen it was looking at and attaches a screenshot and a tree listing to the HTML report.
 
@@ -53,7 +53,10 @@ export default defineConfig<DeviceTestOptions>({
   reporter: [['list'], ['html', { open: 'never' }]],
   projects: [
     { name: 'ios', use: { device: { ...shared, platform: 'ios', name: 'iPhone 17 Pro Max' } } },
-    { name: 'android', use: { device: { ...shared, platform: 'android', name: 'ci api34' } } },
+    {
+      name: 'android',
+      use: { device: { ...shared, platform: 'android', name: 'Pixel 7 API 34' } },
+    },
   ],
 });
 ```
@@ -61,6 +64,8 @@ export default defineConfig<DeviceTestOptions>({
 `device` is the only key tappet adds to `use`. Playwright merges `use` one key at a time, so a project that sets `device` replaces the whole object. Spread a shared constant, as above.
 
 `readyWhen` is required. The driver returns from a launch as soon as the native process starts, while the JavaScript bundle is still loading, so tappet holds until that locator resolves before the first test runs.
+
+`name` is what `agent-device devices` prints, which for an Android emulator is the AVD name with its underscores shown as spaces. An AVD created as `Pixel_7_API_34` is `Pixel 7 API 34` here.
 
 One worker gets one device. To run more than one, give `name` an array with an entry per worker.
 
@@ -82,7 +87,16 @@ npx expo start --port 8081
 npx playwright test --project=ios
 ```
 
-Leave Metro running for the whole suite. The first command takes several minutes the first time.
+Android is the same shape. `expo run:android` wants the AVD's own name, underscores and all, rather than the spaced name the test config uses, and an emulator needs `adb reverse` to reach Metro on the host.
+
+```sh
+npx expo run:android --device Expo_API_36 --no-bundler
+adb reverse tcp:8081 tcp:8081
+npx expo start --port 8081
+npx playwright test --project=android
+```
+
+Leave Metro running for the whole suite. The first build takes several minutes.
 
 ## Docs
 

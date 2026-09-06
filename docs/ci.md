@@ -26,6 +26,12 @@ The Android job runs on `ubuntu-latest` and uses `reactivecircus/android-emulato
 
 Both jobs build in Release, which bundles the JavaScript into the app. A development build would need a Metro server alive for the whole run, and a bundler that dies mid-suite looks like a launch timeout rather than an infrastructure failure. Release removes that whole failure mode from CI.
 
+### Naming the device
+
+`TAPPET_ANDROID_DEVICE` has to match what `agent-device devices` prints, and for an emulator that is the AVD name with its underscores shown as spaces. An AVD created as `ci_api34` is `ci api34` there, so a config that names it `ci-api34` finds nothing and preflight fails with the booted names listed. The workflow sidesteps the trap by creating its AVD as `ci-api34`, with hyphens, and passing that same string through, so the two agree without a translation step.
+
+The same applies locally. The checked-in default is `Expo API 36`, which is the AVD `Expo_API_36`.
+
 ### The runner cache
 
 `agent-device` builds a small XCTest runner the first time it drives an iOS device, and that build costs several minutes. The workflow caches `~/.agent-device/apple-runner/derived` keyed on the `agent-device` version and the Xcode version, then runs `agent-device prepare ios-runner` explicitly so the build happens in a step you can read rather than inside the first test.

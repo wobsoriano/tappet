@@ -63,7 +63,8 @@ All verified this session (see the grounding record in the session scratchpad; t
 4. `apps.open` returns when the native process launches. The JavaScript bundle is still loading. If another Metro owns port 8081 the app silently loads a different project's bundle. A ready gate is therefore required configuration, and it is a locator wait, never `wait stable`.
 5. Playwright discards the worker process after any test failure and starts a replacement that reuses `parallelIndex`. Fixture teardown runs after a timeout with its own budget. `expect.extend` matchers on a non-Locator receiver work under Playwright's own names (`toBeVisible`, `toHaveText`, ...), receive `this.timeout` from `expect.timeout`, and see `this.isNot`. Steps and attachments show in the list and HTML reporters. No trace.zip is produced without a browser, so the HTML report is the evidence surface.
 6. `hittable` is `false` on every node of this app under the XCTest backend while presses succeed. It cannot gate actionability.
-7. agent-device 0.20.10's root entry exports only values. Types are derived with `ReturnType<typeof createAgentDeviceClient>` in one file.
+7. Android, added after a probe against a booted API 36 emulator. `identifier` carries the React Native `testID` verbatim, as it does on iOS, and also native resource ids such as `android:id/content` on nodes React Native did not create. Every React Native `View` reports `android.view.ViewGroup`. An `android.widget.EditText` reports its own contents as both `label` and `value`, or its hint when empty, so a locator naming a field by its label stops matching once a write lands, which is why a fill confirms against the node it wrote rather than against its locator. agent-device 0.20.10 does not emit the documented `hintShowing`, `editable` or `password` fields on this device.
+8. agent-device 0.20.10's root entry exports only values. Types are derived with `ReturnType<typeof createAgentDeviceClient>` in one file.
 
 ## Module map
 
@@ -191,7 +192,7 @@ Three candidates were produced in parallel on three models and cross-judged by a
 
 - Should `readyWhen` accept a function for apps with no stable landing text?
 - Is a fixed pool keyed on `parallelIndex` the right multi-device model, or should allocation move to `client.leases` once physical devices are in scope?
-- Android role table entries are inference until an Android probe runs.
+- Should the Android tree drop nodes belonging to another package? An Android snapshot carries the system status bar, so `com.android.systemui` nodes are matchable today.
 
 ## Verification plan
 
