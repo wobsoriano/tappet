@@ -1,4 +1,4 @@
-import { deviceNameForSlot, sessionName, type ResolvedOptions } from "./config.ts";
+import { deviceNameForSlot, type ResolvedOptions } from "./config.ts";
 import type {
   Binding,
   DeviceDriver,
@@ -258,6 +258,11 @@ function breaksTheSession(failure: DeviceFailure): boolean {
     failure.kind === "device-missing" ||
     failure.kind === "session-rebound"
   );
+}
+
+/** Deterministic, so a worker replaced after a failure reconnects to the session it left behind. */
+export function sessionName(options: ResolvedOptions, project: string, slot: number): string {
+  return `${options.sessionPrefix}-${project === "" ? "default" : project}-${String(slot)}`;
 }
 
 export function failureOf(error: unknown): DeviceFailure | null {

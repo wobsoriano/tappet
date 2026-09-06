@@ -47,7 +47,6 @@ export type Screen = {
   readonly appId: string | null;
   readonly truncated: boolean;
   readonly capturedAt: number;
-  readonly platform: Platform;
 };
 
 declare const pinnedRefBrand: unique symbol;
@@ -184,7 +183,6 @@ export function parseScreen(raw: RawSnapshot, platform: Platform): Screen {
     appId: raw.appBundleId ?? null,
     truncated: raw.truncated ?? false,
     capturedAt: Date.now(),
-    platform,
   });
 }
 

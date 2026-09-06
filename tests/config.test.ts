@@ -1,10 +1,6 @@
 import { expect, test } from "vite-plus/test";
-import {
-  deviceNameForSlot,
-  parseDeviceOptions,
-  sessionName,
-  UNCONFIGURED_DEVICE,
-} from "../src/core/config.ts";
+import { deviceNameForSlot, parseDeviceOptions, UNCONFIGURED_DEVICE } from "../src/core/config.ts";
+import { sessionName } from "../src/core/session.ts";
 
 const minimal = { platform: "ios", app: "com.example.app", readyWhen: { text: "GET STARTED" } };
 

@@ -13,12 +13,7 @@ export type { ActionOptions, App, Locator, RoleOptions, TextOptions } from "./ap
 export { describeCheck, evaluate } from "./checks.ts";
 export type { Check, CheckName, Verdict } from "./checks.ts";
 
-export {
-  deviceNameForSlot,
-  parseDeviceOptions,
-  sessionName,
-  UNCONFIGURED_DEVICE,
-} from "./config.ts";
+export { deviceNameForSlot, parseDeviceOptions, UNCONFIGURED_DEVICE } from "./config.ts";
 export type { DeviceOptions, ReadyQuery, ResolvedOptions } from "./config.ts";
 
 export type {
@@ -56,5 +51,5 @@ export type {
   ScreenNode,
 } from "./screen.ts";
 
-export { openSession } from "./session.ts";
+export { openSession, sessionName } from "./session.ts";
 export type { DeviceSession, OpenSessionInput, SessionState } from "./session.ts";

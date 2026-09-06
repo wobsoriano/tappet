@@ -199,10 +199,6 @@ export function deviceNameForSlot(options: ResolvedOptions, slot: number): strin
   return name;
 }
 
-export function sessionName(options: ResolvedOptions, project: string, slot: number): string {
-  return `${options.sessionPrefix}-${project === "" ? "default" : project}-${String(slot)}`;
-}
-
 function oneOf<T extends string>(
   field: string,
   value: unknown,
