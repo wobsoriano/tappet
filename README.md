@@ -74,7 +74,7 @@ A wrong device name is worth catching before the launch timeout does. `preflight
 
 ## Run the sample project
 
-`apps/e2e` is an Expo app with four screens and a fake sign-in, and it is the app tappet is proven against. Build the library first with `vp run -r build`, so the app resolves its `dist`. Then, from `apps/e2e`:
+`apps/e2e` is an Expo app with three routes, home, login, and profile, and a fake sign-in, and it is the app tappet is proven against. Build the library first with `vp run -r build`, so the app resolves its `dist`. Then, from `apps/e2e`:
 
 ```sh
 npx expo run:ios --device 'iPhone 17 Pro Max' --no-bundler
