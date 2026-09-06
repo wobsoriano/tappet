@@ -16,7 +16,7 @@ The app `playwright-agent-device` is tested against. An Expo SDK 57 project with
 
 `rob@example.com` / `hunter2`. Anything else is rejected as `invalid-credentials`.
 
-`signIn` waits `SIGN_IN_DELAY_MS`, 1500 milliseconds, before resolving either way. It stands in for a network round trip so the specs have to wait on a pending state rather than an instant one. While it is pending the Sign in button is disabled and a `signing-in` text reads "Signing in...".
+`signIn` waits `SIGN_IN_DELAY_MS`, 4000 milliseconds, before resolving either way. It stands in for a network round trip so the specs have to wait on a pending state rather than an instant one. While it is pending the Sign in button is disabled and a `signing-in` text reads "Signing in...".
 
 ## Test IDs and the roles they report
 

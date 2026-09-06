@@ -12,7 +12,7 @@ export type SignInResult = { ok: true } | { ok: false; reason: "invalid-credenti
 const account = { email: "rob@example.com", password: "hunter2", name: "Rob" };
 
 /** Stands in for a network round trip, so a test has to wait the way it would against a real backend. */
-export const SIGN_IN_DELAY_MS = 1500;
+export const SIGN_IN_DELAY_MS = 4000;
 
 type Auth = {
   session: Session;
