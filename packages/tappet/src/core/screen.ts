@@ -82,6 +82,7 @@ export type RawSnapshot = {
     readonly enabled?: boolean;
     readonly selected?: boolean;
     readonly focused?: boolean;
+    readonly hintShowing?: boolean;
     readonly depth?: number;
     readonly parentIndex?: number;
     readonly inheritsLabel?: true;
@@ -119,22 +120,31 @@ const IOS_ROLES: Readonly<Record<string, Role>> = {
   Other: 'other',
 };
 
-// Android class names are inference until an Android probe runs; anything
-// unrecognized falls through to `other`, which is a legal role.
+/**
+ * Observed on a booted Android emulator (API 36) snapshotting this repo's
+ * React Native 0.86 sample app, except the trailing widget block, which this
+ * app never renders and stays a plausible guess.
+ *
+ * `android.view.ViewGroup` is what every React Native `View` reports, testID
+ * containers included, so it is stated here rather than left to the `other`
+ * fall-through in `roleOf`.
+ */
 const ANDROID_ROLES: Readonly<Record<string, Role>> = {
   'android.widget.Button': 'button',
-  'android.widget.ImageButton': 'button',
   'android.widget.TextView': 'text',
   'android.widget.EditText': 'text-field',
   'android.widget.ImageView': 'image',
+  'android.widget.ScrollView': 'scroll-area',
+  'android.view.ViewGroup': 'other',
+  'android.widget.FrameLayout': 'other',
+  'android.widget.LinearLayout': 'other',
+
+  'android.widget.ImageButton': 'button',
   'android.widget.Switch': 'switch',
   'android.widget.CheckBox': 'switch',
   'android.widget.SeekBar': 'slider',
-  'android.widget.ScrollView': 'scroll-area',
   'android.widget.HorizontalScrollView': 'scroll-area',
   'androidx.recyclerview.widget.RecyclerView': 'scroll-area',
-  'android.widget.FrameLayout': 'other',
-  'android.widget.LinearLayout': 'other',
 };
 
 function roleOf(rawType: string, platform: Platform): Role {
@@ -167,7 +177,7 @@ export function parseScreen(raw: RawSnapshot, platform: Platform): Screen {
       role: roleOf(rawType, platform),
       rawType,
       name: inherited(source.label, source.inheritsLabel, parent, (a) => a.name),
-      value: source.value === undefined ? null : normalizeText(source.value),
+      value: parsedValue(source),
       testId: inherited(source.identifier, source.inheritsIdentifier, parent, (a) => a.testId),
       rect: source.rect ?? null,
       enabled: source.enabled ?? true,
@@ -184,6 +194,17 @@ export function parseScreen(raw: RawSnapshot, platform: Platform): Screen {
     truncated: raw.truncated ?? false,
     capturedAt: Date.now(),
   });
+}
+
+/**
+ * On Android a field showing its hint reports the hint as its `value`, so the
+ * flag is the only thing separating an empty field from one a user typed into.
+ * agent-device 0.20.10's Android snapshot helper does not emit `hintShowing`
+ * yet, which is why no fixture on disk carries it.
+ */
+function parsedValue(source: RawSnapshot['nodes'][number]): string | null {
+  if (source.hintShowing === true) return '';
+  return source.value === undefined ? null : normalizeText(source.value);
 }
 
 function inherited(

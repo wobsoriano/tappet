@@ -1,8 +1,16 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { parseScreen, type RawSnapshot, type Screen } from '../src/core/screen.ts';
+import { parseScreen, type Platform, type RawSnapshot, type Screen } from '../src/core/screen.ts';
 
-export type FixtureName = 'home' | 'explore';
+/** The platform belongs to the capture, so no call site has to remember it. */
+const FIXTURE_PLATFORMS = {
+  home: 'ios',
+  explore: 'ios',
+  'android-home': 'android',
+  'android-login': 'android',
+} satisfies Readonly<Record<string, Platform>>;
+
+export type FixtureName = keyof typeof FIXTURE_PLATFORMS;
 
 /**
  * The fixtures are verbatim `agent-device snapshot --json` output for the
@@ -16,5 +24,5 @@ export function loadRaw(name: FixtureName): RawSnapshot {
 }
 
 export function loadScreen(name: FixtureName): Screen {
-  return parseScreen(loadRaw(name), 'ios');
+  return parseScreen(loadRaw(name), FIXTURE_PLATFORMS[name]);
 }

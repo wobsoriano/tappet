@@ -1,10 +1,19 @@
 import { expect, test } from 'vite-plus/test';
 import { describeQuery, textMatch, type Query } from '../src/core/query.ts';
-import { parseScreen, pin, renderScreen, resolve, type RawSnapshot } from '../src/core/screen.ts';
-import { loadScreen } from './fixtures.ts';
+import {
+  parseScreen,
+  pin,
+  renderScreen,
+  resolve,
+  type RawSnapshot,
+  type Screen,
+} from '../src/core/screen.ts';
+import { loadRaw, loadScreen } from './fixtures.ts';
 
 const home = loadScreen('home');
 const explore = loadScreen('explore');
+const androidHome = loadScreen('android-home');
+const androidLogin = loadScreen('android-login');
 
 function byText(value: string, exact?: boolean): Query {
   return { name: textMatch(value, exact) };
@@ -212,4 +221,75 @@ test('pin falls back to a bare ref when the driver reported no generation', () =
   expect(node).toBeDefined();
   if (node === undefined) return;
   expect(pin(screen, node)).toBe('@e1');
+});
+
+test('parseScreen normalizes the Android widget classes this app renders into CLI roles', () => {
+  const heading = androidHome.nodes.find((node) => node.ref === '@e23');
+  expect(heading?.role).toBe('text');
+  expect(heading?.rawType).toBe('android.widget.TextView');
+
+  const scroller = androidHome.nodes.find((node) => node.ref === '@e19');
+  expect(scroller?.role).toBe('scroll-area');
+  expect(scroller?.rawType).toBe('android.widget.ScrollView');
+
+  const container = androidLogin.nodes.find((node) => node.ref === '@e22');
+  expect(container?.role).toBe('other');
+  expect(container?.rawType).toBe('android.view.ViewGroup');
+
+  const email = androidLogin.nodes.find((node) => node.ref === '@e24');
+  expect(email?.role).toBe('text-field');
+  expect(email?.rawType).toBe('android.widget.EditText');
+
+  const button = androidLogin.nodes.find((node) => node.ref === '@e26');
+  expect(button?.role).toBe('button');
+  expect(button?.rawType).toBe('android.widget.Button');
+});
+
+test('an Android identifier becomes testId, a React Native testID and a resource id alike', () => {
+  expect(androidLogin.nodes.find((node) => node.ref === '@e24')?.testId).toBe('email');
+  expect(androidHome.nodes.find((node) => node.ref === '@e14')?.testId).toBe('android:id/content');
+});
+
+test('getByTestId resolves a React Native testID on Android to the text field it marks', () => {
+  const resolution = resolve(androidLogin, { testId: textMatch('email', true) });
+  expect(resolution.outcome).toBe('one');
+  if (resolution.outcome !== 'one') return;
+  expect(resolution.node.role).toBe('text-field');
+});
+
+test('a Pressable resolves to the Android Button, not the TextView it wraps', () => {
+  const resolution = resolve(androidLogin, { role: 'button', name: textMatch('Sign in') });
+  expect(resolution.outcome).toBe('one');
+  if (resolution.outcome !== 'one') return;
+  expect(resolution.node.rawType).toBe('android.widget.Button');
+});
+
+test('an Android label carried by one TextView resolves to one node', () => {
+  expect(resolve(androidHome, byText('Welcome')).outcome).toBe('one');
+});
+
+function androidLoginWithEmail(overrides: Partial<RawSnapshot['nodes'][number]>): Screen {
+  const raw = loadRaw('android-login');
+  const nodes = raw.nodes.map((node) =>
+    node.identifier === 'email' ? { ...node, ...overrides } : node,
+  );
+  return parseScreen({ ...raw, nodes }, 'android');
+}
+
+test('an Android field showing its hint parses as empty and stays findable by its label', () => {
+  // The pinned agent-device helper never emits `hintShowing`, so no fixture can carry it.
+  const email = androidLoginWithEmail({ hintShowing: true }).nodes.find(
+    (node) => node.ref === '@e24',
+  );
+  expect(email?.value).toBe('');
+  expect(email?.name).toBe('Email');
+});
+
+test('a filled Android text field reports its contents as both label and value', () => {
+  const email = androidLoginWithEmail({
+    label: 'rob@example.com',
+    value: 'rob@example.com',
+  }).nodes.find((node) => node.ref === '@e24');
+  expect(email?.name).toBe('rob@example.com');
+  expect(email?.value).toBe('rob@example.com');
 });
