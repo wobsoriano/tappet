@@ -49,6 +49,7 @@ This package drives an app you already built and installed. It never builds, ins
 - Your bundler running if the build needs one. For a React Native development build that means Metro on port 8081.
 - No other project's Metro on that port. A development build silently loads whichever bundle answers, so a stray server means your tests drive someone else's app.
 - `@playwright/test` 1.63 or newer and `agent-device` 0.20.10 or newer, both peer dependencies. Node 22.12 or newer.
+- The globally installed `agent-device` CLI at the same version as the one in your project. The client and the CLI share one daemon, and a version mismatch makes each side restart it, which drops every open session.
 - One device per worker. Running more than one worker needs `name` to be an array with an entry per worker. Two workers pointed at one device would fight over its claim, so that is a configuration error rather than a race.
 
 `readyWhen` is required for this reason. `agent-device` returns from `open` as soon as the native process launches, while the JavaScript bundle is still loading, so the first assertion of the first test would otherwise race the bundle.
