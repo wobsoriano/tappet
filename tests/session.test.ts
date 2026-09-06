@@ -196,3 +196,33 @@ test("every command runs on one queue, so a snapshot never lands inside another 
     "tap @e30~s776575",
   ]);
 });
+
+test("a rejected command does not wedge the queue", async () => {
+  const driver = createFakeDriver();
+  const session = await open(driver);
+  const app = createApp(session, silentSink);
+  await app
+    .getByText("Sign out")
+    .tap()
+    .catch(() => undefined);
+  await app.getByRole("button", { name: "Home" }).tap();
+  expect(driver.calls.at(-1)).toBe("tap @e29~s776575");
+});
+
+test("a device that goes away breaks the session and every later call names the root cause", async () => {
+  const driver = createFakeDriver();
+  const session = await open(driver);
+  driver.capture = () =>
+    Promise.reject(
+      new DeviceTestError({
+        kind: "driver",
+        command: "snapshot",
+        failure: { kind: "device-missing", detail: "simulator shut down" },
+      }),
+    );
+
+  await expect(session.screen()).rejects.toThrow("no matching device is booted");
+  expect(session.state().phase).toBe("broken");
+  expect(session.failure()?.kind).toBe("device-missing");
+  await expect(session.screen()).rejects.toThrow("no matching device is booted");
+});
