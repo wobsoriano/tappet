@@ -95,8 +95,13 @@ function createLocator(session: DeviceSession, sink: ActionSink, query: Query): 
         device.tap(ref, budget),
       ),
     fill: (text, options) =>
-      perform(session, sink, { kind: "fill", query, text }, options, (device, ref, budget) =>
-        device.fill(ref, text, budget),
+      perform(
+        session,
+        sink,
+        { kind: "fill", query, text },
+        options,
+        (device, ref, budget) => device.fill(ref, text, budget),
+        text,
       ),
     longPress: (durationMs, options) => {
       const held = durationMs ?? DEFAULT_LONG_PRESS_MS;
@@ -134,6 +139,12 @@ function createLocator(session: DeviceSession, sink: ActionSink, query: Query): 
  * make a locator less ambiguous. A stale-ref rejection re-captures and retries
  * once; a second one means the screen is changing faster than we can act on
  * it, which is a real finding and reported as one.
+ *
+ * `expectedValue` makes the action a write that is read back. A device keyboard
+ * drops early keystrokes often enough that a fill can under-deliver its text
+ * and still report success, so fill dispatches again until the field holds what
+ * it was given or the budget runs out. Re-filling is safe because a fill
+ * replaces the field's contents rather than appending to them.
  */
 function perform(
   session: DeviceSession,
@@ -141,6 +152,7 @@ function perform(
   record: Extract<ActionRecord, { query: Query }>,
   options: ActionOptions | undefined,
   dispatch: (device: SessionDevice, ref: PinnedRef, budgetMs: number) => Promise<Settled>,
+  expectedValue?: string,
 ): Promise<void> {
   const timeout = options?.timeout ?? session.options.actionTimeout;
   const locator = describeQuery(record.query);
@@ -148,6 +160,7 @@ function perform(
     await session.run(async (device) => {
       const deadline = Date.now() + timeout;
       let retriedStaleRef = false;
+      let attempts = 0;
       let screen: Screen = await device.capture();
       for (;;) {
         const resolution = resolve(screen, record.query);
@@ -160,22 +173,40 @@ function perform(
           });
         }
         if (resolution.outcome === "one") {
+          let settled: Settled;
           try {
-            const outcome = await dispatch(
-              device,
-              pin(screen, resolution.node),
-              deadline - Date.now(),
-            );
-            if (!outcome.settled) {
-              sink.note("settle", `${renderTitle(record)} finished before the screen went quiet`);
-            }
-            return;
+            settled = await dispatch(device, pin(screen, resolution.node), deadline - Date.now());
           } catch (error) {
             if (failureOf(error)?.kind !== "stale-ref" || retriedStaleRef) throw error;
             retriedStaleRef = true;
             screen = await device.capture();
             continue;
           }
+          attempts += 1;
+          if (!settled.settled) {
+            sink.note("settle", `${renderTitle(record)} finished before the screen went quiet`);
+          }
+          if (expectedValue === undefined) return;
+
+          screen = await device.capture();
+          const written = resolve(screen, record.query);
+          const actual = written.outcome === "one" ? (written.node.value ?? "") : null;
+          if (actual === expectedValue) return;
+          const left = deadline - Date.now();
+          if (left <= 0) {
+            throw new DeviceTestError({
+              kind: "fill-unconfirmed",
+              locator,
+              expected: expectedValue,
+              actual,
+              attempts,
+              timeoutMs: timeout,
+              screen: renderScreen(screen),
+            });
+          }
+          await sleep(Math.min(ACTION_POLL_MS, left));
+          screen = await device.capture();
+          continue;
         }
         const remaining = deadline - Date.now();
         if (remaining <= 0) {

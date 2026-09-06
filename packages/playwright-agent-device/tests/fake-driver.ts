@@ -16,14 +16,23 @@ export type FakeDriver = DeviceDriver & {
   screens: FixtureName[];
   /** Fails the next N mutations with a stale-ref rejection, the way a superseded generation does. */
   staleRefs: number;
+  /**
+   * What the next fills actually leave in the field, one entry each. Anything
+   * beyond the queue lands whole, so a short queue models a device keyboard
+   * that drops keystrokes on the first tries and then behaves.
+   */
+  readonly fillOutcomes: string[];
 };
 
 export function createFakeDriver(options?: { screens?: FixtureName[] }): FakeDriver {
   const calls: string[] = [];
   const openOutcomes: DeviceFailure[] = [];
+  const fillOutcomes: string[] = [];
+  const written = new Map<string, string>();
   const driver: FakeDriver = {
     calls,
     openOutcomes,
+    fillOutcomes,
     screens: options?.screens ?? ["home"],
     staleRefs: 0,
 
@@ -47,7 +56,15 @@ export function createFakeDriver(options?: { screens?: FixtureName[] }): FakeDri
         driver.screens.length > 1
           ? (driver.screens.shift() ?? "home")
           : (driver.screens[0] ?? "home");
-      return Promise.resolve(loadRaw(name));
+      const raw = loadRaw(name);
+      if (written.size === 0) return Promise.resolve(raw);
+      return Promise.resolve({
+        ...raw,
+        nodes: raw.nodes.map((node) => {
+          const value = written.get(node.ref);
+          return value === undefined ? node : { ...node, value };
+        }),
+      });
     },
 
     screenshot: (path: string): Promise<string> => {
@@ -65,6 +82,7 @@ export function createFakeDriver(options?: { screens?: FixtureName[] }): FakeDri
     },
     fill: (ref: PinnedRef, text: string) => {
       calls.push(`fill ${ref} ${text}`);
+      written.set(ref.replace(/^@/, "").replace(/~s\d+$/, ""), fillOutcomes.shift() ?? text);
       return mutate(driver);
     },
     scroll: (direction) => {

@@ -40,6 +40,15 @@ export type ErrorInfo =
       readonly timeoutMs: number;
       readonly screen: string;
     }
+  | {
+      readonly kind: "fill-unconfirmed";
+      readonly locator: string;
+      readonly expected: string;
+      readonly actual: string | null;
+      readonly attempts: number;
+      readonly timeoutMs: number;
+      readonly screen: string;
+    }
   | { readonly kind: "driver"; readonly command: string; readonly failure: DeviceFailure };
 
 export class DeviceTestError extends Error {
@@ -92,6 +101,17 @@ function formatError(info: ErrorInfo): string {
         `Locator never resolved to a node within ${String(info.timeoutMs)}ms.`,
         ``,
         `Locator: ${info.locator}`,
+        ``,
+        `Screen:`,
+        info.screen,
+      ].join("\n");
+    case "fill-unconfirmed":
+      return [
+        `fill left the field holding something else after ${String(info.attempts)} attempts in ${String(info.timeoutMs)}ms.`,
+        ``,
+        `Locator: ${info.locator}`,
+        `Expected value: "${info.expected}"`,
+        `Actual value: ${info.actual === null ? "the locator stopped resolving" : `"${info.actual}"`}`,
         ``,
         `Screen:`,
         info.screen,

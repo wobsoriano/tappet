@@ -258,3 +258,33 @@ test("waiting for a target and settling after it share one action budget", async
   const settle = /settle=(\d+)/.exec(driver.calls.at(-1) ?? "");
   expect(Number(settle?.[1])).toBeLessThan(3900);
 });
+
+test("fill dispatches again when the keyboard under-delivers, and reports the text that landed", async () => {
+  const driver = createFakeDriver();
+  driver.fillOutcomes.push("r@example.com", "rob@exa");
+  const session = await open(driver);
+  const app = createApp(session, silentSink);
+
+  await app.getByRole("button", { name: "Explore" }).fill("rob@example.com");
+
+  expect(driver.calls.filter((call) => call.startsWith("fill")).length).toBe(3);
+});
+
+test("a fill that never lands names the locator, both values, and the attempts", async () => {
+  const driver = createFakeDriver();
+  driver.fillOutcomes.push(...Array<string>(50).fill("r@example.com"));
+  const session = await open(driver);
+  const app = createApp(session, silentSink);
+
+  const error = await app
+    .getByRole("button", { name: "Explore" })
+    .fill("rob@example.com")
+    .catch((thrown: unknown) => thrown);
+
+  expect(error).toBeInstanceOf(DeviceTestError);
+  if (!(error instanceof DeviceTestError)) return;
+  expect(error.info.kind).toBe("fill-unconfirmed");
+  expect(error.message).toContain(`Expected value: "rob@example.com"`);
+  expect(error.message).toContain(`Actual value: "r@example.com"`);
+  expect(error.message).toMatch(/after \d+ attempts/);
+});

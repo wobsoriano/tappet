@@ -51,6 +51,7 @@ This package drives an app you already built and installed. It never builds, ins
 - Your bundler running if the build needs one. For a React Native development build that means Metro on port 8081.
 - No other project's Metro on that port. A development build silently loads whichever bundle answers, so a stray server means your tests drive someone else's app.
 - `@playwright/test` 1.63 or newer and `agent-device` 0.20.10 or newer, both peer dependencies. Node 22.12 or newer.
+- Specs that load as ES modules. `agent-device` is ESM only, so a spec Node loads as CommonJS cannot resolve it. Inside a package without `"type": "module"`, such as an Expo app, name them `*.spec.mts`.
 - The globally installed `agent-device` CLI at the same version as the one in your project. The client and the CLI share one daemon, and a version mismatch makes each side restart it, which drops every open session.
 - One device per worker. Running more than one worker needs `name` to be an array with an entry per worker. Two workers pointed at one device would fight over its claim, so that is a configuration error rather than a race.
 
@@ -71,6 +72,8 @@ Roles are normalized to one vocabulary across iOS and Android, spelled the way `
 `Locator.tap()`, `Locator.fill(text)`, `Locator.longPress(ms)`, and `Locator.count()`. On the app itself: `App.scroll(direction)`, `App.restart()`, `App.dismissDevOverlay()`, and `App.screen()` for the parsed tree.
 
 Actions wait for their target the way Playwright actions do. `actionTimeout` is the whole budget for one action, so waiting for the target and waiting for the screen to settle afterwards share it. Each action is reported as a single step.
+
+`fill` is the one action that reads back what it wrote. A device keyboard drops early keystrokes often enough that a fill can under-deliver its text and still report success, so `fill` types again until the field holds what it was given or `actionTimeout` runs out. Re-filling is safe because a fill replaces the field's contents rather than appending to them. A fill that never lands names the locator, the text it wanted, the text it got, and how many times it tried.
 
 ## Matchers
 
