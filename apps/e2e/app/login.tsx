@@ -4,16 +4,17 @@ import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { useAuth } from "../src/auth";
 
 export default function Login() {
-  const { signIn } = useAuth();
+  const { session, signIn } = useAuth();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [failed, setFailed] = useState(false);
+  const pending = session.status === "signing-in";
 
-  function submit() {
-    const result = signIn(email, password);
+  async function submit() {
+    setFailed(false);
+    const result = await signIn(email, password);
     if (result.ok) {
-      setFailed(false);
       router.replace("/profile");
       return;
     }
@@ -56,7 +57,19 @@ export default function Login() {
           Wrong email or password
         </Text>
       ) : null}
-      <Pressable testID="sign-in" accessibilityRole="button" style={styles.button} onPress={submit}>
+      {pending ? (
+        <Text testID="signing-in" style={styles.pending}>
+          Signing in...
+        </Text>
+      ) : null}
+      <Pressable
+        testID="sign-in"
+        accessibilityRole="button"
+        accessibilityState={{ disabled: pending }}
+        disabled={pending}
+        style={[styles.button, pending ? styles.buttonDisabled : null]}
+        onPress={() => void submit()}
+      >
         <Text style={styles.buttonLabel}>Sign in</Text>
       </Pressable>
     </View>
@@ -68,6 +81,7 @@ const styles = StyleSheet.create({
   heading: { fontSize: 28, fontWeight: "600" },
   input: { borderColor: "#d0d7de", borderRadius: 8, borderWidth: 1, fontSize: 16, padding: 12 },
   error: { color: "#cf222e", fontSize: 15 },
+  pending: { color: "#57606a", fontSize: 15 },
   button: {
     alignItems: "center",
     backgroundColor: "#1f6feb",
@@ -75,5 +89,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 12,
   },
+  buttonDisabled: { backgroundColor: "#8fb8f5" },
   buttonLabel: { color: "#ffffff", fontSize: 16, fontWeight: "600" },
 });

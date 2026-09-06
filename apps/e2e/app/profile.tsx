@@ -8,6 +8,7 @@ export default function Profile() {
 
   switch (session.status) {
     case "signed-out":
+    case "signing-in":
       return <Redirect href="/login" />;
     case "signed-in":
       return (

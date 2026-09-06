@@ -15,6 +15,7 @@ export default function Home() {
 function content(session: Session): JSX.Element {
   switch (session.status) {
     case "signed-out":
+    case "signing-in":
       return <SignedOut />;
     case "signed-in":
       return <SignedIn name={session.user.name} />;
