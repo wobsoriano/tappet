@@ -3,7 +3,6 @@ import type {
   DeviceDriver,
   DeviceFailure,
   DeviceInfo,
-  FillOptions,
   OpenRequest,
   SettleOptions,
 } from '../src/core/driver.ts';
@@ -26,16 +25,6 @@ export type FakeDriver = DeviceDriver & {
    * that drops keystrokes on the first tries and then behaves.
    */
   readonly fillOutcomes: string[];
-  /** The `delayMs` each fill was given, in order. */
-  readonly fillDelays: number[];
-  /**
-   * Below this per-character delay a fill under-delivers, landing
-   * `tooFastOutcome` instead of its text. Models a field that cannot keep up
-   * with input typed at full speed. 0, the default, means every delay is
-   * fast enough.
-   */
-  minDelayMs: number;
-  tooFastOutcome: string;
   /**
    * Models a controlled component whose own render writes a stale string back
    * over what the driver typed. The next `revertingFills` fills each put
@@ -58,19 +47,15 @@ export function createFakeDriver(options?: { screens?: FixtureName[] }): FakeDri
   const calls: string[] = [];
   const openOutcomes: DeviceFailure[] = [];
   const fillOutcomes: string[] = [];
-  const fillDelays: number[] = [];
   const written = new Map<string, string>();
   let pendingRevert: { key: string; value: string; at: number } | null = null;
   const driver: FakeDriver = {
     calls,
     openOutcomes,
     fillOutcomes,
-    fillDelays,
     revertingFills: 0,
     revertAfterMs: 0,
     revertTo: '',
-    minDelayMs: 0,
-    tooFastOutcome: '',
     screens: options?.screens ?? ['home'],
     staleRefs: 0,
     contentsBecomeLabel: false,
@@ -132,14 +117,12 @@ export function createFakeDriver(options?: { screens?: FixtureName[] }): FakeDri
       calls.push(`longPress ${ref} ${String(durationMs)}`);
       return mutate(driver);
     },
-    fill: async (ref: PinnedRef, text: string, options: FillOptions) => {
-      calls.push(`fill ${ref} ${text} delay=${String(options.delayMs)}`);
-      fillDelays.push(options.delayMs);
+    fill: async (ref: PinnedRef, text: string) => {
+      calls.push(`fill ${ref} ${text}`);
       // A rejected fill leaves the field alone, so nothing is written until `mutate` resolves.
       const settled = await mutate(driver);
       const key = ref.replace(/^@/, '').replace(/~s\d+$/, '');
-      const queued = fillOutcomes.shift();
-      const landed = queued ?? (options.delayMs < driver.minDelayMs ? driver.tooFastOutcome : text);
+      const landed = fillOutcomes.shift() ?? text;
       written.set(key, landed);
       pendingRevert = null;
       if (driver.revertingFills > 0) {

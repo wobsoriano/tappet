@@ -58,7 +58,7 @@ The library source is deliberately left out of the hash. The sample app never im
 
 ### Losing input on a slow runner
 
-A hosted runner has few cores, and a text field there can lose input that never goes missing on a developer's machine. The fix for that lives in the library. `fill` reads the field back twice with the settle wait between them, so a value that the app's own render puts back over what was typed is caught rather than trusted, and each retry paces its keystrokes more slowly than the last. [Basics](basics.md) has the detail.
+A hosted runner has few cores, and a text field there can lose input that never goes missing on a developer's machine. The fix for that lives in the library. `fill` reads the field back twice with the settle wait between them, so a value that the app's own render puts back over what was typed is caught rather than trusted. [Basics](basics.md) has the detail.
 
 The sample config also sets `retries` to 1 when `CI` is set and 0 otherwise. That is a second line of defense and not the fix. Playwright discards the worker after a failure and the replacement reuses the same slot, so the retry reclaims the same device and reconnects to the same session, which is the path the session lifecycle is built for.
 

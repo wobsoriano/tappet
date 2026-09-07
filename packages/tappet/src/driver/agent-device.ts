@@ -5,7 +5,6 @@ import type {
   DeviceFailure,
   DeviceInfo,
   DeviceSelection,
-  FillOptions,
   OpenRequest,
   ScrollDirection,
   Settled,
@@ -102,17 +101,9 @@ export function createAgentDeviceDriver(
         ),
       ),
 
-    fill: (ref: PinnedRef, text: string, options: FillOptions): Promise<Settled> =>
+    fill: (ref: PinnedRef, text: string, options: SettleOptions): Promise<Settled> =>
       run('fill', async () =>
-        toSettled(
-          await client.interactions.fill({
-            ...where,
-            ref,
-            text,
-            delayMs: options.delayMs,
-            ...settle(options),
-          }),
-        ),
+        toSettled(await client.interactions.fill({ ...where, ref, text, ...settle(options) })),
       ),
 
     scroll: (direction: ScrollDirection, options: SettleOptions): Promise<void> =>

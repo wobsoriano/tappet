@@ -17,18 +17,6 @@ import { failureOf, sleep, type DeviceSession, type SessionDevice } from './sess
 const ACTION_POLL_MS = 250;
 const DEFAULT_LONG_PRESS_MS = 1000;
 
-/**
- * Per-character typing delay for each fill attempt, in order. A field backed by
- * a controlled component cannot always keep up with input typed as fast as the
- * driver can send it, so a retry paces the keystrokes instead of repeating the
- * call that already failed. Attempts past the end reuse the last entry.
- */
-const FILL_DELAYS_MS = [0, 40, 80] as const;
-
-function fillDelayFor(attempt: number): number {
-  return FILL_DELAYS_MS[Math.min(attempt, FILL_DELAYS_MS.length - 1)];
-}
-
 export type TextOptions = { exact?: boolean };
 export type RoleOptions = { name?: string | RegExp; exact?: boolean };
 export type ActionOptions = { timeout?: number };
@@ -129,7 +117,7 @@ function createLocator(session: DeviceSession, sink: ActionSink, query: Query): 
         sink,
         { kind: 'fill', query, text },
         options,
-        (device, ref, budget, delayMs) => device.fill(ref, text, budget, delayMs),
+        (device, ref, budget) => device.fill(ref, text, budget),
         text,
       ),
     longPress: (durationMs, options) => {
@@ -208,12 +196,7 @@ function perform(
   sink: ActionSink,
   record: Extract<ActionRecord, { query: Query }>,
   options: ActionOptions | undefined,
-  dispatch: (
-    device: SessionDevice,
-    ref: PinnedRef,
-    budgetMs: number,
-    delayMs: number,
-  ) => Promise<Settled>,
+  dispatch: (device: SessionDevice, ref: PinnedRef, budgetMs: number) => Promise<Settled>,
   expectedValue?: string,
 ): Promise<void> {
   const timeout = options?.timeout ?? session.options.actionTimeout;
@@ -223,7 +206,6 @@ function perform(
       const deadline = Date.now() + timeout;
       let retriedStaleRef = false;
       let attempts = 0;
-      const delaysTried: number[] = [];
       let target: Query = record.query;
       let lastActual: string | null = null;
       let screen: Screen = await device.capture();
@@ -234,7 +216,6 @@ function perform(
           expected: expectedValue ?? '',
           actual: lastActual,
           attempts,
-          delaysMs: delaysTried,
           timeoutMs: timeout,
           screen: renderScreen(screen),
         });
@@ -259,15 +240,9 @@ function perform(
           ) {
             throw unconfirmed();
           }
-          const delayMs = fillDelayFor(attempts);
           let settled: Settled;
           try {
-            settled = await dispatch(
-              device,
-              pin(screen, resolution.node),
-              deadline - Date.now(),
-              delayMs,
-            );
+            settled = await dispatch(device, pin(screen, resolution.node), deadline - Date.now());
           } catch (error) {
             if (failureOf(error)?.kind !== 'stale-ref' || retriedStaleRef) throw error;
             retriedStaleRef = true;
@@ -279,7 +254,6 @@ function perform(
             sink.note('settle', `${renderTitle(record)} finished before the screen went quiet`);
           }
           if (expectedValue === undefined) return;
-          delaysTried.push(delayMs);
           // The locator names the field until the first write lands, after which the
           // written node names itself, because Android reports a text field's
           // accessible name as its contents.

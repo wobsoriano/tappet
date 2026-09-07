@@ -289,18 +289,6 @@ test('fill refills when the field reverts during the settle wait', async () => {
   expect(driver.calls.filter((call) => call.startsWith('fill')).length).toBe(2);
 });
 
-test('fill paces its typing on the retry when the field drops characters at full speed', async () => {
-  const driver = createFakeDriver();
-  driver.minDelayMs = 40;
-  driver.tooFastOutcome = 'rob';
-  const session = await open(driver, { settleQuietMs: 20 });
-  const app = createDevice(session, silentSink);
-
-  await app.getByRole('button', { name: 'Explore' }).fill('rob@example.com');
-
-  expect(driver.fillDelays).toEqual([0, 40]);
-});
-
 test('fill stops rather than starting an attempt it cannot afford to confirm', async () => {
   const driver = createFakeDriver();
   driver.revertingFills = 10;
@@ -324,7 +312,7 @@ test('fill stops rather than starting an attempt it cannot afford to confirm', a
   expect(Date.now() - started).toBeLessThan(900);
 });
 
-test('a fill that never lands names the locator, both values, the attempts, and the delays', async () => {
+test('a fill that never lands names the locator, both values, and the attempts', async () => {
   const driver = createFakeDriver();
   driver.fillOutcomes.push(...Array<string>(50).fill('r@example.com'));
   // Room for more than three attempts, so the delay escalation is fully observable.
@@ -342,11 +330,8 @@ test('a fill that never lands names the locator, both values, the attempts, and 
   expect(error.message).toContain(`Expected value: "rob@example.com"`);
   expect(error.message).toContain(`Actual value: "r@example.com"`);
   expect(error.message).toMatch(/after \d+ attempts/);
-  expect(error.message).toContain('Typing delays tried: 0ms, 40ms, 80ms');
   if (error.info.kind !== 'fill-unconfirmed') return;
-  expect(error.info.delaysMs.length).toBe(error.info.attempts);
-  expect(error.info.delaysMs.slice(0, 3)).toEqual([0, 40, 80]);
-  expect(error.info.delaysMs.slice(3).every((one) => one === 80)).toBe(true);
+  expect(error.info.attempts).toBeGreaterThan(1);
 });
 
 test('a fill confirms against the node it wrote when the write changes the label it matched on', async () => {

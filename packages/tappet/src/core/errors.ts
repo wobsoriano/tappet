@@ -46,8 +46,6 @@ export type ErrorInfo =
       readonly expected: string;
       readonly actual: string | null;
       readonly attempts: number;
-      /** The per-character typing delay used on each attempt, in order. */
-      readonly delaysMs: readonly number[];
       readonly timeoutMs: number;
       readonly screen: string;
     }
@@ -114,7 +112,6 @@ function formatError(info: ErrorInfo): string {
         `Locator: ${info.locator}`,
         `Expected value: "${info.expected}"`,
         `Actual value: ${info.actual === null ? 'the locator stopped resolving' : `"${info.actual}"`}`,
-        `Typing delays tried: ${info.delaysMs.map((one) => `${String(one)}ms`).join(', ')}`,
         ``,
         `Screen:`,
         info.screen,

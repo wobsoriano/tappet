@@ -61,7 +61,7 @@ export type SessionDevice = {
   capture(): Promise<Screen>;
   tap(ref: PinnedRef, budgetMs: number): Promise<Settled>;
   longPress(ref: PinnedRef, durationMs: number, budgetMs: number): Promise<Settled>;
-  fill(ref: PinnedRef, text: string, budgetMs: number, delayMs: number): Promise<Settled>;
+  fill(ref: PinnedRef, text: string, budgetMs: number): Promise<Settled>;
   scroll(direction: ScrollDirection, budgetMs: number): Promise<void>;
 };
 
@@ -186,8 +186,7 @@ function createSession(
       parseScreen(await driver.capture({ timeoutMs: SNAPSHOT_TIMEOUT_MS }), options.platform),
     tap: (ref, budgetMs) => driver.tap(ref, settle(budgetMs)),
     longPress: (ref, durationMs, budgetMs) => driver.longPress(ref, durationMs, settle(budgetMs)),
-    fill: (ref, text, budgetMs, delayMs) =>
-      driver.fill(ref, text, { ...settle(budgetMs), delayMs }),
+    fill: (ref, text, budgetMs) => driver.fill(ref, text, settle(budgetMs)),
     scroll: (direction, budgetMs) => driver.scroll(direction, settle(budgetMs)),
   };
 

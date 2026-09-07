@@ -50,7 +50,7 @@ The read back is two reads. Behind a controlled component the field gets written
 
 That quiet period is reserved out of the action's budget rather than taken from what is left. A fill that cannot afford to confirm itself reports `fill-unconfirmed` instead of starting an attempt it would have to accept on a window that shrank to nothing.
 
-Each retry types slower than the one before it, at 0, then 40, then 80 milliseconds per character, and 80 for every attempt after that. A field that drops characters at full speed usually keeps up with paced input. The delay is a request to the driver, and not every platform's input backend applies it, so it improves the odds rather than guaranteeing anything. When the budget runs out, the error names the value that was actually there and every typing delay it tried.
+A retry re-sends the same fill. Pacing the keystrokes instead was tried and removed. The driver's per-character delay routes the write down a path that appends to the field rather than replacing it, so a paced retry turned `rob@example.com` into `r@example.comrob@example.com` and never converged. When the budget runs out, the error names the value that was actually there and the number of attempts.
 
 `relaunch()` relaunches the app and waits for the ready gate again. `dismissDevOverlay()` clears the React Native development warning overlay. It is never automatic, because the overlay is a real node and hiding it by default would suppress a warning a test might want to assert on.
 
