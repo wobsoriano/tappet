@@ -1,6 +1,6 @@
 import { test as base, type TestInfo } from '@playwright/test';
-import { createApp, type App } from '../core/app.ts';
-import { parseDeviceOptions, UNCONFIGURED_DEVICE, type DeviceOptions } from '../core/config.ts';
+import { parseDeviceOptions, TAPPET_DEFAULTS, type TappetOptions } from '../core/config.ts';
+import { createDevice, type Device } from '../core/device.ts';
 import { captureEvidence } from '../core/evidence.ts';
 import { silentSink, type ActionSink, type EvidenceFile } from '../core/report.ts';
 import { openSession, type DeviceSession } from '../core/session.ts';
@@ -10,20 +10,32 @@ const SESSION_FIXTURE_TIMEOUT_MS = 180_000;
 // The per-test relaunch and the evidence capture run in this fixture, not in the test body, so it
 // needs a budget of its own. Charged to the test timeout, a slow relaunch reads as a test timeout
 // instead of the launch failure it is.
-const APP_FIXTURE_TIMEOUT_MS = 120_000;
+const DEVICE_FIXTURE_TIMEOUT_MS = 120_000;
 
-/** What `defineConfig<DeviceTestOptions>` types inside `use`. One key. */
-export type DeviceTestOptions = {
-  device: DeviceOptions;
-};
-
-export type DeviceWorkerFixtures = DeviceTestOptions & {
-  session: DeviceSession;
-};
-
-export type DeviceTestFixtures = {
-  app: App;
-};
+/**
+ * Tappet's options and none of its fixtures, for a project that has to read the
+ * configuration before any session exists. A setup project calling `preflight`
+ * is the reason this exists: `test` opens a session for every test through its
+ * auto `device` fixture, which is the very thing preflight runs ahead of.
+ *
+ * The three required options default to `undefined` here rather than to a
+ * plausible value. A Playwright option fixture needs a default of its declared
+ * type, and `parseDeviceOptions` rejects `undefined` by name, so a config that
+ * forgot a key and a config that never set one fail the same way.
+ */
+export const setupTest = base.extend<object, TappetOptions>({
+  platform: [undefined, { option: true, scope: 'worker' }],
+  app: [undefined, { option: true, scope: 'worker' }],
+  readyWhen: [undefined, { option: true, scope: 'worker' }],
+  deviceName: [undefined, { option: true, scope: 'worker' }],
+  relaunch: [TAPPET_DEFAULTS.relaunch, { option: true, scope: 'worker' }],
+  onDeviceInUse: [TAPPET_DEFAULTS.onDeviceInUse, { option: true, scope: 'worker' }],
+  settleQuietMs: [TAPPET_DEFAULTS.settleQuietMs, { option: true, scope: 'worker' }],
+  launchTimeout: [TAPPET_DEFAULTS.launchTimeout, { option: true, scope: 'worker' }],
+  dismissDevOverlay: [TAPPET_DEFAULTS.dismissDevOverlay, { option: true, scope: 'worker' }],
+  evidence: [TAPPET_DEFAULTS.evidence, { option: true, scope: 'worker' }],
+  sessionPrefix: [TAPPET_DEFAULTS.sessionPrefix, { option: true, scope: 'worker' }],
+});
 
 /**
  * The worker session opened the app with a relaunch already, so the first test
@@ -32,10 +44,10 @@ export type DeviceTestFixtures = {
 const startedTests = new WeakSet<DeviceSession>();
 
 /**
- * Fixture graph: `device` (worker option, from `use`) feeds `session` (worker),
- * which feeds `app` (test, auto).
+ * Fixture graph: the options (worker, from `use`) feed `session` (worker),
+ * which feeds `device` (test, auto).
  *
- * `app` is auto so evidence capture runs for every test in a device project,
+ * `device` is auto so evidence capture runs for every test in a device project,
  * whether or not the body touched it. Its teardown runs before the session's,
  * inside the separate budget Playwright grants after the test finishes, so a
  * timed-out test still gets a screenshot.
@@ -43,12 +55,40 @@ const startedTests = new WeakSet<DeviceSession>();
  * Importing and extending `test` launches no browser: `browser`, `context`,
  * and `page` are lazy and non-auto, and nothing here names them.
  */
-export const test = base.extend<DeviceTestFixtures, DeviceWorkerFixtures>({
-  device: [UNCONFIGURED_DEVICE, { option: true, scope: 'worker' }],
-
+export const test = setupTest.extend<{ device: Device }, { session: DeviceSession }>({
   session: [
-    async ({ device }, use, workerInfo) => {
-      const options = parseDeviceOptions(device);
+    async (
+      {
+        platform,
+        app,
+        readyWhen,
+        deviceName,
+        relaunch,
+        onDeviceInUse,
+        settleQuietMs,
+        launchTimeout,
+        dismissDevOverlay,
+        evidence,
+        sessionPrefix,
+      },
+      use,
+      workerInfo,
+    ) => {
+      const options = parseDeviceOptions({
+        platform,
+        app,
+        readyWhen,
+        deviceName,
+        relaunch,
+        onDeviceInUse,
+        settleQuietMs,
+        launchTimeout,
+        dismissDevOverlay,
+        evidence,
+        sessionPrefix,
+        // Playwright's own option rather than one of tappet's, so it is read off the project.
+        actionTimeout: workerInfo.project.use.actionTimeout,
+      });
       const session = await openSession({
         options,
         // `parallelIndex` and not `workerIndex`: Playwright discards a worker after any failure and
@@ -65,7 +105,7 @@ export const test = base.extend<DeviceTestFixtures, DeviceWorkerFixtures>({
     { scope: 'worker', timeout: SESSION_FIXTURE_TIMEOUT_MS },
   ],
 
-  app: [
+  device: [
     async ({ session }, use, testInfo) => {
       const sink = playwrightSink();
       if (session.options.relaunch === 'per-test' && startedTests.has(session)) {
@@ -73,11 +113,11 @@ export const test = base.extend<DeviceTestFixtures, DeviceWorkerFixtures>({
       }
       startedTests.add(session);
 
-      await use(createApp(session, sink));
+      await use(createDevice(session, sink));
 
       if (shouldCapture(testInfo, session.options.evidence)) await captureEvidence(session, sink);
     },
-    { auto: true, timeout: APP_FIXTURE_TIMEOUT_MS },
+    { auto: true, timeout: DEVICE_FIXTURE_TIMEOUT_MS },
   ],
 });
 

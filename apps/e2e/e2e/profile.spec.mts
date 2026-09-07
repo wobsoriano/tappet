@@ -1,14 +1,14 @@
 import { expect, test } from 'tappet';
 
-test('signing out from the profile returns to the signed-out home', async ({ app }) => {
-  await app.getByTestId('sign-in-link').tap();
-  await app.getByRole('text-field', { name: 'Email' }).fill('rob@example.com');
-  await app.getByRole('text-field', { name: 'Password' }).fill('hunter2');
-  await app.getByRole('button', { name: 'Sign in' }).tap();
-  await expect(app.getByTestId('profile-email')).toBeVisible();
+test('signing out from the profile returns to the signed-out home', async ({ device }) => {
+  await device.getByTestId('sign-in-link').tap();
+  await device.getByRole('text-field', { name: 'Email' }).fill('rob@example.com');
+  await device.getByRole('text-field', { name: 'Password' }).fill('hunter2');
+  await device.getByRole('button', { name: 'Sign in' }).tap();
+  await expect(device.getByTestId('profile-email')).toBeVisible();
 
-  await app.getByRole('button', { name: 'Sign out' }).tap();
+  await device.getByRole('button', { name: 'Sign out' }).tap();
 
-  await expect(app.getByRole('text', { name: 'Welcome' })).toBeVisible();
-  await expect(app.getByTestId('greeting')).not.toBeVisible();
+  await expect(device.getByRole('text', { name: 'Welcome' })).toBeVisible();
+  await expect(device.getByTestId('greeting')).not.toBeVisible();
 });

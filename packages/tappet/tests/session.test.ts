@@ -1,21 +1,24 @@
 import { expect, test } from 'vite-plus/test';
-import { createApp } from '../src/core/app.ts';
-import { parseDeviceOptions, type DeviceOptions } from '../src/core/config.ts';
+import { createDevice } from '../src/core/device.ts';
+import { parseDeviceOptions, type TappetOptions } from '../src/core/config.ts';
 import { TappetError } from '../src/core/errors.ts';
 import { silentSink } from '../src/core/report.ts';
 import { openSession } from '../src/core/session.ts';
 import { createFakeDriver, type FakeDriver } from './fake-driver.ts';
 
-const options: DeviceOptions = {
+/** What the fixtures hand the parser: tappet's options plus Playwright's own `actionTimeout`. */
+type ParseInput = Partial<TappetOptions> & { actionTimeout?: number };
+
+const options: ParseInput = {
   platform: 'ios',
   app: 'com.wobsoriano.awesometodo',
-  name: 'iPhone 17 Pro Max',
+  deviceName: 'iPhone 17 Pro Max',
   readyWhen: { text: 'GET STARTED' },
   launchTimeout: 1000,
   actionTimeout: 600,
 };
 
-function open(driver: FakeDriver, overrides?: Partial<DeviceOptions>) {
+function open(driver: FakeDriver, overrides?: ParseInput) {
   return openSession({
     options: parseDeviceOptions({ ...options, ...overrides }),
     slot: 0,
@@ -107,7 +110,7 @@ test('close is idempotent and reaches closed even when the driver call fails', a
 test('a tap resolves against a fresh screen and dispatches a generation-pinned ref', async () => {
   const driver = createFakeDriver();
   const session = await open(driver);
-  const app = createApp(session, silentSink);
+  const app = createDevice(session, silentSink);
   await app.getByRole('button', { name: 'Explore' }).tap();
   expect(driver.calls.at(-1)).toMatch(/^tap @e30~s776575 settle=/);
 });
@@ -115,7 +118,7 @@ test('a tap resolves against a fresh screen and dispatches a generation-pinned r
 test('an ambiguous locator fails an action at once with every match listed', async () => {
   const driver = createFakeDriver({ screens: ['explore'] });
   const session = await open(driver, { readyWhen: { text: 'Expo documentation' } });
-  const app = createApp(session, silentSink);
+  const app = createDevice(session, silentSink);
   const error = await app
     .getByText('Explore')
     .tap()
@@ -131,7 +134,7 @@ test('an ambiguous locator fails an action at once with every match listed', asy
 test('first picks one node out of the same ambiguous locator', async () => {
   const driver = createFakeDriver({ screens: ['explore'] });
   const session = await open(driver, { readyWhen: { text: 'Expo documentation' } });
-  const app = createApp(session, silentSink);
+  const app = createDevice(session, silentSink);
   await app.getByText('Explore').first().tap();
   expect(driver.calls.at(-1)).toMatch(/^tap @e12~s355823 settle=/);
 });
@@ -139,7 +142,7 @@ test('first picks one node out of the same ambiguous locator', async () => {
 test('a stale ref re-captures and retries once, then reports', async () => {
   const driver = createFakeDriver();
   const session = await open(driver);
-  const app = createApp(session, silentSink);
+  const app = createDevice(session, silentSink);
 
   driver.staleRefs = 1;
   await app.getByRole('button', { name: 'Home' }).tap();
@@ -158,7 +161,7 @@ test('a stale ref re-captures and retries once, then reports', async () => {
 test('an action waits for its target and then reports what was on screen', async () => {
   const driver = createFakeDriver();
   const session = await open(driver);
-  const app = createApp(session, silentSink);
+  const app = createDevice(session, silentSink);
   const started = Date.now();
   const error = await app
     .getByText('Sign out')
@@ -174,7 +177,7 @@ test('an action waits for its target and then reports what was on screen', async
 test('count reports distinct matches after absorption', async () => {
   const driver = createFakeDriver({ screens: ['explore'] });
   const session = await open(driver, { readyWhen: { text: 'Expo documentation' } });
-  const app = createApp(session, silentSink);
+  const app = createDevice(session, silentSink);
   expect(await app.getByText('Explore').count()).toBe(2);
   expect(await app.getByText('Sign out').count()).toBe(0);
 });
@@ -182,7 +185,7 @@ test('count reports distinct matches after absorption', async () => {
 test('every command runs on one queue, so a snapshot never lands inside another action', async () => {
   const driver = createFakeDriver();
   const session = await open(driver);
-  const app = createApp(session, silentSink);
+  const app = createDevice(session, silentSink);
   driver.calls.length = 0;
   await Promise.all([
     app.getByRole('button', { name: 'Home' }).tap(),
@@ -201,7 +204,7 @@ test('every command runs on one queue, so a snapshot never lands inside another 
 test('a rejected command does not wedge the queue', async () => {
   const driver = createFakeDriver();
   const session = await open(driver);
-  const app = createApp(session, silentSink);
+  const app = createDevice(session, silentSink);
   await app
     .getByText('Sign out')
     .tap()
@@ -253,7 +256,7 @@ test('waiting for a target and settling after it share one action budget', async
     actionTimeout: 4000,
     settleQuietMs: 100,
   });
-  const app = createApp(session, silentSink);
+  const app = createDevice(session, silentSink);
   await app.getByRole('text', { name: 'Fresh start' }).tap();
   const settle = /settle=(\d+)/.exec(driver.calls.at(-1) ?? '');
   expect(Number(settle?.[1])).toBeLessThan(3900);
@@ -263,7 +266,7 @@ test('fill dispatches again when the keyboard under-delivers, and reports the te
   const driver = createFakeDriver();
   driver.fillOutcomes.push('r@example.com', 'rob@exa');
   const session = await open(driver);
-  const app = createApp(session, silentSink);
+  const app = createDevice(session, silentSink);
 
   await app.getByRole('button', { name: 'Explore' }).fill('rob@example.com');
 
@@ -274,7 +277,7 @@ test('a fill that never lands names the locator, both values, and the attempts',
   const driver = createFakeDriver();
   driver.fillOutcomes.push(...Array<string>(50).fill('r@example.com'));
   const session = await open(driver);
-  const app = createApp(session, silentSink);
+  const app = createDevice(session, silentSink);
 
   const error = await app
     .getByRole('button', { name: 'Explore' })
@@ -294,10 +297,10 @@ test('a fill confirms against the node it wrote when the write changes the label
   driver.contentsBecomeLabel = true;
   const session = await open(driver, {
     platform: 'android',
-    name: 'Pixel 9',
+    deviceName: 'Pixel 9',
     readyWhen: { text: 'Sign in' },
   });
-  const app = createApp(session, silentSink);
+  const app = createDevice(session, silentSink);
 
   await app.getByRole('text-field', { name: 'Email' }).fill('rob@example.com');
 
@@ -310,10 +313,10 @@ test('a fill whose label follows its contents still re-dispatches and still repo
   driver.fillOutcomes.push(...Array<string>(50).fill('r@example.com'));
   const session = await open(driver, {
     platform: 'android',
-    name: 'Pixel 9',
+    deviceName: 'Pixel 9',
     readyWhen: { text: 'Sign in' },
   });
-  const app = createApp(session, silentSink);
+  const app = createDevice(session, silentSink);
 
   const error = await app
     .getByRole('text-field', { name: 'Email' })
@@ -331,7 +334,7 @@ test('a fill whose label follows its contents still re-dispatches and still repo
 test('a defaulted screenshot numbers its own path and returns what the driver resolved', async () => {
   const driver = createFakeDriver();
   const session = await open(driver);
-  const app = createApp(session, silentSink);
+  const app = createDevice(session, silentSink);
 
   expect(await app.screenshot()).toBe('screenshot-1.png');
   expect(await app.screenshot()).toBe('screenshot-2.png');
@@ -344,7 +347,7 @@ test('a defaulted screenshot numbers its own path and returns what the driver re
 test('an explicit screenshot path is passed through and does not consume a counter value', async () => {
   const driver = createFakeDriver();
   const session = await open(driver);
-  const app = createApp(session, silentSink);
+  const app = createDevice(session, silentSink);
 
   expect(await app.screenshot({ path: 'card.png' })).toBe('card.png');
   expect(await app.screenshot()).toBe('screenshot-1.png');
@@ -357,7 +360,7 @@ test('an explicit screenshot path is passed through and does not consume a count
 test('textContent reads the matched node off exactly one capture', async () => {
   const driver = createFakeDriver();
   const session = await open(driver);
-  const app = createApp(session, silentSink);
+  const app = createDevice(session, silentSink);
   driver.calls.length = 0;
   expect(await app.getByText('GET STARTED').textContent()).toBe('GET STARTED');
   expect(driver.calls).toEqual(['capture']);
@@ -366,14 +369,14 @@ test('textContent reads the matched node off exactly one capture', async () => {
 test('textContent is null when the locator matches nothing', async () => {
   const driver = createFakeDriver();
   const session = await open(driver);
-  const app = createApp(session, silentSink);
+  const app = createDevice(session, silentSink);
   expect(await app.getByText('Sign out').textContent()).toBe(null);
 });
 
 test('textContent refuses an ambiguous locator and lists every match', async () => {
   const driver = createFakeDriver({ screens: ['explore'] });
   const session = await open(driver, { readyWhen: { text: 'Expo documentation' } });
-  const app = createApp(session, silentSink);
+  const app = createDevice(session, silentSink);
   const error = await app
     .getByText('Explore')
     .textContent()

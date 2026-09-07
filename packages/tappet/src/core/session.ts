@@ -231,7 +231,7 @@ function createSession(
     screen: () => run((one) => one.capture()),
     screenshot: (path) => queue.enqueue(() => driver.screenshot(path)),
     relaunch: (sink) =>
-      sink.step(renderTitle({ kind: 'restart', app: options.app }), async () => {
+      sink.step(renderTitle({ kind: 'relaunch', app: options.app }), async () => {
         // Relaunching with the session's own selection is what keeps `open` legal on an already-bound session.
         await run(() => driver.open({ app: options.app, relaunch: true }));
         if (options.dismissDevOverlay) await run(() => driver.dismissDevOverlay());

@@ -17,14 +17,14 @@ They carry Playwright's own matcher names, but they are typed by their first par
 ```ts
 import { expect, test } from 'tappet';
 
-test('the wrong password is rejected without leaving the login screen', async ({ app }) => {
-  await app.getByTestId('sign-in-link').tap();
-  await app.getByRole('text-field', { name: 'Email' }).fill('rob@example.com');
-  await app.getByTestId('password').fill('wrong');
-  await app.getByRole('button', { name: 'Sign in' }).tap();
+test('the wrong password is rejected without leaving the login screen', async ({ device }) => {
+  await device.getByTestId('sign-in-link').tap();
+  await device.getByRole('text-field', { name: 'Email' }).fill('rob@example.com');
+  await device.getByTestId('password').fill('wrong');
+  await device.getByRole('button', { name: 'Sign in' }).tap();
 
-  await expect(app.getByTestId('error')).toHaveText('Wrong email or password', { exact: true });
-  await expect(app.getByTestId('profile-name')).not.toBeVisible();
+  await expect(device.getByTestId('error')).toHaveText('Wrong email or password', { exact: true });
+  await expect(device.getByTestId('profile-name')).not.toBeVisible();
 });
 ```
 
@@ -41,7 +41,7 @@ Two things fail the assertion whichever way you write it. An ambiguous locator i
 Every matcher uses `expect.timeout` from the Playwright config unless the call passes its own.
 
 ```ts
-await expect(app.getByTestId('signing-in')).toBeVisible({ timeout: 3000 });
+await expect(device.getByTestId('signing-in')).toBeVisible({ timeout: 3000 });
 ```
 
 The first evaluation happens immediately, so an expectation that already holds costs one snapshot. After that the loop takes a fresh snapshot every 250 milliseconds until the check agrees or the budget runs out.
@@ -83,4 +83,4 @@ TAPPET_INCLUDE_FAILING=1 npx playwright test --project=ios e2e/failing.spec.mts
 
 ## Assertions tappet does not model
 
-Reach for `app.screen()` and assert on the tree with plain `expect`. See [Basics](basics.md).
+Reach for `device.screen()` and assert on the tree with plain `expect`. See [Basics](basics.md).

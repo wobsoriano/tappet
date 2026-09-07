@@ -5,27 +5,27 @@ A locator is a query bound to a session. Building one performs no work. Holding 
 ## The three factories
 
 ```ts
-app.getByText('Welcome');
-app.getByText(/welcome/i);
-app.getByText('Welcome', { exact: true });
+device.getByText('Welcome');
+device.getByText(/welcome/i);
+device.getByText('Welcome', { exact: true });
 
-app.getByRole('button');
-app.getByRole('button', { name: 'Sign in' });
-app.getByRole('text', { name: 'Rob', exact: true });
+device.getByRole('button');
+device.getByRole('button', { name: 'Sign in' });
+device.getByRole('text', { name: 'Rob', exact: true });
 
-app.getByTestId('profile-email');
+device.getByTestId('profile-email');
 ```
 
 `getByText` matches a node's accessibility name or its value, the way Playwright's own `getByText` matches text. `getByRole` matches the normalized role and, optionally, the name. `getByTestId` matches the accessibility identifier, which is what a React Native `testID` becomes, and it always matches the whole string.
 
 ## The escape hatch
 
-`app.locator(query)` takes the raw query for anything the three factories cannot express.
+`device.locator(query)` takes the raw query for anything the three factories cannot express.
 
 ```ts
-app.locator({ role: 'text-field', focused: true });
-app.locator({ testId: { kind: 'substring', value: 'row-' }, enabled: false });
-app.locator({ where: (node) => node.rect !== null && node.rect.y > 400 });
+device.locator({ role: 'text-field', focused: true });
+device.locator({ testId: { kind: 'substring', value: 'row-' }, enabled: false });
+device.locator({ where: (node) => node.rect !== null && node.rect.y > 400 });
 ```
 
 A query is conjunctive. Every field narrows, and an empty query matches every node. The fields are `testId`, `name`, `value`, `role`, `enabled`, `selected`, `focused`, `where`, and `index`.
@@ -56,8 +56,8 @@ Narrow it with getByRole, or take one deliberately with .first() or .nth(n).
 Take one on purpose with `.first()` or `.nth(n)`. Negative indexes count from the end, so `.nth(-1)` is the last match.
 
 ```ts
-await app.getByText('Explore').first().tap();
-await app.getByRole('cell').nth(-1).tap();
+await device.getByText('Explore').first().tap();
+await device.getByRole('cell').nth(-1).tap();
 ```
 
 `toHaveCount(n)` is the one matcher that is happy with many. It asks how many there are.
@@ -94,7 +94,7 @@ Roles are normalized to one vocabulary across iOS and Android, spelled the way `
 | `alert`             | `Alert`, `Sheet`                                      |                                                                       |
 | `other`             | `Other`, and anything unrecognized                    | `ViewGroup`, `FrameLayout`, `LinearLayout`, and anything unrecognized |
 
-`other` is a real role, not a failure signal. React Native emits many labelled container views with no semantic type. The platform spelling is kept on each node as `rawType` if you need it through `app.screen()`.
+`other` is a real role, not a failure signal. React Native emits many labelled container views with no semantic type. The platform spelling is kept on each node as `rawType` if you need it through `device.screen()`.
 
 The Android half of the table was read off a booted API 36 emulator running the sample app. React Native reports fully qualified class names, so the entries are `android.widget.Button`, `android.view.ViewGroup` and so on. Every React Native `View` reports `android.view.ViewGroup`, the containers carrying a `testID` included, which is why most of an Android tree is `other`.
 

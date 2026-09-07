@@ -17,7 +17,7 @@ export type ActionRecord =
   | { readonly kind: 'long-press'; readonly query: Query; readonly durationMs: number }
   | { readonly kind: 'fill'; readonly query: Query; readonly text: string }
   | { readonly kind: 'scroll'; readonly direction: ScrollDirection }
-  | { readonly kind: 'restart'; readonly app: string }
+  | { readonly kind: 'relaunch'; readonly app: string }
   | { readonly kind: 'dismiss-overlay' }
   | { readonly kind: 'screenshot'; readonly path: string };
 
@@ -52,8 +52,8 @@ export function renderTitle(record: ActionRecord): string {
       return `fill ${describeQuery(record.query)} with "${truncate(record.text)}"`;
     case 'scroll':
       return `scroll ${record.direction}`;
-    case 'restart':
-      return `restart ${record.app}`;
+    case 'relaunch':
+      return `relaunch ${record.app}`;
     case 'dismiss-overlay':
       return 'dismiss the React Native dev overlay';
     case 'screenshot':

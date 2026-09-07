@@ -3,38 +3,61 @@ import { textMatch, type Query, type Role } from './query.ts';
 import type { Platform } from './screen.ts';
 
 /**
- * The one object a test author writes in `use.device`. Parsed once by
- * `parseDeviceOptions` at worker start; nothing downstream re-validates it.
+ * The keys tappet adds to Playwright's `use`. Each is its own option fixture,
+ * so a project overrides one without restating the rest.
+ *
+ * Playwright types `use` as a partial of this, so a config may leave any key
+ * out. `parseDeviceOptions` is what makes the first three required. It runs
+ * once at worker start, names the key to fix, and nothing downstream
+ * re-validates.
  */
-export type DeviceOptions = {
-  platform: Platform;
-  /** Bundle id on iOS, package name on Android. Never a path to an artifact. */
-  app: string;
+export type TappetOptions = {
+  /** Required. */
+  platform: Platform | undefined;
+  /** Required. Bundle id on iOS, package name on Android. Never a path to an artifact. */
+  app: string | undefined;
   /**
-   * The locator that means the JavaScript bundle finished loading. Required,
-   * because `open` returns as soon as the native process launches and the
-   * first assertion would otherwise race the bundle.
+   * Required. The locator that means the JavaScript bundle finished loading.
+   * `open` returns as soon as the native process launches, so without this gate
+   * the first assertion would race the bundle.
    */
-  readyWhen: ReadyQuery;
-  /** Device name. An array is a pool indexed by the runner's worker slot. Omitted means the first booted device. */
-  name?: string | readonly string[];
+  readyWhen: ReadyQuery | undefined;
+  /** Device name. An array is a pool indexed by the runner's worker slot. Unset means the first booted device. */
+  deviceName: string | readonly string[] | undefined;
   /** @default 'per-test' */
-  relaunch?: 'per-test' | 'per-worker';
+  relaunch: 'per-test' | 'per-worker';
   /** @default 'fail'. Sessions carrying this library's own prefix are always reclaimed. */
-  onDeviceInUse?: 'fail' | 'reclaim';
-  /** @default 10_000 */
-  actionTimeout?: number;
+  onDeviceInUse: 'fail' | 'reclaim';
   /** @default 500 */
-  settleQuietMs?: number;
+  settleQuietMs: number;
   /** @default 90_000. Covers `open` plus the ready gate. */
-  launchTimeout?: number;
+  launchTimeout: number;
   /** @default false. Sends agent-device's `react-native dismiss-overlay` after every launch. */
-  dismissDevOverlay?: boolean;
+  dismissDevOverlay: boolean;
   /** @default 'on-failure' */
-  evidence?: 'on-failure' | 'always' | 'off';
+  evidence: 'on-failure' | 'always' | 'off';
   /** @default 'tappet'. Session names are `${prefix}-${project}-${parallelIndex}`. */
-  sessionPrefix?: string;
+  sessionPrefix: string;
 };
+
+/**
+ * Every defaulted option in one place. The option fixtures declare these as
+ * their fixture defaults and the parser falls back to the same values, so a
+ * caller that reaches the parser without going through the fixtures, such as
+ * `preflight`, resolves identically.
+ */
+export const TAPPET_DEFAULTS: Omit<TappetOptions, 'platform' | 'app' | 'readyWhen' | 'deviceName'> =
+  {
+    relaunch: 'per-test',
+    onDeviceInUse: 'fail',
+    settleQuietMs: 500,
+    launchTimeout: 90_000,
+    dismissDevOverlay: false,
+    evidence: 'on-failure',
+    sessionPrefix: 'tappet',
+  };
+
+const DEFAULT_ACTION_TIMEOUT_MS = 10_000;
 
 /** The config-file friendly subset of a locator. Matched by the same rules as any other query. */
 export type ReadyQuery =
@@ -69,17 +92,6 @@ export type ResolvedOptions = {
   readonly sessionPrefix: string;
 };
 
-/**
- * The Playwright option fixture needs a default of the declared type, and this
- * is it. `parseDeviceOptions` rejects it by its empty `app`, which is the same
- * error a config that forgot the field would get.
- */
-export const UNCONFIGURED_DEVICE: DeviceOptions = {
-  platform: 'ios',
-  app: '',
-  readyWhen: { text: '' },
-};
-
 const ROLES: readonly Role[] = [
   'application',
   'window',
@@ -99,99 +111,118 @@ const ROLES: readonly Role[] = [
 ];
 
 /**
- * The config boundary. `use.device` arrives as `unknown` because a project can
- * omit it entirely or be written in JavaScript, and every message names the
- * field to fix.
+ * The config boundary. The options arrive as `unknown` because a project can
+ * omit any of them, or be written in JavaScript, and because `actionTimeout`
+ * rides along from Playwright's own options. Every message names the key to
+ * fix.
  */
 export function parseDeviceOptions(raw: unknown): ResolvedOptions {
-  if (typeof raw !== 'object' || raw === null) {
-    throw fail(
-      'device',
-      'must be an object. Set `use: { device: { ... } }` in your Playwright config.',
-    );
-  }
   const platform = read(raw, 'platform');
   if (platform !== 'ios' && platform !== 'android')
-    throw fail('device.platform', "must be 'ios' or 'android'.");
+    throw fail('platform', "must be 'ios' or 'android'.");
 
   const app = read(raw, 'app');
   if (typeof app !== 'string' || app.length === 0) {
-    throw fail('device.app', 'must be the bundle id or package name of the app under test.');
+    throw fail('app', 'must be the bundle id or package name of the app under test.');
   }
 
   return {
     platform,
     app,
     readyWhen: parseReadyWhen(read(raw, 'readyWhen')),
-    device: parseDeviceChoice(read(raw, 'name')),
+    device: parseDeviceChoice(read(raw, 'deviceName')),
     relaunch: oneOf(
-      'device.relaunch',
+      'relaunch',
       read(raw, 'relaunch'),
       ['per-test', 'per-worker'],
-      'per-test',
+      TAPPET_DEFAULTS.relaunch,
     ),
     onDeviceInUse: oneOf(
-      'device.onDeviceInUse',
+      'onDeviceInUse',
       read(raw, 'onDeviceInUse'),
       ['fail', 'reclaim'],
-      'fail',
+      TAPPET_DEFAULTS.onDeviceInUse,
     ),
-    actionTimeout: positive('device.actionTimeout', read(raw, 'actionTimeout'), 10_000),
-    settleQuietMs: positive('device.settleQuietMs', read(raw, 'settleQuietMs'), 500),
-    launchTimeout: positive('device.launchTimeout', read(raw, 'launchTimeout'), 90_000),
-    dismissDevOverlay: flag('device.dismissDevOverlay', read(raw, 'dismissDevOverlay')),
+    actionTimeout: parseActionTimeout(read(raw, 'actionTimeout')),
+    settleQuietMs: positive(
+      'settleQuietMs',
+      read(raw, 'settleQuietMs'),
+      TAPPET_DEFAULTS.settleQuietMs,
+    ),
+    launchTimeout: positive(
+      'launchTimeout',
+      read(raw, 'launchTimeout'),
+      TAPPET_DEFAULTS.launchTimeout,
+    ),
+    dismissDevOverlay: flag(
+      'dismissDevOverlay',
+      read(raw, 'dismissDevOverlay'),
+      TAPPET_DEFAULTS.dismissDevOverlay,
+    ),
     evidence: oneOf(
-      'device.evidence',
+      'evidence',
       read(raw, 'evidence'),
       ['on-failure', 'always', 'off'],
-      'on-failure',
+      TAPPET_DEFAULTS.evidence,
     ),
-    sessionPrefix: text('device.sessionPrefix', read(raw, 'sessionPrefix'), 'tappet'),
+    sessionPrefix: text('sessionPrefix', read(raw, 'sessionPrefix'), TAPPET_DEFAULTS.sessionPrefix),
   };
 }
 
-function read(source: object, key: string): unknown {
+/** A non-object source reads as every key unset, so a caller that passes nothing fails on the first required key. */
+function read(source: unknown, key: string): unknown {
+  if (typeof source !== 'object' || source === null) return undefined;
   return key in source ? Reflect.get(source, key) : undefined;
+}
+
+/**
+ * Playwright's own `use.actionTimeout`, not one of tappet's options. Playwright
+ * defaults it to 0, which means "no timeout" there and would mean "give up at
+ * once" here, so 0 falls back the way an unset value does.
+ */
+function parseActionTimeout(value: unknown): number {
+  if (value === 0) return DEFAULT_ACTION_TIMEOUT_MS;
+  return positive('actionTimeout', value, DEFAULT_ACTION_TIMEOUT_MS);
 }
 
 function parseReadyWhen(raw: unknown): Query {
   if (typeof raw !== 'object' || raw === null) {
     throw fail(
-      'device.readyWhen',
+      'readyWhen',
       "is required. Name something that only appears once the bundle has loaded, such as { text: 'Welcome' }.",
     );
   }
   const wanted = read(raw, 'text');
   if (wanted !== undefined) {
     if (typeof wanted !== 'string' || wanted.length === 0)
-      throw fail('device.readyWhen.text', 'must be a non-empty string.');
-    return { name: textMatch(wanted, flag('device.readyWhen.exact', read(raw, 'exact'))) };
+      throw fail('readyWhen.text', 'must be a non-empty string.');
+    return { name: textMatch(wanted, flag('readyWhen.exact', read(raw, 'exact'), false)) };
   }
   const testId = read(raw, 'testId');
   if (testId !== undefined) {
     if (typeof testId !== 'string' || testId.length === 0)
-      throw fail('device.readyWhen.testId', 'must be a non-empty string.');
+      throw fail('readyWhen.testId', 'must be a non-empty string.');
     return { testId: textMatch(testId, true) };
   }
   const wantedRole = read(raw, 'role');
   const role = ROLES.find((candidate) => candidate === wantedRole);
   if (role === undefined) {
-    throw fail('device.readyWhen', 'must be one of { text }, { testId }, or { role, name }.');
+    throw fail('readyWhen', 'must be one of { text }, { testId }, or { role, name }.');
   }
   const name = read(raw, 'name');
   if (name === undefined) return { role };
-  if (typeof name !== 'string') throw fail('device.readyWhen.name', 'must be a string.');
+  if (typeof name !== 'string') throw fail('readyWhen.name', 'must be a string.');
   return { role, name: textMatch(name) };
 }
 
 function parseDeviceChoice(raw: unknown): DeviceChoice {
   if (raw === undefined) return { kind: 'first-booted' };
   if (typeof raw === 'string') {
-    if (raw.length === 0) throw fail('device.name', 'must not be empty.');
+    if (raw.length === 0) throw fail('deviceName', 'must not be empty.');
     return { kind: 'named', name: raw };
   }
   if (!isStringArray(raw) || raw.length === 0) {
-    throw fail('device.name', 'must be a device name or a non-empty array of device names.');
+    throw fail('deviceName', 'must be a device name or a non-empty array of device names.');
   }
   return { kind: 'pool', names: raw };
 }
@@ -213,18 +244,15 @@ export function deviceNameForSlot(options: ResolvedOptions, slot: number): strin
   switch (choice.kind) {
     case 'first-booted':
       if (slot > 0)
-        throw tooFewDevices(
-          'device.name is unset, so every worker would target the same booted device',
-          slot,
-        );
+        throw tooFewDevices('is unset, so every worker would target the same booted device', slot);
       return null;
     case 'named':
-      if (slot > 0) throw tooFewDevices(`device.name is one device, "${choice.name}"`, slot);
+      if (slot > 0) throw tooFewDevices(`names one device, "${choice.name}"`, slot);
       return choice.name;
     case 'pool': {
       const name = choice.names[slot];
       if (name === undefined) {
-        throw tooFewDevices(`device.name lists ${String(choice.names.length)} devices`, slot);
+        throw tooFewDevices(`lists ${String(choice.names.length)} devices`, slot);
       }
       return name;
     }
@@ -237,7 +265,7 @@ export function deviceNameForSlot(options: ResolvedOptions, slot: number): strin
 
 function tooFewDevices(problem: string, slot: number): TappetError {
   return fail(
-    'device.name',
+    'deviceName',
     `${problem}, but Playwright asked for worker slot ${String(slot)}. List one device name per worker, or set \`workers: 1\`.`,
   );
 }
@@ -263,8 +291,8 @@ function positive(field: string, value: unknown, fallback: number): number {
   return value;
 }
 
-function flag(field: string, value: unknown): boolean {
-  if (value === undefined) return false;
+function flag(field: string, value: unknown, fallback: boolean): boolean {
+  if (value === undefined) return fallback;
   if (typeof value !== 'boolean') throw fail(field, 'must be true or false.');
   return value;
 }

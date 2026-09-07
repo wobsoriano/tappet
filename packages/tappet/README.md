@@ -8,14 +8,14 @@ tappet runs e2e tests for mobile apps on the Playwright test runner. It drives a
 ```ts
 import { expect, test } from 'tappet';
 
-test('the right credentials land on the profile', async ({ app }) => {
-  await app.getByTestId('sign-in-link').tap();
-  await app.getByRole('text-field', { name: 'Email' }).fill('rob@example.com');
-  await app.getByTestId('password').fill('hunter2');
-  await app.getByRole('button', { name: 'Sign in' }).tap();
+test('the right credentials land on the profile', async ({ device }) => {
+  await device.getByTestId('sign-in-link').tap();
+  await device.getByRole('text-field', { name: 'Email' }).fill('rob@example.com');
+  await device.getByTestId('password').fill('hunter2');
+  await device.getByRole('button', { name: 'Sign in' }).tap();
 
-  await expect(app.getByTestId('signing-in')).toBeVisible();
-  await expect(app.getByTestId('profile-email')).toHaveText('rob@example.com', { exact: true });
+  await expect(device.getByTestId('signing-in')).toBeVisible();
+  await expect(device.getByTestId('profile-email')).toHaveText('rob@example.com', { exact: true });
 });
 ```
 
@@ -32,35 +32,31 @@ pnpm add -D tappet @playwright/test
 ```ts
 // playwright.config.ts
 import { defineConfig } from '@playwright/test';
-import type { DeviceTestOptions } from 'tappet';
+import type { TappetOptions } from 'tappet';
 
-const shared = {
-  app: 'com.example.app',
-  readyWhen: { testId: 'home' },
-} as const;
-
-export default defineConfig<DeviceTestOptions>({
+export default defineConfig<TappetOptions>({
   testDir: 'e2e',
   workers: 1,
   expect: { timeout: 10_000 },
   reporter: [['list'], ['html', { open: 'never' }]],
+  use: {
+    app: 'com.example.app',
+    readyWhen: { testId: 'home' },
+  },
   projects: [
-    { name: 'ios', use: { device: { ...shared, platform: 'ios', name: 'iPhone 17 Pro Max' } } },
-    {
-      name: 'android',
-      use: { device: { ...shared, platform: 'android', name: 'Pixel 7 API 34' } },
-    },
+    { name: 'ios', use: { platform: 'ios', deviceName: 'iPhone 17 Pro Max' } },
+    { name: 'android', use: { platform: 'android', deviceName: 'Pixel 7 API 34' } },
   ],
 });
 ```
 
-`device` is the only key tappet adds to `use`. Playwright merges `use` one key at a time, so a project that sets `device` replaces the whole object. Spread a shared constant, as above.
+Every option tappet adds is a key of its own in `use`. Playwright merges `use` one key at a time, so what the projects share is written once at the top level and a project sets only what differs.
 
 `readyWhen` is required. The driver returns from a launch as soon as the native process starts, before the JavaScript bundle has loaded, so tappet waits for that locator before the first test runs.
 
-`name` is what `agent-device devices` prints, which for an Android emulator is the AVD name with its underscores shown as spaces. An AVD created as `Pixel_7_API_34` is `Pixel 7 API 34` here.
+`deviceName` is what `agent-device devices` prints, which for an Android emulator is the AVD name with its underscores shown as spaces. An AVD created as `Pixel_7_API_34` is `Pixel 7 API 34` here.
 
-One worker gets one device. To run more than one, give `name` an array with an entry per worker.
+One worker gets one device. To run more than one, give `deviceName` an array with an entry per worker.
 
 ### Run
 
@@ -68,7 +64,7 @@ One worker gets one device. To run more than one, give `name` an array with an e
 npx playwright test --project=ios
 ```
 
-`preflight` reads a project's `device` option and reports whether that device is booted, so a missing simulator fails once, in about a second, instead of once per test after the launch timeout. Wire it as a setup project per platform that the device projects depend on. [Basics](https://github.com/wobsoriano/tappet/blob/main/docs/basics.md) has the spec, and [`apps/e2e/e2e/preflight.setup.mts`](https://github.com/wobsoriano/tappet/blob/main/apps/e2e/e2e/preflight.setup.mts) is a working one.
+`preflight` reads a project's options and reports whether the device they name is booted, so a missing simulator fails once, in about a second, instead of once per test after the launch timeout. Wire it as a setup project per platform that the device projects depend on. [Basics](https://github.com/wobsoriano/tappet/blob/main/docs/basics.md) has the spec, and [`apps/e2e/e2e/preflight.setup.mts`](https://github.com/wobsoriano/tappet/blob/main/apps/e2e/e2e/preflight.setup.mts) is a working one.
 
 ## Run the sample project
 

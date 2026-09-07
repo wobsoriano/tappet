@@ -25,7 +25,7 @@ export type ActionOptions = { timeout?: number };
  * What a test holds. One per test, cheap to build, and the only way into the
  * device. Locators are pure values until one of their async methods runs.
  */
-export type App = {
+export type Device = {
   /** Matches a node's accessibility name or its value, the way Playwright's `getByText` matches text. */
   getByText(text: string | RegExp, options?: TextOptions): Locator;
   getByRole(role: Role, options?: RoleOptions): Locator;
@@ -36,7 +36,7 @@ export type App = {
 
   scroll(direction: ScrollDirection): Promise<void>;
   /** Relaunches the app and waits for the ready gate again. */
-  restart(): Promise<void>;
+  relaunch(): Promise<void>;
   /**
    * Clears the React Native development warning overlay. Never automatic: the
    * overlay is a real node and hiding it by default would suppress a warning a
@@ -70,7 +70,7 @@ export type Locator = {
   expect(check: Check, options: ProbeOptions): Promise<ProbeResult>;
 };
 
-export function createApp(session: DeviceSession, sink: ActionSink): App {
+export function createDevice(session: DeviceSession, sink: ActionSink): Device {
   const build = (query: Query): Locator => createLocator(session, sink, query);
   let screenshots = 0;
   return {
@@ -87,7 +87,7 @@ export function createApp(session: DeviceSession, sink: ActionSink): App {
       sink.step(renderTitle({ kind: 'scroll', direction }), async () => {
         await session.run((device) => device.scroll(direction, session.options.actionTimeout));
       }),
-    restart: () => session.relaunch(sink),
+    relaunch: () => session.relaunch(sink),
     dismissDevOverlay: () =>
       sink.step(renderTitle({ kind: 'dismiss-overlay' }), () => session.dismissDevOverlay()),
     screen: () => session.screen(),

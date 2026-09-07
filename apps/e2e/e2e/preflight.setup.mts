@@ -1,15 +1,12 @@
-import { test as base } from '@playwright/test';
-import { preflight, type DeviceTestOptions } from 'tappet';
-import { UNCONFIGURED_DEVICE } from 'tappet/core';
+import { preflight, setupTest } from 'tappet';
 
-// Extends `@playwright/test`'s own `test` rather than tappet's. Tappet's `app` fixture is auto and
-// would open a session, which is the very thing preflight runs before.
-const setup = base.extend<object, DeviceTestOptions>({
-  device: [UNCONFIGURED_DEVICE, { option: true, scope: 'worker' }],
-});
-
-setup('the project names a booted device', async ({ device }) => {
-  const report = await preflight(device);
-  if (report.ok) return;
-  throw new Error(report.problems.join('\n'));
-});
+// `setupTest` carries tappet's options and none of its fixtures. Tappet's `test` would open a
+// session through its auto `device` fixture, which is the very thing preflight runs ahead of.
+setupTest(
+  'the project names a booted device',
+  async ({ platform, app, readyWhen, deviceName, sessionPrefix }) => {
+    const report = await preflight({ platform, app, readyWhen, deviceName, sessionPrefix });
+    if (report.ok) return;
+    throw new Error(report.problems.join('\n'));
+  },
+);

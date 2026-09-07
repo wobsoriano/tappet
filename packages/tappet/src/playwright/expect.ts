@@ -1,5 +1,5 @@
 import { expect as base, type ExpectMatcherState } from '@playwright/test';
-import type { Locator } from '../core/app.ts';
+import type { Locator } from '../core/device.ts';
 import type { Check, CheckName } from '../core/checks.ts';
 import { textMatch } from '../core/query.ts';
 

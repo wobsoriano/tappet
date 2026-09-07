@@ -64,12 +64,12 @@ export class TappetError extends Error {
 function formatError(info: ErrorInfo): string {
   switch (info.kind) {
     case 'config':
-      return `Invalid use.device: ${info.field} ${info.detail}`;
+      return `Invalid tappet option: use.${info.field} ${info.detail}`;
     case 'device-in-use':
       return [
         `Device ${info.device} is held by ${info.owner === null ? 'another session' : `session "${info.owner}"`}.`,
         `Release it with: ${info.releaseCommand}`,
-        ...(info.canReclaim ? ["Or set use.device.onDeviceInUse to 'reclaim'."] : []),
+        ...(info.canReclaim ? ["Or set use.onDeviceInUse to 'reclaim'."] : []),
       ].join('\n');
     case 'launch-failed':
       return `Could not open ${info.app} on ${info.device}: ${describeFailure(info.failure)}`;

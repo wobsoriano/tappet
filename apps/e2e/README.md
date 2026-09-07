@@ -1,6 +1,6 @@
 # tappet-e2e
 
-The app `tappet` is tested against. An Expo SDK 57 project with expo-router, four screens, and a fake sign-in held in React state. Nothing here is a product. Every screen exists so a spec can name something on it.
+The app `tappet` is tested against. An Expo SDK 57 project with expo-router, three screens, and a fake sign-in held in React state. Nothing here is a product. Every screen exists so a spec can name something on it.
 
 ## Routes
 
@@ -56,7 +56,7 @@ pnpm --filter tappet build     # or: vp run -r build, from the repo root
 Then, from this directory, build and install the app on a booted simulator and start Metro. The build takes several minutes the first time.
 
 ```sh
-npx expo run:ios --device "iPhone 17 Pro Max" --no-bundler
+npx expo run:ios --device 'iPhone 17 Pro Max' --no-bundler
 npx expo start --port 8081
 ```
 

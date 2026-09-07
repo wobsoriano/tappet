@@ -1,6 +1,6 @@
 /**
  * The runner-independent surface. An adapter needs exactly this: open a
- * session per worker slot, build an `App` per test over its own `ActionSink`,
+ * session per worker slot, build a `Device` per test over its own `ActionSink`,
  * and turn `Check` names into matchers via `probe`.
  *
  * No module under `core/` imports `@playwright/test` or `agent-device`, and no
@@ -8,14 +8,14 @@
  * re-export of `preflight`, which needs a concrete driver.
  */
 
-export { createApp } from './app.ts';
-export type { ActionOptions, App, Locator, RoleOptions, TextOptions } from './app.ts';
+export { createDevice } from './device.ts';
+export type { ActionOptions, Device, Locator, RoleOptions, TextOptions } from './device.ts';
 
 export { describeCheck, evaluate } from './checks.ts';
 export type { Check, CheckName, Verdict } from './checks.ts';
 
-export { deviceNameForSlot, parseDeviceOptions, UNCONFIGURED_DEVICE } from './config.ts';
-export type { DeviceChoice, DeviceOptions, ReadyQuery, ResolvedOptions } from './config.ts';
+export { deviceNameForSlot, parseDeviceOptions, TAPPET_DEFAULTS } from './config.ts';
+export type { DeviceChoice, ReadyQuery, ResolvedOptions, TappetOptions } from './config.ts';
 
 export type {
   Binding,

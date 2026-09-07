@@ -1,5 +1,5 @@
 import { expect, test } from 'vite-plus/test';
-import { deviceNameForSlot, parseDeviceOptions, UNCONFIGURED_DEVICE } from '../src/core/config.ts';
+import { deviceNameForSlot, parseDeviceOptions } from '../src/core/config.ts';
 import { sessionName } from '../src/core/session.ts';
 
 const minimal = { platform: 'ios', app: 'com.example.app', readyWhen: { text: 'GET STARTED' } };
@@ -17,25 +17,28 @@ test('parse fills every default', () => {
   expect(options.device).toEqual({ kind: 'first-booted' });
 });
 
-test("the option fixture's unconfigured default is rejected by name", () => {
-  expect(() => parseDeviceOptions(UNCONFIGURED_DEVICE)).toThrow(/device\.app/);
-  expect(() => parseDeviceOptions(undefined)).toThrow(/use: \{ device/);
+test('the unset option fixture defaults are rejected, one required key at a time', () => {
+  expect(() => parseDeviceOptions({ platform: undefined })).toThrow(/use\.platform/);
+  expect(() => parseDeviceOptions({ platform: 'ios', app: undefined })).toThrow(/use\.app/);
+  expect(() => parseDeviceOptions(undefined)).toThrow(/use\.platform/);
 });
 
-test('every required field names itself when it is wrong', () => {
-  expect(() => parseDeviceOptions({ ...minimal, platform: 'web' })).toThrow(/device\.platform/);
-  expect(() => parseDeviceOptions({ ...minimal, app: '' })).toThrow(/device\.app/);
-  expect(() => parseDeviceOptions({ platform: 'ios', app: 'a' })).toThrow(/device\.readyWhen/);
+test('every field names itself when it is wrong', () => {
+  expect(() => parseDeviceOptions({ ...minimal, platform: 'web' })).toThrow(/use\.platform/);
+  expect(() => parseDeviceOptions({ ...minimal, app: '' })).toThrow(/use\.app/);
+  expect(() => parseDeviceOptions({ platform: 'ios', app: 'a' })).toThrow(/use\.readyWhen/);
   expect(() => parseDeviceOptions({ ...minimal, readyWhen: { role: 'menu' } })).toThrow(
-    /device\.readyWhen/,
+    /use\.readyWhen/,
   );
-  expect(() => parseDeviceOptions({ ...minimal, actionTimeout: 0 })).toThrow(
-    /device\.actionTimeout/,
-  );
-  expect(() => parseDeviceOptions({ ...minimal, evidence: 'sometimes' })).toThrow(
-    /device\.evidence/,
-  );
-  expect(() => parseDeviceOptions({ ...minimal, name: [] })).toThrow(/device\.name/);
+  expect(() => parseDeviceOptions({ ...minimal, evidence: 'sometimes' })).toThrow(/use\.evidence/);
+  expect(() => parseDeviceOptions({ ...minimal, deviceName: [] })).toThrow(/use\.deviceName/);
+});
+
+test("Playwright's own actionTimeout drives an action, and its zero reads as unset", () => {
+  expect(parseDeviceOptions({ ...minimal, actionTimeout: 4000 }).actionTimeout).toBe(4000);
+  expect(parseDeviceOptions({ ...minimal, actionTimeout: 0 }).actionTimeout).toBe(10_000);
+  expect(parseDeviceOptions({ ...minimal, actionTimeout: undefined }).actionTimeout).toBe(10_000);
+  expect(() => parseDeviceOptions({ ...minimal, actionTimeout: -1 })).toThrow(/use\.actionTimeout/);
 });
 
 test('readyWhen accepts text, testId, and role forms', () => {
@@ -56,14 +59,14 @@ test('readyWhen accepts text, testId, and role forms', () => {
 });
 
 test('a device pool is indexed by worker slot and a short pool is a config error', () => {
-  const pool = parseDeviceOptions({ ...minimal, name: ['one', 'two'] });
+  const pool = parseDeviceOptions({ ...minimal, deviceName: ['one', 'two'] });
   expect(deviceNameForSlot(pool, 0)).toBe('one');
   expect(deviceNameForSlot(pool, 1)).toBe('two');
   expect(() => deviceNameForSlot(pool, 2)).toThrow(/worker slot 2/);
 });
 
 test("one device never serves a second worker, because the second would reclaim the first's session", () => {
-  const named = parseDeviceOptions({ ...minimal, name: 'iPhone 17 Pro Max' });
+  const named = parseDeviceOptions({ ...minimal, deviceName: 'iPhone 17 Pro Max' });
   expect(deviceNameForSlot(named, 0)).toBe('iPhone 17 Pro Max');
   expect(() => deviceNameForSlot(named, 1)).toThrow(/one device, "iPhone 17 Pro Max"/);
   expect(() => deviceNameForSlot(named, 1)).toThrow(/workers: 1/);
@@ -74,7 +77,7 @@ test("one device never serves a second worker, because the second would reclaim 
     /every worker would target the same booted device/,
   );
 
-  const onePool = parseDeviceOptions({ ...minimal, name: ['only'] });
+  const onePool = parseDeviceOptions({ ...minimal, deviceName: ['only'] });
   expect(() => deviceNameForSlot(onePool, 1)).toThrow(/lists 1 devices/);
 });
 

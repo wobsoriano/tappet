@@ -26,7 +26,7 @@ Each action is therefore one unit. Capture a screen, resolve the locator, pin th
 
 `'per-worker'` skips that. Use it when your app is expensive to launch and your tests genuinely do not care what came before.
 
-`app.restart()` does the same thing on demand inside a test.
+`device.relaunch()` does the same thing on demand inside a test.
 
 ## DEVICE_IN_USE
 
@@ -37,14 +37,14 @@ Leftovers whose session name starts with your `sessionPrefix` are always reclaim
 ```
 Device iPhone 17 Pro Max is held by session "lex".
 Release it with: agent-device close --session lex
-Or set use.device.onDeviceInUse to 'reclaim'.
+Or set use.onDeviceInUse to 'reclaim'.
 ```
 
 Set `onDeviceInUse: 'reclaim'` when a shared CI device should always be taken over.
 
 ## Evidence
 
-`evidence` defaults to `'on-failure'`. When a test does not end in the status it expected, the `app` fixture captures `screen.png` and a `screen.txt` listing and attaches both to that test, before the worker fixture closes the session. That teardown runs in the separate budget Playwright grants after a test finishes, so a test that timed out still gets its screenshot.
+`evidence` defaults to `'on-failure'`. When a test does not end in the status it expected, the `device` fixture captures `screen.png` and a `screen.txt` listing and attaches both to that test, before the worker fixture closes the session. That teardown runs in the separate budget Playwright grants after a test finishes, so a test that timed out still gets its screenshot.
 
 A capture that itself fails records an annotation and returns. Masking the test's real error with a screenshot error would be worse than having no screenshot.
 

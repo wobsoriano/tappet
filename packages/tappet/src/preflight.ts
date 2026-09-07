@@ -3,7 +3,7 @@
  * driver, and no module under `core/` may import `agent-device`.
  */
 
-import { parseDeviceOptions, type DeviceChoice, type DeviceOptions } from './core/config.ts';
+import { parseDeviceOptions, type DeviceChoice, type TappetOptions } from './core/config.ts';
 import type { DeviceDriver, DeviceInfo } from './core/driver.ts';
 import { describeFailure } from './core/errors.ts';
 import type { Platform } from './core/screen.ts';
@@ -25,7 +25,7 @@ export type PreflightReport =
  * `driver` is the seam adapters and unit tests inject.
  */
 export async function preflight(
-  options: DeviceOptions,
+  options: Partial<TappetOptions>,
   driver?: DeviceDriver,
 ): Promise<PreflightReport> {
   const resolved = parseDeviceOptions(options);
@@ -99,5 +99,5 @@ function notBooted(platform: Platform, name: string, booted: readonly DeviceInfo
     return `No booted ${platform} device is named '${name}', because no ${platform} device is booted at all. Boot '${name}'.`;
   }
   const listing = booted.map((device) => `'${device.name}'`).join(', ');
-  return `No booted ${platform} device is named '${name}'. Booted right now: ${listing}. Set use.device.name to one of those or boot '${name}'.`;
+  return `No booted ${platform} device is named '${name}'. Booted right now: ${listing}. Set use.deviceName to one of those or boot '${name}'.`;
 }
