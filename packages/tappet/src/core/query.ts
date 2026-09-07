@@ -32,14 +32,24 @@ export type TextMatch =
   | { readonly kind: 'exact'; readonly value: string }
   | { readonly kind: 'regex'; readonly value: RegExp };
 
+/** One `.filter()` call. Every field narrows, so an empty filter is a no-op. */
+export type Filter = {
+  readonly hasText?: TextMatch;
+  readonly hasNotText?: TextMatch;
+  readonly has?: Query;
+  readonly hasNot?: Query;
+};
+
 /**
  * A pure conjunctive description of a node. Building one performs no I/O.
  *
  * Invariants: every field narrows, so an empty query matches every node.
  * `name` is compared against the node's name and its value, which is what
- * makes `getByText` behave like Playwright's. `index` is the strictness
- * opt-out set by `.first()` and `.nth(n)`; without it more than one distinct
- * match is an error.
+ * makes `getByText` behave like Playwright's. `filters` holds one entry per
+ * `.filter()` call the author wrote, conjunctive inside an entry and across
+ * them, so the rendered description reproduces the chain. `index` is the
+ * strictness opt-out set by `.first()` and `.nth(n)`; without it more than one
+ * distinct match is an error.
  */
 export type Query = {
   readonly testId?: TextMatch;
@@ -50,6 +60,7 @@ export type Query = {
   readonly selected?: boolean;
   readonly focused?: boolean;
   readonly where?: (node: ScreenNode) => boolean;
+  readonly filters?: readonly Filter[];
   readonly index?: number;
 };
 
@@ -92,7 +103,7 @@ export function matchesText(match: TextMatch, candidate: string | null): boolean
  * place a query is formatted.
  */
 export function describeQuery(query: Query): string {
-  const suffix = describeIndex(query.index);
+  const suffix = `${describeFilters(query.filters)}${describeIndex(query.index)}`;
   const fields = describeExtraFields(query);
   const plain = fields.length === 0 && query.value === undefined;
   if (plain && query.testId !== undefined && query.name === undefined && query.role === undefined) {
@@ -128,11 +139,27 @@ function describeExtraFields(query: Query): string[] {
   ].filter((part) => part !== null);
 }
 
+function describeFilters(filters: readonly Filter[] | undefined): string {
+  if (filters === undefined) return '';
+  return filters.map((filter) => describeFilter(filter)).join('');
+}
+
+function describeFilter(filter: Filter): string {
+  const fields = [
+    filter.hasText === undefined ? null : `hasText: ${describeMatch(filter.hasText)}`,
+    filter.hasNotText === undefined ? null : `hasNotText: ${describeMatch(filter.hasNotText)}`,
+    filter.has === undefined ? null : `has: ${describeQuery(filter.has)}`,
+    filter.hasNot === undefined ? null : `hasNot: ${describeQuery(filter.hasNot)}`,
+  ].filter((part) => part !== null);
+  return fields.length === 0 ? '.filter({})' : `.filter({ ${fields.join(', ')} })`;
+}
+
 function describeExact(match: TextMatch): string {
   return match.kind === 'exact' ? ', exact: true' : '';
 }
 
-function describeMatch(match: TextMatch): string {
+/** A match rendered back into the literal an author would have typed. */
+export function describeMatch(match: TextMatch): string {
   return match.kind === 'regex' ? String(match.value) : `'${match.value}'`;
 }
 

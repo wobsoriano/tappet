@@ -28,7 +28,7 @@ device.locator({ testId: { kind: 'substring', value: 'row-' }, enabled: false })
 device.locator({ where: (node) => node.rect !== null && node.rect.y > 400 });
 ```
 
-A query is conjunctive. Every field narrows, and an empty query matches every node. The fields are `testId`, `name`, `value`, `role`, `enabled`, `selected`, `focused`, `where`, and `index`.
+A query is conjunctive. Every field narrows, and an empty query matches every node. The fields are `testId`, `name`, `value`, `role`, `enabled`, `selected`, `focused`, `where`, `filters`, and `index`. `filters` is what `.filter()` appends to and `index` is what `.first()` and `.nth(n)` set.
 
 ## Matching rules
 
@@ -71,6 +71,57 @@ React Native renders a `Text` as a text node wrapped in another text node holdin
 Matches in disjoint subtrees stay distinct. A heading that says "Explore" and a tab button that says "Explore" are two things, and the failure says so.
 
 A query that constrains no text falls back to the node's own name for this comparison, so `getByRole('button')` does not collapse two nested buttons that say different things.
+
+## Filtering
+
+`filter` narrows the matches a locator already makes.
+
+```ts
+device.getByRole('other').filter({ hasText: 'Dev tools' });
+device.getByRole('cell').filter({ hasNotText: 'Archived' });
+device.getByRole('cell').filter({ has: device.getByRole('switch') });
+device.getByRole('other').filter({ hasNot: device.getByRole('image') });
+```
+
+There are four options.
+
+- `hasText` keeps a match when the node itself, or anything in its subtree, has a name or a value matching the text.
+- `hasNotText` keeps the ones `hasText` would drop.
+- `has` keeps a match when another locator resolves to something strictly inside its subtree. The node itself does not count.
+- `hasNot` keeps the ones `has` would drop.
+
+The asymmetry is deliberate, and it is the one Playwright has. `hasText` includes the node's own text. `has` means a descendant.
+
+Text follows the same rules as `getByText`. The default is a case-insensitive substring after whitespace is collapsed, and a `RegExp` works too. There is no `exact` option, so anchor a `RegExp` with `^` and `$` when you need a whole string.
+
+Every option narrows and so does every call, so these two mean the same thing.
+
+```ts
+device.getByRole('cell').filter({ hasText: 'Rob', hasNot: device.getByRole('switch') });
+device
+  .getByRole('cell')
+  .filter({ hasText: 'Rob' })
+  .filter({ hasNot: device.getByRole('switch') });
+```
+
+The locator inside `has` is matched on its own terms. Its fields, its own filters and its own absorption all apply. Its `.first()` and `.nth(n)` do not, because the question is whether anything in the subtree matches rather than which one.
+
+## Filtering by text collapses the containers around it
+
+A `hasText` filter names a string on screen, so ancestor absorption treats every candidate holding that string as one thing and keeps the innermost.
+
+That is what makes the filter usable on a React Native tree, where almost every container reports role `other`. Three nested containers on the sample app's home screen hold "Dev tools", and their own names are all different.
+
+```
+@e3  [other]
+  @e4  [other] "Tab Bar"
+    @e5  [other] "Live from the cloud"
+      @e19 [text] "Dev tools"
+```
+
+`getByRole('other').filter({ hasText: 'Dev tools' })` resolves to `@e5`, the card that holds the text, rather than to every wrapper around it.
+
+`hasNotText`, `has` and `hasNot` take no part in absorption. They name structure or an absence rather than a string, and `getByRole('other').filter({ has: device.getByRole('button') })` is meant to find several sibling containers.
 
 ## Roles
 

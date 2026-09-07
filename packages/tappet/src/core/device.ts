@@ -2,7 +2,7 @@ import { describeNode, type Check } from './checks.ts';
 import type { ScrollDirection, Settled } from './driver.ts';
 import { TappetError, type ExpectedValue } from './errors.ts';
 import { probe, type ProbeOptions, type ProbeResult } from './probe.ts';
-import { describeQuery, textMatch, type Query, type Role } from './query.ts';
+import { describeQuery, textMatch, type Filter, type Query, type Role } from './query.ts';
 import { renderTitle, type ActionRecord, type ActionSink, type Typed } from './report.ts';
 import {
   pin,
@@ -20,6 +20,19 @@ const DEFAULT_LONG_PRESS_MS = 1000;
 export type TextOptions = { exact?: boolean };
 export type RoleOptions = { name?: string | RegExp; exact?: boolean };
 export type ActionOptions = { timeout?: number };
+
+/**
+ * How one `.filter()` call narrows. `hasText` matches the node's own text or
+ * any text in its subtree, while `has` means a strict descendant, which is the
+ * asymmetry Playwright has. Text follows the default case-insensitive
+ * substring rule.
+ */
+export type FilterOptions = {
+  hasText?: string | RegExp;
+  hasNotText?: string | RegExp;
+  has?: Locator;
+  hasNot?: Locator;
+};
 
 /**
  * `secret` is fill's alone. It cuts the report and any failure message back to
@@ -69,6 +82,8 @@ export type Locator = {
   first(): Locator;
   /** Negative indexes count from the end, so `nth(-1)` is the last match. */
   nth(index: number): Locator;
+  /** Narrows the matches this locator already makes. Chains, and every call narrows further. */
+  filter(options: FilterOptions): Locator;
   tap(options?: ActionOptions): Promise<void>;
   fill(text: string, options?: FillOptions): Promise<void>;
   longPress(durationMs?: number, options?: ActionOptions): Promise<void>;
@@ -116,6 +131,11 @@ function createLocator(session: DeviceSession, sink: ActionSink, query: Query): 
     description,
     first: () => withIndex(0),
     nth: (index) => withIndex(index),
+    filter: (options) =>
+      createLocator(session, sink, {
+        ...query,
+        filters: [...(query.filters ?? []), filterOf(options)],
+      }),
     tap: (options) =>
       perform(session, sink, { kind: 'tap', query }, options, (device, ref, budget) =>
         device.tap(ref, budget),
@@ -174,6 +194,15 @@ function createLocator(session: DeviceSession, sink: ActionSink, query: Query): 
         check,
         options,
       ),
+  };
+}
+
+function filterOf(options: FilterOptions): Filter {
+  return {
+    hasText: options.hasText === undefined ? undefined : textMatch(options.hasText),
+    hasNotText: options.hasNotText === undefined ? undefined : textMatch(options.hasNotText),
+    has: options.has?.query,
+    hasNot: options.hasNot?.query,
   };
 }
 

@@ -13,6 +13,7 @@ export type {
   ActionOptions,
   Device,
   FillOptions,
+  FilterOptions,
   Locator,
   RoleOptions,
   TextOptions,
@@ -47,7 +48,7 @@ export { formatFailure, probe } from './probe.ts';
 export type { ProbeOptions, ProbeResult, ProbeTarget } from './probe.ts';
 
 export { describeQuery, normalizeText, textMatch } from './query.ts';
-export type { Query, Role, TextMatch } from './query.ts';
+export type { Filter, Query, Role, TextMatch } from './query.ts';
 
 export { renderTitle, silentSink } from './report.ts';
 export type { ActionRecord, ActionSink, EvidenceFile, StepOptions, Typed } from './report.ts';

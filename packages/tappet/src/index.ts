@@ -17,6 +17,6 @@ export { preflight } from './preflight.ts';
 export type { PreflightDevice, PreflightReport } from './preflight.ts';
 
 export type { ReadyQuery, TappetOptions } from './core/config.ts';
-export type { Device, Locator } from './core/device.ts';
-export type { Query, Role, TextMatch } from './core/query.ts';
+export type { Device, FilterOptions, Locator } from './core/device.ts';
+export type { Filter, Query, Role, TextMatch } from './core/query.ts';
 export type { Platform, Rect, Screen, ScreenNode } from './core/screen.ts';

@@ -1,4 +1,12 @@
-import { matchesText, normalizeText, type Query, type Role } from './query.ts';
+import {
+  describeMatch,
+  matchesText,
+  normalizeText,
+  type Filter,
+  type Query,
+  type Role,
+  type TextMatch,
+} from './query.ts';
 
 export type Platform = 'ios' | 'android';
 
@@ -226,8 +234,8 @@ function inherited(
  * The single resolver, shared by actions and assertions so the two can never
  * disagree about which node was meant.
  *
- * Rule order: filter by every query field, then ancestor absorption, then
- * `index`.
+ * Rule order: match every query field, then apply every `.filter()`, then
+ * ancestor absorption, then `index`.
  *
  * Ancestor absorption drops a match when a descendant match carries the same
  * string the query matched on. On the sample app "Live from the cloud" is
@@ -237,8 +245,7 @@ function inherited(
  * Explore screen is still the heading and the tab button.
  */
 export function resolve(screen: Screen, query: Query): Resolution {
-  const matched = screen.nodes.filter((node) => matchesQuery(node, query));
-  const distinct = absorbAncestors(matched, query);
+  const distinct = matchesOf(screen, query);
   if (query.index !== undefined) {
     const picked = distinct.at(query.index);
     if (picked === undefined) return { outcome: 'none', nearest: nearestTo(screen, query) };
@@ -248,6 +255,46 @@ export function resolve(screen: Screen, query: Query): Resolution {
   if (first === undefined) return { outcome: 'none', nearest: nearestTo(screen, query) };
   if (distinct.length > 1) return { outcome: 'many', nodes: distinct };
   return { outcome: 'one', node: first };
+}
+
+/**
+ * Everything a query matches, before `index` and before strictness has an
+ * opinion. `resolve` and the `has` filters share it, so an inner query means
+ * exactly what the same locator would mean on its own.
+ */
+function matchesOf(screen: Screen, query: Query): readonly ScreenNode[] {
+  const matched = screen.nodes.filter(
+    (node) =>
+      matchesQuery(node, query) &&
+      (query.filters ?? []).every((filter) => matchesFilter(screen, node, filter)),
+  );
+  return absorbAncestors(matched, query);
+}
+
+/**
+ * The asymmetry mirrors Playwright. `hasText` looks at the candidate's own
+ * text as well as its subtree's, while `has` means a strict descendant.
+ */
+function matchesFilter(screen: Screen, node: ScreenNode, filter: Filter): boolean {
+  if (filter.hasText !== undefined && !subtreeHasText(screen, node, filter.hasText)) return false;
+  if (filter.hasNotText !== undefined && subtreeHasText(screen, node, filter.hasNotText)) {
+    return false;
+  }
+  if (filter.has !== undefined && !containsMatch(screen, node, filter.has)) return false;
+  if (filter.hasNot !== undefined && containsMatch(screen, node, filter.hasNot)) return false;
+  return true;
+}
+
+function subtreeHasText(screen: Screen, candidate: ScreenNode, match: TextMatch): boolean {
+  return screen.nodes.some(
+    (node) =>
+      (node === candidate || isDescendant(node, candidate)) &&
+      (matchesText(match, node.name) || matchesText(match, node.value)),
+  );
+}
+
+function containsMatch(screen: Screen, candidate: ScreenNode, inner: Query): boolean {
+  return matchesOf(screen, inner).some((node) => isDescendant(node, candidate));
 }
 
 function matchesQuery(node: ScreenNode, query: Query): boolean {
@@ -273,12 +320,24 @@ function matchesQuery(node: ScreenNode, query: Query): boolean {
  * sharing it are one thing on screen. A query that constrains no text falls
  * back to the node's name, so `getByRole('button')` does not collapse two
  * nested buttons that say different things.
+ *
+ * A `hasText` filter names a string on screen, so it contributes the same
+ * pattern to every candidate and collapses an ancestor chain to the innermost
+ * container holding that text. Almost every React Native container reports
+ * role `other`, so without this `getByRole('other').filter({ hasText })` would
+ * match every wrapper around the text rather than the row the author meant.
+ * `hasNotText`, `has` and `hasNot` name structure or an absence rather than a
+ * string, and `.filter({ has })` legitimately matches sibling containers, so
+ * they contribute nothing.
  */
 function matchedText(node: ScreenNode, query: Query): string {
   const parts: string[] = [];
   if (query.testId !== undefined) parts.push(node.testId ?? '');
   if (query.value !== undefined) parts.push(node.value ?? '');
   if (query.name !== undefined) parts.push(node.name ?? node.value ?? '');
+  for (const filter of query.filters ?? []) {
+    if (filter.hasText !== undefined) parts.push(describeMatch(filter.hasText));
+  }
   return parts.length === 0 ? (node.name ?? '') : parts.join(' ');
 }
 
