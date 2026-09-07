@@ -31,7 +31,11 @@ export type ActionRecord =
   | { readonly kind: 'scroll-into-view'; readonly query: Query }
   | { readonly kind: 'relaunch'; readonly app: string }
   | { readonly kind: 'dismiss-overlay' }
-  | { readonly kind: 'screenshot'; readonly path: string };
+  | { readonly kind: 'screenshot'; readonly path: string }
+  | { readonly kind: 'act'; readonly instruction: string }
+  | { readonly kind: 'extract'; readonly question: string }
+  /** One command the model ran inside an `act`. `target` is its snapshot ref, or a scroll's direction. */
+  | { readonly kind: 'tool'; readonly name: string; readonly target?: string };
 
 /** A boxed step reports as one line rather than as something to open. */
 export type StepOptions = { readonly box?: boolean };
@@ -53,6 +57,7 @@ export type ActionSink = {
 };
 
 const FILL_TEXT_LIMIT = 40;
+const PROMPT_LIMIT = 80;
 
 /** Rendered here rather than in an adapter so every runner produces the same text. */
 export function renderTitle(record: ActionRecord): string {
@@ -77,6 +82,12 @@ export function renderTitle(record: ActionRecord): string {
       return 'dismiss the React Native dev overlay';
     case 'screenshot':
       return `screenshot ${record.path}`;
+    case 'act':
+      return `act "${truncate(record.instruction, PROMPT_LIMIT)}"`;
+    case 'extract':
+      return `extract "${truncate(record.question, PROMPT_LIMIT)}"`;
+    case 'tool':
+      return record.target === undefined ? record.name : `${record.name} ${record.target}`;
     default: {
       const never: never = record;
       throw new Error(`unhandled action record ${JSON.stringify(never)}`);
@@ -87,7 +98,7 @@ export function renderTitle(record: ActionRecord): string {
 function renderTyped(typed: Typed): string {
   switch (typed.kind) {
     case 'text':
-      return `type "${truncate(typed.value)}"`;
+      return `type "${truncate(typed.value, FILL_TEXT_LIMIT)}"`;
     case 'hidden':
       return `type ${String(typed.length)} characters`;
     default: {
@@ -97,8 +108,8 @@ function renderTyped(typed: Typed): string {
   }
 }
 
-function truncate(text: string): string {
-  return text.length <= FILL_TEXT_LIMIT ? text : `${text.slice(0, FILL_TEXT_LIMIT)}...`;
+function truncate(text: string, limit: number): string {
+  return text.length <= limit ? text : `${text.slice(0, limit)}...`;
 }
 
 /** Discards everything. The default for scripts, unit tests, and runners with no reporting. */

@@ -61,7 +61,22 @@ export type ErrorInfo =
       readonly timeoutMs: number;
       readonly screen: string;
     }
-  | { readonly kind: 'driver'; readonly command: string; readonly failure: DeviceFailure };
+  | { readonly kind: 'driver'; readonly command: string; readonly failure: DeviceFailure }
+  | { readonly kind: 'ai-not-configured' }
+  | { readonly kind: 'ai-missing-peer' }
+  | {
+      readonly kind: 'ai-blocked';
+      readonly instruction: string;
+      /** The model's own account of what stopped it. */
+      readonly summary: string;
+      readonly screen: string;
+    }
+  | {
+      readonly kind: 'ai-incomplete';
+      readonly instruction: string;
+      readonly steps: number;
+      readonly screen: string;
+    };
 
 export class TouchpressError extends Error {
   readonly info: ErrorInfo;
@@ -131,6 +146,36 @@ function formatError(info: ErrorInfo): string {
       ].join('\n');
     case 'driver':
       return `${info.command} failed: ${describeFailure(info.failure)}`;
+    case 'ai-not-configured':
+      return [
+        'device.act and device.extract need a model.',
+        "Set use.aiModel to a gateway model id, such as 'anthropic/claude-sonnet-4.5', or to a provider model instance.",
+      ].join('\n');
+    case 'ai-missing-peer':
+      return [
+        "device.act and device.extract need the optional peer dependency 'ai'.",
+        'Install it with: pnpm add -D ai',
+      ].join('\n');
+    case 'ai-blocked':
+      return [
+        `act stopped without finishing: ${info.summary}`,
+        ``,
+        `Instruction: ${info.instruction}`,
+        ``,
+        `Screen:`,
+        info.screen,
+      ].join('\n');
+    case 'ai-incomplete':
+      return [
+        `act ran ${String(info.steps)} steps without reaching an outcome.`,
+        ``,
+        `Instruction: ${info.instruction}`,
+        ``,
+        'Raise maxSteps, or split the instruction into smaller ones.',
+        ``,
+        `Screen:`,
+        info.screen,
+      ].join('\n');
     default: {
       const never: never = info;
       throw new Error(`unhandled error info ${JSON.stringify(never)}`);
