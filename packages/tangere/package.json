@@ -2,15 +2,15 @@
   "name": "tangere",
   "version": "0.0.1",
   "description": "End-to-end testing for mobile apps.",
-  "homepage": "https://github.com/wobsoriano/tappet#readme",
+  "homepage": "https://github.com/wobsoriano/tangere#readme",
   "bugs": {
-    "url": "https://github.com/wobsoriano/tappet/issues"
+    "url": "https://github.com/wobsoriano/tangere/issues"
   },
   "license": "MIT",
   "author": "Robert Soriano",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/wobsoriano/tappet.git"
+    "url": "git+https://github.com/wobsoriano/tangere.git"
   },
   "files": [
     "dist"

@@ -64,7 +64,7 @@ One worker gets one device. To run more than one, give `deviceName` an array wit
 npx playwright test --project=ios
 ```
 
-`preflight` reads a project's options and reports whether the device they name is booted, so a missing simulator fails once, in about a second, instead of once per test after the launch timeout. Wire it as a setup project per platform that the device projects depend on. [Basics](https://github.com/wobsoriano/tappet/blob/main/docs/basics.md) has the spec, and [`apps/e2e/e2e/preflight.setup.mts`](https://github.com/wobsoriano/tappet/blob/main/apps/e2e/e2e/preflight.setup.mts) is a working one.
+`preflight` reads a project's options and reports whether the device they name is booted, so a missing simulator fails once, in about a second, instead of once per test after the launch timeout. Wire it as a setup project per platform that the device projects depend on. [Basics](https://github.com/wobsoriano/tangere/blob/main/docs/basics.md) has the spec, and [`apps/e2e/e2e/preflight.setup.mts`](https://github.com/wobsoriano/tangere/blob/main/apps/e2e/e2e/preflight.setup.mts) is a working one.
 
 ## Run the sample project
 
@@ -89,12 +89,12 @@ Leave Metro running for the whole suite. The first build takes several minutes.
 
 ## Docs
 
-- [Basics](https://github.com/wobsoriano/tappet/blob/main/docs/basics.md)
-- [Configuration](https://github.com/wobsoriano/tappet/blob/main/docs/configuration.md)
-- [Locators](https://github.com/wobsoriano/tappet/blob/main/docs/locators.md)
-- [Assertions](https://github.com/wobsoriano/tappet/blob/main/docs/assertions.md)
-- [Lifecycle](https://github.com/wobsoriano/tappet/blob/main/docs/lifecycle.md)
-- [Continuous integration](https://github.com/wobsoriano/tappet/blob/main/docs/ci.md)
+- [Basics](https://github.com/wobsoriano/tangere/blob/main/docs/basics.md)
+- [Configuration](https://github.com/wobsoriano/tangere/blob/main/docs/configuration.md)
+- [Locators](https://github.com/wobsoriano/tangere/blob/main/docs/locators.md)
+- [Assertions](https://github.com/wobsoriano/tangere/blob/main/docs/assertions.md)
+- [Lifecycle](https://github.com/wobsoriano/tangere/blob/main/docs/lifecycle.md)
+- [Continuous integration](https://github.com/wobsoriano/tangere/blob/main/docs/ci.md)
 
 ## The workspace
 
