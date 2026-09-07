@@ -44,6 +44,16 @@ use: {
 
 A string is a gateway model id, which the AI SDK resolves against `AI_GATEWAY_API_KEY`.
 
+Playwright reads no `.env` on its own. Load one from the config before `defineConfig`, as the sample app does, and keep the file out of git.
+
+```ts
+import { existsSync } from 'node:fs';
+import path from 'node:path';
+
+const envFile = path.join(__dirname, '.env');
+if (existsSync(envFile)) process.loadEnvFile(envFile);
+```
+
 ```ts
 use: { app: 'com.example.app', aiModel: 'anthropic/claude-sonnet-4.5' }
 ```
