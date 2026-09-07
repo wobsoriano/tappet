@@ -108,7 +108,7 @@ The locator inside `has` is matched on its own terms. Its fields, its own filter
 
 ## Filtering by text collapses the containers around it
 
-A `hasText` filter names a string on screen, so ancestor absorption treats every candidate holding that string as one thing and keeps the innermost.
+A `hasText` filter names a string on screen, so ancestor absorption treats a chain of candidates holding that string as one thing and keeps the innermost. Candidates in disjoint subtrees stay distinct, the way they do for any other query.
 
 That is what makes the filter usable on a React Native tree, where almost every container reports role `other`. Three nested containers on the sample app's home screen hold "Dev tools", and their own names are all different.
 
@@ -121,7 +121,7 @@ That is what makes the filter usable on a React Native tree, where almost every 
 
 `getByRole('other').filter({ hasText: 'Dev tools' })` resolves to `@e5`, the card that holds the text, rather than to every wrapper around it.
 
-`hasNotText`, `has` and `hasNot` take no part in absorption. They name structure or an absence rather than a string, and `getByRole('other').filter({ has: device.getByRole('button') })` is meant to find several sibling containers.
+`hasNotText`, `has` and `hasNot` leave the compared string alone. They name structure or an absence rather than a string on screen. Absorption still runs on whatever the query would have compared without them, so a chain of same-named containers still collapses and differently named ones stay apart. That is why `getByRole('other').filter({ has: device.getByRole('button') })` can resolve to several siblings.
 
 ## Roles
 

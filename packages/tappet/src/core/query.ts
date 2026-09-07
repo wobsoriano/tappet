@@ -48,7 +48,7 @@ export type Filter = {
  * makes `getByText` behave like Playwright's. `filters` holds one entry per
  * `.filter()` call the author wrote, conjunctive inside an entry and across
  * them, so the rendered description reproduces the chain. `index` is the
- * strictness opt-out set by `.first()` and `.nth(n)`; without it more than one
+ * strictness opt-out set by `.first()` and `.nth(n)`. Without it more than one
  * distinct match is an error.
  */
 export type Query = {

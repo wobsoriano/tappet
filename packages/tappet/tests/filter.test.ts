@@ -37,9 +37,14 @@ test('a hasText filter collapses a chain of containers to the innermost one hold
   expect(refs(resolve(home, containers([{ hasText: textMatch('Dev tools') }])))).toEqual(['@e5']);
 });
 
-test('hasText matches the candidate itself, not only its subtree', () => {
-  const query: Query = { role: 'text', filters: [{ hasText: textMatch('Dev tools') }] };
-  expect(refs(resolve(home, query))).toEqual(['@e19']);
+test('hasText matches the candidate itself but has needs a strict descendant', () => {
+  const own: Query = { role: 'text', filters: [{ hasText: textMatch('Dev tools') }] };
+  const inside: Query = {
+    role: 'text',
+    filters: [{ has: { role: 'text', name: textMatch('Dev tools') } }],
+  };
+  expect(refs(resolve(home, own))).toEqual(['@e19']);
+  expect(refs(resolve(home, inside))).toEqual([]);
 });
 
 test('a regex hasText narrows the same chain', () => {
@@ -48,16 +53,25 @@ test('a regex hasText narrows the same chain', () => {
   ).toEqual(['@e5']);
 });
 
-test('hasNotText drops the candidates whose text it names', () => {
+test('hasNotText drops a candidate whose subtree carries the text, not only its own name', () => {
   const query: Query = { role: 'button', filters: [{ hasNotText: textMatch('Home') }] };
   expect(refs(resolve(home, { role: 'button' }))).toEqual(['@e29', '@e30']);
   expect(refs(resolve(home, query))).toEqual(['@e30']);
+
+  // @e5 is named "Live from the cloud" and holds the "Dev tools" text a level down.
+  expect(refs(resolve(home, { role: 'other' }))).toContain('@e5');
+  expect(refs(resolve(home, containers([{ hasNotText: textMatch('Dev tools') }])))).not.toContain(
+    '@e5',
+  );
 });
 
 test('has keeps the containers holding a descendant match and drops the hint card', () => {
-  const held = refs(resolve(home, containers([{ has: { role: 'button' } }])));
-  expect(held).toEqual(['@e3', '@e25', '@e27']);
-  expect(held).not.toContain('@e5');
+  // @e5 is the hint card. It holds the "Dev tools" text but no button.
+  expect(refs(resolve(home, containers([{ has: { role: 'button' } }])))).toEqual([
+    '@e3',
+    '@e25',
+    '@e27',
+  ]);
 });
 
 test('hasNot is the inverse of has', () => {
@@ -81,9 +95,14 @@ test('a second filter narrows the same way a second field in the first one would
   expect(refs(resolve(home, chained))).toEqual(['@e8', '@e11']);
 });
 
-test('an inner query carries its own filters', () => {
+test('an inner query keeps its own filters and drops its own index', () => {
   const query = containers([{ has: containers([{ hasText: textMatch('Welcome') }]) }]);
   expect(refs(resolve(androidHome, query))).toEqual(['@e20']);
+
+  const indexed = containers([{ has: { role: 'button', index: 99 } }]);
+  expect(refs(resolve(home, indexed))).toEqual(
+    refs(resolve(home, containers([{ has: { role: 'button' } }]))),
+  );
 });
 
 test('an Android tree of unnamed containers narrows to one row', () => {
@@ -92,6 +111,13 @@ test('an Android tree of unnamed containers narrows to one row', () => {
     '@e21',
   ]);
   expect(refs(resolve(androidHome, containers([{ has: { role: 'button' } }])))).toEqual(['@e21']);
+});
+
+test('a miss on a hasText filter names the text the author was reaching for', () => {
+  const resolution = resolve(home, containers([{ hasText: textMatch('Dev tolls') }]));
+  expect(resolution.outcome).toBe('none');
+  if (resolution.outcome !== 'none') return;
+  expect(resolution.nearest.map((node) => node.name)).toEqual(['Dev tools']);
 });
 
 test('describeQuery renders the chain between the factory call and the index suffix', () => {

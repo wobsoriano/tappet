@@ -381,7 +381,8 @@ function nearestTo(screen: Screen, query: Query): readonly ScreenNode[] {
 }
 
 function wantedText(query: Query): string | null {
-  for (const match of [query.name, query.testId, query.value]) {
+  const asked = (query.filters ?? []).map((filter) => filter.hasText);
+  for (const match of [query.name, query.testId, query.value, ...asked]) {
     if (match !== undefined && match.kind !== 'regex') return match.value;
   }
   return null;
