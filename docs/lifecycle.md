@@ -61,7 +61,7 @@ The worker fixture closes the session when the worker exits. `close` is idempote
 The `agent-device` CLI and the client tappet uses share one daemon, and a version mismatch makes each side restart it, which drops every open session. tappet pins `agent-device` as a dependency, so run the CLI through your workspace rather than a global install.
 
 ```sh
-pnpm exec agent-device sessions list
+pnpm exec agent-device session list
 ```
 
 The workspace root pins `agent-device` as a devDependency at the library's exact version for one reason. `pnpm exec agent-device` resolves through the nearest `node_modules/.bin`, and a package that only reaches agent-device through tappet has no such binary, so the command would fall through to a globally installed CLI. A CLI at another version replaces the shared daemon on every call and drops every open session, which shows up as `SESSION_NOT_FOUND` in the middle of a suite. Pin the same version in any project that drives a device by hand next to tappet.

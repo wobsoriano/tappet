@@ -112,3 +112,28 @@ filled   @e24 [text-field] "rob@example.com"   value "rob@example.com"
 So `getByRole('text-field', { name: 'Email' })` finds that field while it is empty and stops matching the moment anything is typed into it. Name a field by its `testID` when you need a locator that survives the write.
 
 `fill` is unaffected. It confirms what it wrote against the node it wrote to rather than against the locator you named it with, so a name-shaped locator is still a legal way to fill a field.
+
+## A SwiftUI identifier can name several siblings
+
+`getByTestId` is the sharpest locator in a React Native tree, where a `testID` lands on one view. It is not sharp in a SwiftUI one. SwiftUI's `.accessibilityIdentifier` applied to a container propagates to every accessibility element inside it, so one identifier in the source can be several nodes on screen.
+
+Clerk's native sign-in view is the case that found this. It puts the identifier on the `HStack` wrapping a field, and the password step reports three siblings carrying it.
+
+```
+@e64 [text] "Enter your password"        #clerk.auth.signIn.password
+@e65 [secure-text-field]                 #clerk.auth.signIn.password
+@e66 [button] "Hide"                     #clerk.auth.signIn.password
+```
+
+They sit on one parent rather than one ancestor chain, so absorption leaves them alone and `getByTestId('clerk.auth.signIn.password')` is ambiguous. `agent-device` refuses the same selector with `AMBIGUOUS_MATCH`, so this is the driver's reading too, not tappet's alone.
+
+Narrow with the role, which is what separates them.
+
+```ts
+device.locator({
+  testId: { kind: 'exact', value: 'clerk.auth.signIn.password' },
+  role: 'secure-text-field',
+});
+```
+
+A field can also be missing from the tree entirely. SwiftUI animates a control to near-zero opacity rather than removing it, and an element that faint is left out of the accessibility tree, so Clerk's email field appears only once something focuses it. Tap the placeholder, which is the node that carries the identifier while the field is hidden, and the field arrives.

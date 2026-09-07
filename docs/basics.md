@@ -52,6 +52,8 @@ That quiet period is reserved out of the action's budget rather than taken from 
 
 A retry re-sends the same fill. Pacing the keystrokes instead was tried and removed. The driver's per-character delay routes the write down a path that appends to the field rather than replacing it, so a paced retry turned `rob@example.com` into `r@example.comrob@example.com` and never converged. When the budget runs out, the error names the value that was actually there and the number of attempts.
 
+A secure field is read back differently, because it never reports its contents. It reports one masking character per character it holds, so what the read back checks there is the length. That still catches the dropped keystroke this exists for, because a short write is a short mask, and the failure names how many characters were typed rather than the text, so a password stays out of the terminal and out of the HTML report.
+
 `relaunch()` relaunches the app and waits for the ready gate again. `dismissDevOverlay()` clears the React Native development warning overlay. It is never automatic, because the overlay is a real node and hiding it by default would suppress a warning a test might want to assert on.
 
 ## Reading values
