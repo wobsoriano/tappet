@@ -3,7 +3,7 @@
 > [!WARNING]
 > tangere is highly experimental. Use at your own risk.
 
-tangere runs e2e tests for mobile apps on the Playwright test runner. It drives a booted simulator or emulator through Callstack [`agent-device`](https://agent-device.dev/).
+tangere runs e2e tests for mobile apps on the Playwright test runner. It drives a booted simulator or emulator through [`agent-device`](https://agent-device.dev/).
 
 ```ts
 import { expect, test } from 'tangere';
