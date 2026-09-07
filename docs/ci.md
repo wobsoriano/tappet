@@ -7,10 +7,12 @@ Two workflows live in `.github/workflows`. One is fast and runs on every push. T
 Runs on pushes to `main` and on every pull request, on `ubuntu-latest`. It checks out the repository, sets up Vite Plus with its cache, and runs the three commands you run locally.
 
 ```sh
+vp run -r build   # build every package in dependency order
 vp check          # format, lint, and type check every package
 vp test           # the library's unit tests
-vp run -r build   # build every package in dependency order
 ```
+
+The build leads. The sample app imports tappet through its exports map, which points at `dist`, so nothing can typecheck until the workspace is built.
 
 Nothing here touches a device, so it finishes in about a minute and it is what gates a pull request.
 
@@ -36,7 +38,15 @@ The same applies locally. The checked-in default is `Expo API 36`, which is the 
 
 `agent-device` builds a small XCTest runner the first time it drives an iOS device, and that build costs several minutes. The workflow caches `~/.agent-device/apple-runner/derived` keyed on the `agent-device` version and the Xcode version, then runs `agent-device prepare ios-runner` explicitly so the build happens in a step you can read rather than inside the first test.
 
-The Android emulator's AVD is cached the same way, keyed by API level.
+The Android emulator's AVD is cached the same way, keyed by API level, target, and architecture.
+
+### The native build cache
+
+The cold native build is what a run actually costs, so both jobs cache the artifact it produces. A step hashes the inputs the build reads, using `git ls-files -s` over the lockfile, the workspace file, and the sample app's `package.json`, `app.json`, `app`, `src`, and `assets`, piped to `git hash-object --stdin`. The iOS job folds in the Xcode version and the Android job folds in the API level, because the same sources build differently against a different toolchain.
+
+The key is `tappet-native-v1-<platform>-<hash>`. `actions/cache/restore` looks for the `.app` bundle on iOS and the release APK on Android. A hit skips both `expo prebuild` and the platform build. A miss runs them and `actions/cache/save` stores the artifact under the key that was just missed. Bump the `v1` when the build commands change, since the commands are not part of the hash.
+
+The library source is deliberately left out of the hash. The sample app never imports tappet. It is a devDependency the specs use on the host, so a library change cannot alter the native build. `vp run -r build` stays unconditional for that reason, because the specs need the built library whether or not the app was rebuilt.
 
 ### Artifacts
 
@@ -55,4 +65,4 @@ pnpm --filter tappet-e2e test:e2e --project=android
 
 ## What a run costs
 
-Both workflows have run green on GitHub-hosted runners. The first run of each job pays for a cold native build, about 26 minutes for the iOS Release build on `macos-26` and about 42 minutes for the Android Release build on `ubuntu-latest`, against under four minutes for the suite itself. The next change to the workflow is a cache of the built app keyed on its inputs, so a change that does not touch the sample app or the lockfile skips the build entirely.
+Both workflows have run green on GitHub-hosted runners. A cold native build is what a run pays for, about 26 minutes for the iOS Release build on `macos-26` and about 42 minutes for the Android Release build on `ubuntu-latest`, against under four minutes for the suite itself. The native build cache removes that cost from every run that does not touch the sample app or the lockfile.

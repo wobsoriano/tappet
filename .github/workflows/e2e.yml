@@ -44,8 +44,39 @@ jobs:
           path: ~/.agent-device/apple-runner/derived
           key: apple-runner-${{ steps.versions.outputs.agent_device }}-${{ steps.versions.outputs.xcode }}
 
+      # The library source is deliberately not in this hash. The app never imports tappet, which is a
+      # devDependency the specs use on the host, so a library change cannot alter the native build.
+      - name: Compute native build cache key
+        id: native-build-key
+        env:
+          XCODE: ${{ steps.versions.outputs.xcode }}
+        run: |
+          build_hash="$(
+            {
+              git ls-files -s -- \
+                pnpm-lock.yaml \
+                pnpm-workspace.yaml \
+                apps/e2e/package.json \
+                apps/e2e/app.json \
+                apps/e2e/app \
+                apps/e2e/src \
+                apps/e2e/assets
+              echo "xcode=$XCODE"
+            } | git hash-object --stdin
+          )"
+          echo "hash=$build_hash" >> "$GITHUB_OUTPUT"
+
+      - name: Restore native build
+        id: native-build-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: apps/e2e/ios/build/Build/Products/Release-iphonesimulator/tappete2e.app
+          # Bump the version when the build commands below change.
+          key: tappet-native-v1-ios-${{ steps.native-build-key.outputs.hash }}
+
       # Release bundles the JavaScript into the app, so no Metro server has to stay alive for the run.
       - name: Build the app in Release for the simulator
+        if: steps.native-build-cache.outputs.cache-hit != 'true'
         working-directory: apps/e2e
         run: |
           npx expo prebuild --clean --platform ios
@@ -57,6 +88,13 @@ jobs:
             -derivedDataPath ios/build \
             -destination "id=${{ steps.simulator.outputs.udid }}" \
             build
+
+      - name: Save native build
+        if: steps.native-build-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: apps/e2e/ios/build/Build/Products/Release-iphonesimulator/tappete2e.app
+          key: ${{ steps.native-build-cache.outputs.cache-primary-key }}
 
       - name: Install the app
         run: |
@@ -86,6 +124,7 @@ jobs:
     timeout-minutes: 60
     env:
       TAPPET_ANDROID_DEVICE: ci-api34
+      ANDROID_API_LEVEL: '34'
     steps:
       - uses: actions/checkout@v5
 
@@ -114,11 +153,47 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
+      # The library source is deliberately not in this hash. The app never imports tappet, which is a
+      # devDependency the specs use on the host, so a library change cannot alter the native build.
+      - name: Compute native build cache key
+        id: native-build-key
+        run: |
+          build_hash="$(
+            {
+              git ls-files -s -- \
+                pnpm-lock.yaml \
+                pnpm-workspace.yaml \
+                apps/e2e/package.json \
+                apps/e2e/app.json \
+                apps/e2e/app \
+                apps/e2e/src \
+                apps/e2e/assets
+              echo "api-level=$ANDROID_API_LEVEL"
+            } | git hash-object --stdin
+          )"
+          echo "hash=$build_hash" >> "$GITHUB_OUTPUT"
+
+      - name: Restore native build
+        id: native-build-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: apps/e2e/android/app/build/outputs/apk/release/app-release.apk
+          # Bump the version when the build commands below change.
+          key: tappet-native-v1-android-${{ steps.native-build-key.outputs.hash }}
+
       - name: Build the app in Release
+        if: steps.native-build-cache.outputs.cache-hit != 'true'
         working-directory: apps/e2e
         run: |
           npx expo prebuild --clean --platform android
           ./android/gradlew -p android assembleRelease
+
+      - name: Save native build
+        if: steps.native-build-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: apps/e2e/android/app/build/outputs/apk/release/app-release.apk
+          key: ${{ steps.native-build-cache.outputs.cache-primary-key }}
 
       - id: avd-cache
         uses: actions/cache@v4
@@ -126,13 +201,13 @@ jobs:
           path: |
             ~/.android/avd/*
             ~/.android/adb*
-          key: avd-34-google_apis-x86_64
+          key: avd-${{ env.ANDROID_API_LEVEL }}-google_apis-x86_64
 
       - name: Create the AVD
         if: steps.avd-cache.outputs.cache-hit != 'true'
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
-          api-level: 34
+          api-level: ${{ env.ANDROID_API_LEVEL }}
           target: google_apis
           arch: x86_64
           avd-name: ci-api34
@@ -144,7 +219,7 @@ jobs:
       - name: Run the suite
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
-          api-level: 34
+          api-level: ${{ env.ANDROID_API_LEVEL }}
           target: google_apis
           arch: x86_64
           avd-name: ci-api34
