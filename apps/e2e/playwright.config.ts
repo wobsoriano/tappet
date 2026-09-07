@@ -3,8 +3,14 @@ import type { TappetOptions } from 'tappet';
 
 // The device names are overridable because CI boots whatever model its runner image carries, which
 // is not the one on a developer's machine. Preflight turns a mismatch into one readable failure.
-const iosDevice = process.env['TAPPET_IOS_DEVICE'] ?? 'iPhone 17 Pro Max';
-const androidDevice = process.env['TAPPET_ANDROID_DEVICE'] ?? 'Expo API 36';
+const ios = {
+  platform: 'ios',
+  deviceName: process.env['TAPPET_IOS_DEVICE'] ?? 'iPhone 17 Pro Max',
+} as const;
+const android = {
+  platform: 'android',
+  deviceName: process.env['TAPPET_ANDROID_DEVICE'] ?? 'Expo API 36',
+} as const;
 
 export default defineConfig<TappetOptions>({
   // The specs are .mts because Playwright transpiles the workspace-linked library as source, and
@@ -24,25 +30,9 @@ export default defineConfig<TappetOptions>({
     // One setup project per platform, off the same spec. A Playwright setup project has a single
     // `use`, so a shared one could only ever check one platform's device, and running the other
     // platform would gate on a device that run has no reason to have booted.
-    {
-      name: 'setup-ios',
-      testMatch: /preflight\.setup\.mts/,
-      use: { platform: 'ios', deviceName: iosDevice },
-    },
-    {
-      name: 'setup-android',
-      testMatch: /preflight\.setup\.mts/,
-      use: { platform: 'android', deviceName: androidDevice },
-    },
-    {
-      name: 'ios',
-      dependencies: ['setup-ios'],
-      use: { platform: 'ios', deviceName: iosDevice },
-    },
-    {
-      name: 'android',
-      dependencies: ['setup-android'],
-      use: { platform: 'android', deviceName: androidDevice },
-    },
+    { name: 'setup-ios', testMatch: /preflight\.setup\.mts/, use: ios },
+    { name: 'setup-android', testMatch: /preflight\.setup\.mts/, use: android },
+    { name: 'ios', dependencies: ['setup-ios'], use: ios },
+    { name: 'android', dependencies: ['setup-android'], use: android },
   ],
 });

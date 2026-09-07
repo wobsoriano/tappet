@@ -7,9 +7,9 @@ import type { Platform } from './screen.ts';
  * so a project overrides one without restating the rest.
  *
  * Playwright types `use` as a partial of this, so a config may leave any key
- * out. `parseDeviceOptions` is what makes the first three required. It runs
- * once at worker start, names the key to fix, and nothing downstream
- * re-validates.
+ * out. `parseDeviceOptions` is what makes `platform`, `app`, and `readyWhen`
+ * required. It runs once at worker start, names the key to fix, and nothing
+ * downstream re-validates.
  */
 export type TappetOptions = {
   /** Required. */

@@ -13,13 +13,12 @@ const SESSION_FIXTURE_TIMEOUT_MS = 180_000;
 const DEVICE_FIXTURE_TIMEOUT_MS = 120_000;
 
 /**
- * Tappet's options and none of its fixtures, for a project that has to read the
- * configuration before any session exists. A setup project calling `preflight`
- * is the reason this exists: `test` opens a session for every test through its
- * auto `device` fixture, which is the very thing preflight runs ahead of.
+ * Tappet's options and none of its fixtures, for a setup project that has to
+ * read the configuration before any session exists, such as one calling
+ * `preflight`.
  *
- * The three required options default to `undefined` here rather than to a
- * plausible value. A Playwright option fixture needs a default of its declared
+ * `platform`, `app`, and `readyWhen` default to `undefined` here rather than to
+ * a plausible value. A Playwright option fixture needs a default of its declared
  * type, and `parseDeviceOptions` rejects `undefined` by name, so a config that
  * forgot a key and a config that never set one fail the same way.
  */
