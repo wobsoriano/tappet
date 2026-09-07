@@ -3,7 +3,7 @@ import { expect, test } from 'tappet';
 test('the wrong password is rejected without leaving the login screen', async ({ device }) => {
   await device.getByTestId('sign-in-link').tap();
   await device.getByRole('text-field', { name: 'Email' }).fill('rob@example.com');
-  await device.getByTestId('password').fill('wrong');
+  await device.getByTestId('password').fill('wrong', { secret: true });
   await device.getByRole('button', { name: 'Sign in' }).tap();
 
   await expect(device.getByTestId('error')).toHaveText('Wrong email or password', { exact: true });
@@ -15,7 +15,7 @@ test('the right credentials land on the profile after the sign-in wait', async (
   await device.getByRole('text-field').first().fill('rob@example.com');
   await expect(device.getByRole('text-field').first()).toHaveValue('rob@example.com');
 
-  await device.getByTestId('password').fill('hunter2');
+  await device.getByTestId('password').fill('hunter2', { secret: true });
   await device.getByRole('button', { name: 'Sign in' }).tap();
 
   await expect(device.getByTestId('signing-in')).toBeVisible();

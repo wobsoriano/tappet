@@ -50,6 +50,8 @@ A capture that itself fails records an annotation and returns. Masking the test'
 
 `'always'` captures on every test. `'off'` never does.
 
+`screen.txt` lists each node's reference, role, name, test id and flags, and never a field's value, so an iOS secure field's contents cannot reach it. An Android text field is the exception, because it reports its contents as its accessibility name. The step titles hold the same line. A fill is titled by its locator alone, and the value it typed is a nested step that reports a character count for a secure field and for any fill marked `{ secret: true }`.
+
 No `trace.zip` is produced, because no browser is involved. The HTML report is the evidence surface.
 
 ## Shutdown

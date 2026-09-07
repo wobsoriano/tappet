@@ -3,7 +3,7 @@ import { expect, test } from 'tappet';
 test('a test can leave the app signed in on the profile', async ({ device }) => {
   await device.getByTestId('sign-in-link').tap();
   await device.getByTestId('email').fill('rob@example.com');
-  await device.getByTestId('password').fill('hunter2');
+  await device.getByTestId('password').fill('hunter2', { secret: true });
   await device.getByRole('button', { name: 'Sign in' }).tap();
 
   await expect(device.getByTestId('profile-name')).toBeVisible();

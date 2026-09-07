@@ -20,7 +20,7 @@ import { expect, test } from 'tappet';
 test('the wrong password is rejected without leaving the login screen', async ({ device }) => {
   await device.getByTestId('sign-in-link').tap();
   await device.getByRole('text-field', { name: 'Email' }).fill('rob@example.com');
-  await device.getByTestId('password').fill('wrong');
+  await device.getByTestId('password').fill('wrong', { secret: true });
   await device.getByRole('button', { name: 'Sign in' }).tap();
 
   await expect(device.getByTestId('error')).toHaveText('Wrong email or password', { exact: true });
@@ -73,7 +73,9 @@ screen.png and screen.txt are attached to this test in the HTML report.
 
 The `Locator:` line is the factory call rendered back, so it reads like the line you wrote. `Received:` changes shape with the outcome. On a miss it lists the named nodes closest to what you asked for, because a miss is usually a wording drift. On an ambiguous locator it lists every match and suggests `.first()` or `.nth(n)`. `Timeout:` carries the snapshot count, which tells you whether the loop actually got to poll or the budget was spent elsewhere.
 
-The `Screen:` listing uses `agent-device`'s own `[role] "label"` vocabulary, and it is produced by the same renderer that writes the `screen.txt` attachment, so the terminal and the report always agree. Long screens are cut at 60 nodes in the message and kept whole in the attachment.
+The `Screen:` listing uses `agent-device`'s own `[role] "label"` vocabulary, and it is produced by the same renderer that writes the `screen.txt` attachment, so the terminal and the report always agree. Long screens are cut at 60 nodes in the message and kept whole in the attachment. The listing carries a node's reference, role, name, test id and flags. It never carries a field's value, so a secure field's contents cannot reach it.
+
+`Received:` is the one line that repeats a value back, and it prints what the node reported. That is safe for a secure field, which reports a mask rather than its contents. It is not safe for a field you filled with `{ secret: true }`, because the snapshot carries no mark for it. Assert on the result of a sign-in rather than on the credential you typed.
 
 Run that spec yourself from `apps/e2e`.
 

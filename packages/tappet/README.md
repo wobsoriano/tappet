@@ -11,7 +11,7 @@ import { expect, test } from 'tappet';
 test('the right credentials land on the profile', async ({ device }) => {
   await device.getByTestId('sign-in-link').tap();
   await device.getByRole('text-field', { name: 'Email' }).fill('rob@example.com');
-  await device.getByTestId('password').fill('hunter2');
+  await device.getByTestId('password').fill('hunter2', { secret: true });
   await device.getByRole('button', { name: 'Sign in' }).tap();
 
   await expect(device.getByTestId('signing-in')).toBeVisible();
