@@ -6,6 +6,18 @@ export type EvidenceFile =
   | { readonly name: string; readonly path: string; readonly contentType: string }
   | { readonly name: string; readonly body: string; readonly contentType: string };
 
+/**
+ * The most a step title may say about text that was typed.
+ *
+ * A secure field never reports its contents, so a step that wrote to one says
+ * how many characters it typed and nothing else. A caller can ask for the same
+ * treatment on a field the platform did not mark secure, which is what keeps a
+ * credential out of a terminal and out of an HTML report.
+ */
+export type Typed =
+  | { readonly kind: 'text'; readonly value: string }
+  | { readonly kind: 'hidden'; readonly length: number };
+
 export type ActionRecord =
   | {
       readonly kind: 'open';
@@ -15,21 +27,25 @@ export type ActionRecord =
     }
   | { readonly kind: 'tap'; readonly query: Query }
   | { readonly kind: 'long-press'; readonly query: Query; readonly durationMs: number }
-  | { readonly kind: 'fill'; readonly query: Query; readonly text: string }
+  | { readonly kind: 'fill'; readonly query: Query }
+  | { readonly kind: 'typed'; readonly typed: Typed }
   | { readonly kind: 'scroll'; readonly direction: ScrollDirection }
   | { readonly kind: 'relaunch'; readonly app: string }
   | { readonly kind: 'dismiss-overlay' }
   | { readonly kind: 'screenshot'; readonly path: string };
 
+/** A boxed step reports as one line rather than as something to open, which is all a step with no body of its own has to show. */
+export type StepOptions = { readonly box?: boolean };
+
 /**
- * The runner port. A runner with no step concept calls `body()` directly and
- * drops attachments.
+ * The runner port. A runner with no step concept calls `body()` directly,
+ * ignores `options`, and drops attachments.
  *
  * Invariant: `step` invokes `body` exactly once and propagates its result and
  * its rejection unchanged. It reports, it never decides control flow.
  */
 export type ActionSink = {
-  step<T>(title: string, body: () => Promise<T>): Promise<T>;
+  step<T>(title: string, body: () => Promise<T>, options?: StepOptions): Promise<T>;
   attach(file: EvidenceFile): Promise<void>;
   /** A key/value fact about the run, such as which device this worker bound to. */
   note(key: string, value: string): void;
@@ -49,7 +65,9 @@ export function renderTitle(record: ActionRecord): string {
     case 'long-press':
       return `longPress ${describeQuery(record.query)} for ${String(record.durationMs)}ms`;
     case 'fill':
-      return `fill ${describeQuery(record.query)} with "${truncate(record.text)}"`;
+      return `fill ${describeQuery(record.query)}`;
+    case 'typed':
+      return renderTyped(record.typed);
     case 'scroll':
       return `scroll ${record.direction}`;
     case 'relaunch':
@@ -61,6 +79,19 @@ export function renderTitle(record: ActionRecord): string {
     default: {
       const never: never = record;
       throw new Error(`unhandled action record ${JSON.stringify(never)}`);
+    }
+  }
+}
+
+function renderTyped(typed: Typed): string {
+  switch (typed.kind) {
+    case 'text':
+      return `type "${truncate(typed.value)}"`;
+    case 'hidden':
+      return `type ${String(typed.length)} characters`;
+    default: {
+      const never: never = typed;
+      throw new Error(`unhandled typed value ${JSON.stringify(never)}`);
     }
   }
 }

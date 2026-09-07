@@ -3,7 +3,7 @@ import type { ScrollDirection, Settled } from './driver.ts';
 import { TappetError, type ExpectedValue } from './errors.ts';
 import { probe, type ProbeOptions, type ProbeResult } from './probe.ts';
 import { describeQuery, textMatch, type Query, type Role } from './query.ts';
-import { renderTitle, type ActionRecord, type ActionSink } from './report.ts';
+import { renderTitle, type ActionRecord, type ActionSink, type Typed } from './report.ts';
 import {
   pin,
   renderScreen,
@@ -20,6 +20,15 @@ const DEFAULT_LONG_PRESS_MS = 1000;
 export type TextOptions = { exact?: boolean };
 export type RoleOptions = { name?: string | RegExp; exact?: boolean };
 export type ActionOptions = { timeout?: number };
+
+/**
+ * `secret` is fill's alone. It cuts the report and any failure message back to
+ * a character count whatever the written node's role, for a field holding a
+ * credential the platform did not mark secure, which a snapshot gives no way
+ * to detect. The write is still confirmed character for character, because a
+ * field the platform left plain hands its exact contents back.
+ */
+export type FillOptions = ActionOptions & { secret?: boolean };
 
 /**
  * What a test holds. One per test, cheap to build, and the only way into the
@@ -61,7 +70,7 @@ export type Locator = {
   /** Negative indexes count from the end, so `nth(-1)` is the last match. */
   nth(index: number): Locator;
   tap(options?: ActionOptions): Promise<void>;
-  fill(text: string, options?: ActionOptions): Promise<void>;
+  fill(text: string, options?: FillOptions): Promise<void>;
   longPress(durationMs?: number, options?: ActionOptions): Promise<void>;
   count(): Promise<number>;
   /** The matched node's text off one fresh screen. Null when nothing matches; ambiguity fails the way an action does. */
@@ -115,10 +124,10 @@ function createLocator(session: DeviceSession, sink: ActionSink, query: Query): 
       perform(
         session,
         sink,
-        { kind: 'fill', query, text },
+        { kind: 'fill', query },
         options,
         (device, ref, budget) => device.fill(ref, text, budget),
-        text,
+        { text, secret: options?.secret ?? false },
       ),
     longPress: (durationMs, options) => {
       const held = durationMs ?? DEFAULT_LONG_PRESS_MS;
@@ -178,7 +187,7 @@ function createLocator(session: DeviceSession, sink: ActionSink, query: Query): 
  * once; a second one means the screen is changing faster than we can act on
  * it, which is a real finding and reported as one.
  *
- * `expectedValue` makes the action a write that is read back. A device keyboard
+ * `write` makes the action a write that is read back. A device keyboard
  * drops early keystrokes often enough that a fill can under-deliver its text
  * and still report success, so fill dispatches again until the field holds what
  * it was given or the budget runs out. Re-filling is safe because a fill
@@ -193,7 +202,9 @@ function createLocator(session: DeviceSession, sink: ActionSink, query: Query): 
  *
  * What counts as proof comes from the written node's role, because a secure
  * field reports a mask rather than its contents and can only ever prove how
- * much it holds. See `expectedOf`.
+ * much it holds. The same classification decides how much of the text the
+ * nested `type` step and any failure message are allowed to repeat back. See
+ * `confirmationOf`.
  */
 function perform(
   session: DeviceSession,
@@ -201,7 +212,7 @@ function perform(
   record: Extract<ActionRecord, { query: Query }>,
   options: ActionOptions | undefined,
   dispatch: (device: SessionDevice, ref: PinnedRef, budgetMs: number) => Promise<Settled>,
-  expectedValue?: string,
+  write?: Write,
 ): Promise<void> {
   const timeout = options?.timeout ?? session.options.actionTimeout;
   const locator = describeQuery(record.query);
@@ -218,7 +229,7 @@ function perform(
           kind: 'fill-unconfirmed',
           locator,
           expected,
-          actual: lastActual,
+          actual: lastActual === null ? null : disclose(expected, lastActual),
           attempts,
           timeoutMs: timeout,
           screen: renderScreen(screen),
@@ -234,17 +245,17 @@ function perform(
           });
         }
         if (resolution.outcome === 'one') {
-          const expected =
-            expectedValue === undefined ? null : expectedOf(resolution.node.role, expectedValue);
+          const confirmation =
+            write === undefined ? null : confirmationOf(resolution.node.role, write);
           // A confirmed write needs its quiet period inside the budget, not whatever is
           // left over. Confirming across a window that shrank to nothing is two reads
           // back to back, which is the single read this exists to replace.
           if (
-            expected !== null &&
+            confirmation !== null &&
             attempts > 0 &&
             deadline - Date.now() <= session.options.settleQuietMs
           ) {
-            throw unconfirmed(expected);
+            throw unconfirmed(expectedOf(confirmation));
           }
           let settled: Settled;
           try {
@@ -259,7 +270,14 @@ function perform(
           if (!settled.settled) {
             sink.note('settle', `${renderTitle(record)} finished before the screen went quiet`);
           }
-          if (expected === null) return;
+          if (confirmation === null) return;
+          if (attempts === 1) {
+            await sink.step(
+              renderTitle({ kind: 'typed', typed: typedOf(confirmation) }),
+              () => Promise.resolve(),
+              { box: true },
+            );
+          }
           // The locator names the field until the first write lands, after which the
           // written node names itself, because Android reports a text field's
           // accessible name as its contents.
@@ -267,17 +285,17 @@ function perform(
 
           screen = await device.capture();
           lastActual = valueAt(screen, target);
-          if (lastActual !== null && holds(expected, lastActual)) {
+          if (lastActual !== null && holds(confirmation, lastActual)) {
             await sleep(session.options.settleQuietMs);
             screen = await device.capture();
             const second = valueAt(screen, target);
             // A locator that stopped resolving says nothing about the value, so the read
             // that did resolve stands. Only a different value is evidence of a revert.
-            if (second === null || holds(expected, second)) return;
+            if (second === null || holds(confirmation, second)) return;
             lastActual = second;
           }
           const left = deadline - Date.now();
-          if (left <= 0) throw unconfirmed(expected);
+          if (left <= 0) throw unconfirmed(expectedOf(confirmation));
           await sleep(Math.min(ACTION_POLL_MS, left));
           screen = await device.capture();
           continue;
@@ -298,36 +316,92 @@ function perform(
   });
 }
 
+type Write = { readonly text: string; readonly secret: boolean };
+
 /**
- * What the written field is able to prove about the write.
+ * What the written field proves about a write, and how much of that a message
+ * may repeat back. Both come out of the same question, so they are answered
+ * together and cannot drift apart.
  *
  * A secure field never reports its contents, only one masking character per
- * character it holds, so its length is everything it can attest to. Checking
- * that length still catches the failure this confirmation exists for, a device
- * keyboard dropping keystrokes, because a dropped keystroke is a shorter mask.
+ * character it holds, so its length is both everything it can attest to and
+ * everything it can disclose. Checking that length still catches the failure
+ * this confirmation exists for, a device keyboard dropping keystrokes, because
+ * a dropped keystroke is a shorter mask.
+ *
+ * A field the caller marked `secret` is a plain field that happens to hold a
+ * credential the platform did not mark secure. It hands back its exact
+ * contents, so it is confirmed character for character, and only the reporting
+ * is cut back to a length. Folding it into `mask` would compare it the way a
+ * mask is compared, which demands one repeated character, and a password read
+ * back verbatim is never that.
  */
-function expectedOf(role: Role, text: string): ExpectedValue {
-  return role === 'secure-text-field'
-    ? { kind: 'masked', length: text.length }
-    : { kind: 'exact', value: text };
+type Confirmation =
+  | { readonly kind: 'mask'; readonly length: number }
+  | { readonly kind: 'secret'; readonly value: string }
+  | { readonly kind: 'open'; readonly value: string };
+
+function confirmationOf(role: Role, write: Write): Confirmation {
+  if (role === 'secure-text-field') return { kind: 'mask', length: write.text.length };
+  return write.secret ? { kind: 'secret', value: write.text } : { kind: 'open', value: write.text };
+}
+
+function holds(confirmation: Confirmation, actual: string): boolean {
+  switch (confirmation.kind) {
+    // Requiring the mask be one repeated character is what stops a placeholder that
+    // happens to be the right length, which is what an untouched secure field
+    // reports, from passing as a landed write.
+    case 'mask':
+      return actual.length === confirmation.length && new Set(actual).size <= 1;
+    case 'secret':
+    case 'open':
+      return actual === confirmation.value;
+    default: {
+      const never: never = confirmation;
+      throw new Error(`unhandled confirmation ${JSON.stringify(never)}`);
+    }
+  }
+}
+
+function expectedOf(confirmation: Confirmation): ExpectedValue {
+  switch (confirmation.kind) {
+    case 'mask':
+      return { kind: 'masked', length: confirmation.length };
+    case 'secret':
+      return { kind: 'masked', length: confirmation.value.length };
+    case 'open':
+      return { kind: 'exact', value: confirmation.value };
+    default: {
+      const never: never = confirmation;
+      throw new Error(`unhandled confirmation ${JSON.stringify(never)}`);
+    }
+  }
+}
+
+function typedOf(confirmation: Confirmation): Typed {
+  switch (confirmation.kind) {
+    case 'mask':
+      return { kind: 'hidden', length: confirmation.length };
+    case 'secret':
+      return { kind: 'hidden', length: confirmation.value.length };
+    case 'open':
+      return { kind: 'text', value: confirmation.value };
+    default: {
+      const never: never = confirmation;
+      throw new Error(`unhandled confirmation ${JSON.stringify(never)}`);
+    }
+  }
 }
 
 /**
- * Requiring the mask be one repeated character is what stops a placeholder that
- * happens to be the right length, which is what an untouched secure field
- * reports, from passing as a landed write.
+ * An actual value may be repeated back only as far as the expected one could
+ * be, so a field the caller marked secret reports its length the same way a
+ * secure field's mask does.
  */
-function holds(expected: ExpectedValue, actual: string): boolean {
-  switch (expected.kind) {
-    case 'exact':
-      return actual === expected.value;
-    case 'masked':
-      return actual.length === expected.length && new Set(actual).size <= 1;
-    default: {
-      const never: never = expected;
-      throw new Error(`unhandled expected value ${JSON.stringify(never)}`);
-    }
-  }
+function disclose(expected: ExpectedValue, actual: string): ExpectedValue {
+  return expected.kind === 'masked'
+    ? { kind: 'masked', length: actual.length }
+    : { kind: 'exact', value: actual };
 }
 
 /** The field's current contents, or null once the locator stops resolving to exactly one node. */

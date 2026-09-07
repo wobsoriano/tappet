@@ -1,13 +1,14 @@
 import type { DeviceFailure } from './driver.ts';
 
 /**
- * What a field can prove about a write, and so the most a failure may say about
- * the text that was typed.
+ * The most a failure may say about the text that was typed.
  *
  * A readable field hands back its exact contents. A secure field replaces them
  * with one masking character per character it holds, so how much it holds is
- * the whole of what it can prove. The password has no representation in this
- * union, which is what keeps it out of a terminal and out of an HTML report.
+ * the whole of what it can report. A field the caller marked secret discloses
+ * a length as well, even though it was confirmed character for character. The
+ * password has no representation in this union, which is what keeps it out of
+ * a terminal and out of an HTML report.
  */
 export type ExpectedValue =
   | { readonly kind: 'exact'; readonly value: string }
@@ -57,7 +58,7 @@ export type ErrorInfo =
       readonly kind: 'fill-unconfirmed';
       readonly locator: string;
       readonly expected: ExpectedValue;
-      readonly actual: string | null;
+      readonly actual: ExpectedValue | null;
       readonly attempts: number;
       readonly timeoutMs: number;
       readonly screen: string;
@@ -123,8 +124,8 @@ function formatError(info: ErrorInfo): string {
         `fill left the field holding something else after ${String(info.attempts)} attempts in ${String(info.timeoutMs)}ms.`,
         ``,
         `Locator: ${info.locator}`,
-        `Expected value: ${describeExpected(info.expected)}`,
-        `Actual value: ${info.actual === null ? 'the locator stopped resolving' : `"${info.actual}"`}`,
+        `Expected value: ${describeValue(info.expected)}${info.expected.kind === 'masked' ? ' (a secure field reports a mask, not its contents)' : ''}`,
+        `Actual value: ${info.actual === null ? 'the locator stopped resolving' : describeValue(info.actual)}`,
         ``,
         `Screen:`,
         info.screen,
@@ -138,14 +139,19 @@ function formatError(info: ErrorInfo): string {
   }
 }
 
-function describeExpected(expected: ExpectedValue): string {
-  switch (expected.kind) {
+/**
+ * How much of a value a message may repeat back. A masked value is reported by
+ * its length alone, which is all a secure field, or a field the caller marked
+ * secret, can be allowed to disclose.
+ */
+function describeValue(value: ExpectedValue): string {
+  switch (value.kind) {
     case 'exact':
-      return `"${expected.value}"`;
+      return `"${value.value}"`;
     case 'masked':
-      return `${String(expected.length)} characters (a secure field reports a mask, not its contents)`;
+      return `${String(value.length)} characters`;
     default: {
-      const never: never = expected;
+      const never: never = value;
       throw new Error(`unhandled expected value ${JSON.stringify(never)}`);
     }
   }

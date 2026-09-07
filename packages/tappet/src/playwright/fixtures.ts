@@ -132,7 +132,7 @@ function shouldCapture(testInfo: TestInfo, evidence: 'on-failure' | 'always' | '
  */
 export function playwrightSink(): ActionSink {
   return {
-    step: (title, body) => base.step(title, body),
+    step: (title, body, options) => base.step(title, body, options),
     attach: async (file: EvidenceFile) => {
       const info = currentTest();
       if (info === null) return;

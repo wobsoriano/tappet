@@ -4,7 +4,7 @@ import { parseDeviceOptions, type TappetOptions } from '../src/core/config.ts';
 import { TappetError } from '../src/core/errors.ts';
 import { silentSink } from '../src/core/report.ts';
 import { openSession } from '../src/core/session.ts';
-import { createFakeDriver, type FakeDriver } from './fake-driver.ts';
+import { createFakeDriver, createRecordingSink, type FakeDriver } from './fake-driver.ts';
 
 /** What the fixtures hand the parser: tappet's options plus Playwright's own `actionTimeout`. */
 type ParseInput = Partial<TappetOptions> & { actionTimeout?: number };
@@ -468,6 +468,71 @@ test('a readable field next to a secure one is still confirmed on its exact cont
   if (!(error instanceof TappetError)) return;
   expect(error.info.kind).toBe('fill-unconfirmed');
   expect(error.message).toContain(`Expected value: "rob@example.com"`);
+});
+
+test('a fill titles its step with the locator alone and the typed text with a nested step', async () => {
+  const driver = createFakeDriver({ screens: ['ios-login'] });
+  const session = await openLogin(driver, { actionTimeout: 4000, settleQuietMs: 20 });
+  const sink = createRecordingSink();
+  const app = createDevice(session, sink);
+
+  await app.getByRole('text-field', { name: 'Email' }).fill('rob@example.com');
+
+  expect(sink.steps).toEqual([
+    { title: `fill getByRole('text-field', { name: 'Email' })`, depth: 0, boxed: false },
+    { title: `type "rob@example.com"`, depth: 1, boxed: true },
+  ]);
+});
+
+test('a fill of a secure field reports how much it typed and never the text', async () => {
+  const driver = createFakeDriver({ screens: ['ios-login'] });
+  driver.fillOutcomes.push(...Array<string>(50).fill(mask(SECRET.length)));
+  const session = await openLogin(driver, { actionTimeout: 4000, settleQuietMs: 20 });
+  const sink = createRecordingSink();
+  const app = createDevice(session, sink);
+
+  await app.getByRole('secure-text-field').fill(SECRET);
+
+  expect(sink.steps[1]?.title).toBe(`type ${String(SECRET.length)} characters`);
+  expect(sink.steps.some((step) => step.title.includes(SECRET))).toBe(false);
+});
+
+test('a fill marked secret is confirmed on its exact contents and still reported as a length', async () => {
+  const driver = createFakeDriver({ screens: ['ios-login'] });
+  const session = await openLogin(driver, { actionTimeout: 4000, settleQuietMs: 20 });
+  const sink = createRecordingSink();
+  const app = createDevice(session, sink);
+
+  await app.getByRole('text-field', { name: 'Email' }).fill(SECRET, { secret: true });
+
+  expect(driver.calls.filter((call) => call.startsWith('fill')).length).toBe(1);
+  expect(sink.steps).toEqual([
+    { title: `fill getByRole('text-field', { name: 'Email' })`, depth: 0, boxed: false },
+    { title: `type ${String(SECRET.length)} characters`, depth: 1, boxed: true },
+  ]);
+  expect(sink.steps.some((step) => step.title.includes(SECRET))).toBe(false);
+});
+
+test('a fill marked secret that never lands reports both values as lengths', async () => {
+  const driver = createFakeDriver({ screens: ['ios-login'] });
+  driver.fillOutcomes.push(...Array<string>(50).fill('s3cr3t'));
+  const session = await openLogin(driver, { actionTimeout: 4000, settleQuietMs: 20 });
+  const app = createDevice(session, silentSink);
+
+  const error = await app
+    .getByRole('text-field', { name: 'Email' })
+    .fill(SECRET, { secret: true })
+    .catch((thrown: unknown) => thrown);
+
+  expect(error).toBeInstanceOf(TappetError);
+  if (!(error instanceof TappetError)) return;
+  expect(error.info.kind).toBe('fill-unconfirmed');
+  expect(error.message).not.toContain(SECRET);
+  expect(error.message).toContain(`Expected value: ${String(SECRET.length)} characters`);
+  expect(error.message).toMatch(/Actual value: 6 characters/);
+  if (error.info.kind !== 'fill-unconfirmed') return;
+  expect(error.info.expected).toEqual({ kind: 'masked', length: SECRET.length });
+  expect(error.info.actual).toEqual({ kind: 'masked', length: 6 });
 });
 
 test('a defaulted screenshot numbers its own path and returns what the driver resolved', async () => {

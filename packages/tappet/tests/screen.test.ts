@@ -293,3 +293,21 @@ test('a filled Android text field reports its contents as both label and value',
   expect(email?.name).toBe('rob@example.com');
   expect(email?.value).toBe('rob@example.com');
 });
+
+test('renderScreen prints no field value, so a secure field cannot leak its contents', () => {
+  const raw = loadRaw('ios-login');
+  const secret = 's3cr3t-p4ssw0rd';
+  const screen = parseScreen(
+    {
+      ...raw,
+      nodes: raw.nodes.map((node) =>
+        node.type === 'SecureTextField' ? { ...node, value: secret } : node,
+      ),
+    },
+    'ios',
+  );
+
+  const listing = renderScreen(screen);
+  expect(listing).not.toContain(secret);
+  expect(listing).toContain(`[secure-text-field] "Password"`);
+});

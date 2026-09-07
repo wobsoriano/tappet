@@ -9,7 +9,14 @@
  */
 
 export { createDevice } from './device.ts';
-export type { ActionOptions, Device, Locator, RoleOptions, TextOptions } from './device.ts';
+export type {
+  ActionOptions,
+  Device,
+  FillOptions,
+  Locator,
+  RoleOptions,
+  TextOptions,
+} from './device.ts';
 
 export { describeCheck, evaluate } from './checks.ts';
 export type { Check, CheckName, Verdict } from './checks.ts';
@@ -43,7 +50,7 @@ export { describeQuery, normalizeText, textMatch } from './query.ts';
 export type { Query, Role, TextMatch } from './query.ts';
 
 export { renderTitle, silentSink } from './report.ts';
-export type { ActionRecord, ActionSink, EvidenceFile } from './report.ts';
+export type { ActionRecord, ActionSink, EvidenceFile, StepOptions, Typed } from './report.ts';
 
 export { parseScreen, renderScreen, resolve } from './screen.ts';
 export type {

@@ -7,6 +7,7 @@ import type {
   SettleOptions,
 } from '../src/core/driver.ts';
 import { TappetError } from '../src/core/errors.ts';
+import type { ActionSink } from '../src/core/report.ts';
 import type { PinnedRef, RawSnapshot } from '../src/core/screen.ts';
 import { loadRaw, type FixtureName } from './fixtures.ts';
 
@@ -162,4 +163,39 @@ function mutate(driver: FakeDriver): Promise<{ settled: boolean; waitedMs: numbe
     );
   }
   return Promise.resolve({ settled: true, waitedMs: 20 });
+}
+
+export type RecordedStep = {
+  readonly title: string;
+  readonly depth: number;
+  readonly boxed: boolean;
+};
+
+/**
+ * The step titles a runner would print, in order, with the nesting a reporter
+ * would indent by. A test asserting on these is asserting on what a terminal
+ * and an HTML report end up holding.
+ */
+export function createRecordingSink(): ActionSink & { readonly steps: RecordedStep[] } {
+  const steps: RecordedStep[] = [];
+  let depth = 0;
+  return {
+    steps,
+    step: async <T>(
+      title: string,
+      body: () => Promise<T>,
+      options?: { readonly box?: boolean },
+    ) => {
+      steps.push({ title, depth, boxed: options?.box === true });
+      depth += 1;
+      try {
+        return await body();
+      } finally {
+        depth -= 1;
+      }
+    },
+    attach: () => Promise.resolve(),
+    note: () => {},
+    outputPath: (fileName: string) => fileName,
+  };
 }
