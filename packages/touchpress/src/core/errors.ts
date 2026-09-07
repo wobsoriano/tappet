@@ -76,6 +76,12 @@ export type ErrorInfo =
       readonly instruction: string;
       readonly steps: number;
       readonly screen: string;
+    }
+  | {
+      readonly kind: 'ai-timeout';
+      readonly instruction: string;
+      readonly timeoutMs: number;
+      readonly screen: string;
     };
 
 export class TouchpressError extends Error {
@@ -172,6 +178,17 @@ function formatError(info: ErrorInfo): string {
         `Instruction: ${info.instruction}`,
         ``,
         'Raise maxSteps, or split the instruction into smaller ones.',
+        ``,
+        `Screen:`,
+        info.screen,
+      ].join('\n');
+    case 'ai-timeout':
+      return [
+        `act ran out of its ${String(info.timeoutMs)}ms budget before reaching an outcome.`,
+        ``,
+        `Instruction: ${info.instruction}`,
+        ``,
+        'Raise the act timeout, and the test timeout with it.',
         ``,
         `Screen:`,
         info.screen,

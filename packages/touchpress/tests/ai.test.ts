@@ -126,6 +126,32 @@ test('a fill the model ran reports the text it typed as a nested boxed step', as
   ]);
 });
 
+test('a loop that outlives its budget fails with the instruction and the screen', async () => {
+  const model = new MockLanguageModelV4({
+    doGenerate: (options) =>
+      new Promise((_resolve, reject) => {
+        options.abortSignal?.addEventListener('abort', () => reject(options.abortSignal?.reason));
+      }),
+  });
+  const calls: string[] = [];
+  const run = runAct({
+    model,
+    tools: fakeTools(calls),
+    sink: silentSink,
+    instruction: 'Open the list',
+    platform: 'ios',
+    maxSteps: 10,
+    timeout: 20,
+    screen: () => Promise.resolve('@a1 [button] "List"'),
+    attempt: 1,
+  });
+
+  const error = await run.catch((thrown: unknown) => thrown);
+  expect(error).toBeInstanceOf(TouchpressError);
+  expect((error as TouchpressError).info).toMatchObject({ kind: 'ai-timeout', timeoutMs: 20 });
+  expect((error as TouchpressError).message).toContain('@a1 [button] "List"');
+});
+
 test('act attaches one transcript carrying the calls, the results, and the usage', async () => {
   const model = new MockLanguageModelV4({
     doGenerate: [

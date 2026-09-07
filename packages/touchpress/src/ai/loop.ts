@@ -100,6 +100,14 @@ export function runAct(run: ActRun): Promise<string> {
         prompt: run.instruction,
         stopWhen: [hasToolCall('done'), stepCountIs(run.maxSteps)],
         abortSignal: AbortSignal.timeout(run.timeout),
+      }).catch(async (error: unknown) => {
+        if (!timedOut(error)) throw error;
+        throw new TouchpressError({
+          kind: 'ai-timeout',
+          instruction: run.instruction,
+          timeoutMs: run.timeout,
+          screen: await run.screen(),
+        });
       });
 
       await run.sink.attach({
@@ -210,6 +218,11 @@ function outcomeOf(
   if (outcome === 'completed') return { kind: 'completed', summary };
   if (outcome === 'blocked') return { kind: 'blocked', summary };
   return null;
+}
+
+/** `AbortSignal.timeout` rejects with a DOMException named TimeoutError, which a provider surfaces as is or as an AbortError. */
+function timedOut(error: unknown): boolean {
+  return error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError');
 }
 
 function clip(output: unknown): string {
