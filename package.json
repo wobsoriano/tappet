@@ -12,6 +12,7 @@
     "prepare": "vp config"
   },
   "devDependencies": {
+    "agent-device": "0.20.10",
     "vite": "catalog:",
     "vite-plus": "catalog:"
   },
