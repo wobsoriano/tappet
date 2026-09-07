@@ -46,6 +46,12 @@ Actions wait for their target the way Playwright actions do. Playwright's own `u
 
 `fill` is the one action that reads back what it wrote. A device keyboard drops early keystrokes often enough that a fill can under-deliver its text and still report success, so `fill` types again until the field holds what it was given or the budget runs out. Re-filling is safe because a fill replaces the field's contents rather than appending to them.
 
+The read back is two reads. Behind a controlled component the field gets written twice, once by the driver and once by the app's own render, and that second write can put a stale string back over what was just typed. A single read can land between the two and report a value that is already gone, so `fill` reads once, waits `settleQuietMs`, and reads again. Both have to agree before it returns.
+
+That quiet period is reserved out of the action's budget rather than taken from what is left. A fill that cannot afford to confirm itself reports `fill-unconfirmed` instead of starting an attempt it would have to accept on a window that shrank to nothing.
+
+Each retry types slower than the one before it, at 0, then 40, then 80 milliseconds per character, and 80 for every attempt after that. A field that drops characters at full speed usually keeps up with paced input. The delay is a request to the driver, and not every platform's input backend applies it, so it improves the odds rather than guaranteeing anything. When the budget runs out, the error names the value that was actually there and every typing delay it tried.
+
 `relaunch()` relaunches the app and waits for the ready gate again. `dismissDevOverlay()` clears the React Native development warning overlay. It is never automatic, because the overlay is a real node and hiding it by default would suppress a warning a test might want to assert on.
 
 ## Reading values

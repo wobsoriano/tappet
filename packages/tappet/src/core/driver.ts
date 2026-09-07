@@ -68,6 +68,15 @@ export type SettleOptions = {
   readonly timeoutMs: number;
 };
 
+export type FillOptions = SettleOptions & {
+  /**
+   * Milliseconds to wait between characters. 0 types as fast as the driver can,
+   * which is what a field backed by a controlled component can fail to keep up
+   * with, so a retry raises this rather than repeating the same call.
+   */
+  readonly delayMs: number;
+};
+
 /**
  * The port between the core and whatever drives a device. Nothing crossing it
  * is a transport type, which is what lets the core be unit-tested against a
@@ -86,7 +95,7 @@ export type DeviceDriver = {
   screenshot(path: string): Promise<string>;
   tap(ref: PinnedRef, options: SettleOptions): Promise<Settled>;
   longPress(ref: PinnedRef, durationMs: number, options: SettleOptions): Promise<Settled>;
-  fill(ref: PinnedRef, text: string, options: SettleOptions): Promise<Settled>;
+  fill(ref: PinnedRef, text: string, options: FillOptions): Promise<Settled>;
   /** Returns nothing because the driver's scroll response carries no settle observation. */
   scroll(direction: ScrollDirection, options: SettleOptions): Promise<void>;
   dismissDevOverlay(): Promise<void>;

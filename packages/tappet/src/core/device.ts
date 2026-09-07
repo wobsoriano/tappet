@@ -17,6 +17,18 @@ import { failureOf, sleep, type DeviceSession, type SessionDevice } from './sess
 const ACTION_POLL_MS = 250;
 const DEFAULT_LONG_PRESS_MS = 1000;
 
+/**
+ * Per-character typing delay for each fill attempt, in order. A field backed by
+ * a controlled component cannot always keep up with input typed as fast as the
+ * driver can send it, so a retry paces the keystrokes instead of repeating the
+ * call that already failed. Attempts past the end reuse the last entry.
+ */
+const FILL_DELAYS_MS = [0, 40, 80] as const;
+
+function fillDelayFor(attempt: number): number {
+  return FILL_DELAYS_MS[Math.min(attempt, FILL_DELAYS_MS.length - 1)];
+}
+
 export type TextOptions = { exact?: boolean };
 export type RoleOptions = { name?: string | RegExp; exact?: boolean };
 export type ActionOptions = { timeout?: number };
@@ -117,7 +129,7 @@ function createLocator(session: DeviceSession, sink: ActionSink, query: Query): 
         sink,
         { kind: 'fill', query, text },
         options,
-        (device, ref, budget) => device.fill(ref, text, budget),
+        (device, ref, budget, delayMs) => device.fill(ref, text, budget, delayMs),
         text,
       ),
     longPress: (durationMs, options) => {
@@ -183,13 +195,25 @@ function createLocator(session: DeviceSession, sink: ActionSink, query: Query): 
  * and still report success, so fill dispatches again until the field holds what
  * it was given or the budget runs out. Re-filling is safe because a fill
  * replaces the field's contents rather than appending to them.
+ *
+ * The read back is two reads, not one. Behind a controlled component the field
+ * is written twice: once by the driver, then again by the app's own render,
+ * which can push a stale string back over what the driver just typed. A single
+ * read lands between those writes and reports a value that is already gone, so
+ * the second read after the screen has had its quiet period is what proves the
+ * value held. Each retry types slower than the last.
  */
 function perform(
   session: DeviceSession,
   sink: ActionSink,
   record: Extract<ActionRecord, { query: Query }>,
   options: ActionOptions | undefined,
-  dispatch: (device: SessionDevice, ref: PinnedRef, budgetMs: number) => Promise<Settled>,
+  dispatch: (
+    device: SessionDevice,
+    ref: PinnedRef,
+    budgetMs: number,
+    delayMs: number,
+  ) => Promise<Settled>,
   expectedValue?: string,
 ): Promise<void> {
   const timeout = options?.timeout ?? session.options.actionTimeout;
@@ -199,8 +223,21 @@ function perform(
       const deadline = Date.now() + timeout;
       let retriedStaleRef = false;
       let attempts = 0;
+      const delaysTried: number[] = [];
       let target: Query = record.query;
+      let lastActual: string | null = null;
       let screen: Screen = await device.capture();
+      const unconfirmed = (): TappetError =>
+        new TappetError({
+          kind: 'fill-unconfirmed',
+          locator,
+          expected: expectedValue ?? '',
+          actual: lastActual,
+          attempts,
+          delaysMs: delaysTried,
+          timeoutMs: timeout,
+          screen: renderScreen(screen),
+        });
       for (;;) {
         const resolution = resolve(screen, target);
         if (resolution.outcome === 'many') {
@@ -212,9 +249,25 @@ function perform(
           });
         }
         if (resolution.outcome === 'one') {
+          // A confirmed write needs its quiet period inside the budget, not whatever is
+          // left over. Confirming across a window that shrank to nothing is two reads
+          // back to back, which is the single read this exists to replace.
+          if (
+            expectedValue !== undefined &&
+            attempts > 0 &&
+            deadline - Date.now() <= session.options.settleQuietMs
+          ) {
+            throw unconfirmed();
+          }
+          const delayMs = fillDelayFor(attempts);
           let settled: Settled;
           try {
-            settled = await dispatch(device, pin(screen, resolution.node), deadline - Date.now());
+            settled = await dispatch(
+              device,
+              pin(screen, resolution.node),
+              deadline - Date.now(),
+              delayMs,
+            );
           } catch (error) {
             if (failureOf(error)?.kind !== 'stale-ref' || retriedStaleRef) throw error;
             retriedStaleRef = true;
@@ -226,27 +279,25 @@ function perform(
             sink.note('settle', `${renderTitle(record)} finished before the screen went quiet`);
           }
           if (expectedValue === undefined) return;
+          delaysTried.push(delayMs);
           // The locator names the field until the first write lands, after which the
           // written node names itself, because Android reports a text field's
           // accessible name as its contents.
           target = identityOf(screen, resolution.node);
 
           screen = await device.capture();
-          const written = resolve(screen, target);
-          const actual = written.outcome === 'one' ? (written.node.value ?? '') : null;
-          if (actual === expectedValue) return;
-          const left = deadline - Date.now();
-          if (left <= 0) {
-            throw new TappetError({
-              kind: 'fill-unconfirmed',
-              locator,
-              expected: expectedValue,
-              actual,
-              attempts,
-              timeoutMs: timeout,
-              screen: renderScreen(screen),
-            });
+          lastActual = valueAt(screen, target);
+          if (lastActual === expectedValue) {
+            await sleep(session.options.settleQuietMs);
+            screen = await device.capture();
+            const second = valueAt(screen, target);
+            // A locator that stopped resolving says nothing about the value, so the read
+            // that did resolve stands. Only a different value is evidence of a revert.
+            if (second === expectedValue || second === null) return;
+            lastActual = second;
           }
+          const left = deadline - Date.now();
+          if (left <= 0) throw unconfirmed();
           await sleep(Math.min(ACTION_POLL_MS, left));
           screen = await device.capture();
           continue;
@@ -265,6 +316,12 @@ function perform(
       }
     });
   });
+}
+
+/** The field's current contents, or null once the locator stops resolving to exactly one node. */
+function valueAt(screen: Screen, target: Query): string | null {
+  const found = resolve(screen, target);
+  return found.outcome === 'one' ? (found.node.value ?? '') : null;
 }
 
 /**

@@ -3,6 +3,7 @@ import type {
   DeviceDriver,
   DeviceFailure,
   DeviceInfo,
+  FillOptions,
   OpenRequest,
   SettleOptions,
 } from '../src/core/driver.ts';
@@ -25,6 +26,26 @@ export type FakeDriver = DeviceDriver & {
    * that drops keystrokes on the first tries and then behaves.
    */
   readonly fillOutcomes: string[];
+  /** The `delayMs` each fill was given, in order. */
+  readonly fillDelays: number[];
+  /**
+   * Below this per-character delay a fill under-delivers, landing
+   * `tooFastOutcome` instead of its text. Models a field that cannot keep up
+   * with input typed at full speed. 0, the default, means every delay is
+   * fast enough.
+   */
+  minDelayMs: number;
+  tooFastOutcome: string;
+  /**
+   * Models a controlled component whose own render writes a stale string back
+   * over what the driver typed. The next `revertingFills` fills each put
+   * `revertTo` in the field once `revertAfterMs` have passed since the write.
+   * The delay is real time, not a capture count, so a read-back that skipped
+   * its wait sees the value the driver wrote and misses the revert.
+   */
+  revertingFills: number;
+  revertAfterMs: number;
+  revertTo: string;
   /**
    * Models Android, where a text field reports its contents as its
    * accessibility label as well as its value, so a locator that names the
@@ -37,11 +58,19 @@ export function createFakeDriver(options?: { screens?: FixtureName[] }): FakeDri
   const calls: string[] = [];
   const openOutcomes: DeviceFailure[] = [];
   const fillOutcomes: string[] = [];
+  const fillDelays: number[] = [];
   const written = new Map<string, string>();
+  let pendingRevert: { key: string; value: string; at: number } | null = null;
   const driver: FakeDriver = {
     calls,
     openOutcomes,
     fillOutcomes,
+    fillDelays,
+    revertingFills: 0,
+    revertAfterMs: 0,
+    revertTo: '',
+    minDelayMs: 0,
+    tooFastOutcome: '',
     screens: options?.screens ?? ['home'],
     staleRefs: 0,
     contentsBecomeLabel: false,
@@ -70,6 +99,10 @@ export function createFakeDriver(options?: { screens?: FixtureName[] }): FakeDri
 
     capture: (): Promise<RawSnapshot> => {
       calls.push('capture');
+      if (pendingRevert !== null && Date.now() >= pendingRevert.at) {
+        written.set(pendingRevert.key, pendingRevert.value);
+        pendingRevert = null;
+      }
       const name =
         driver.screens.length > 1
           ? (driver.screens.shift() ?? 'home')
@@ -99,10 +132,21 @@ export function createFakeDriver(options?: { screens?: FixtureName[] }): FakeDri
       calls.push(`longPress ${ref} ${String(durationMs)}`);
       return mutate(driver);
     },
-    fill: (ref: PinnedRef, text: string) => {
-      calls.push(`fill ${ref} ${text}`);
-      written.set(ref.replace(/^@/, '').replace(/~s\d+$/, ''), fillOutcomes.shift() ?? text);
-      return mutate(driver);
+    fill: async (ref: PinnedRef, text: string, options: FillOptions) => {
+      calls.push(`fill ${ref} ${text} delay=${String(options.delayMs)}`);
+      fillDelays.push(options.delayMs);
+      // A rejected fill leaves the field alone, so nothing is written until `mutate` resolves.
+      const settled = await mutate(driver);
+      const key = ref.replace(/^@/, '').replace(/~s\d+$/, '');
+      const queued = fillOutcomes.shift();
+      const landed = queued ?? (options.delayMs < driver.minDelayMs ? driver.tooFastOutcome : text);
+      written.set(key, landed);
+      pendingRevert = null;
+      if (driver.revertingFills > 0) {
+        driver.revertingFills -= 1;
+        pendingRevert = { key, value: driver.revertTo, at: Date.now() + driver.revertAfterMs };
+      }
+      return settled;
     },
     scroll: (direction) => {
       calls.push(`scroll ${direction}`);

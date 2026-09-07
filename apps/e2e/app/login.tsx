@@ -28,12 +28,6 @@ export default function Login() {
   // The password field is not secureTextEntry and both fields opt out of AutoFill.
   // iOS reads a secure field next to an email field as a real credential and covers
   // the next screen with a "Save Password?" system alert once sign-in succeeds.
-  //
-  // Neither field passes `value`. A controlled TextInput pushes the last rendered
-  // string back into the native field, and on a slow CI runner that write lands
-  // while the driver is still typing, truncating the text after the driver has
-  // already read the full value back. Uncontrolled, the native field keeps every
-  // keystroke and `onChangeText` delivers the final string.
   return (
     <View testID="login" style={styles.screen}>
       <Text style={styles.heading}>Sign in</Text>
@@ -46,6 +40,7 @@ export default function Login() {
         autoCorrect={false}
         keyboardType="email-address"
         textContentType="none"
+        value={email}
         onChangeText={setEmail}
       />
       <TextInput
@@ -54,6 +49,7 @@ export default function Login() {
         style={styles.input}
         placeholder="Password"
         textContentType="none"
+        value={password}
         onChangeText={setPassword}
       />
       {failed ? (

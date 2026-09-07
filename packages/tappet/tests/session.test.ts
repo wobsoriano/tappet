@@ -265,7 +265,8 @@ test('waiting for a target and settling after it share one action budget', async
 test('fill dispatches again when the keyboard under-delivers, and reports the text that landed', async () => {
   const driver = createFakeDriver();
   driver.fillOutcomes.push('r@example.com', 'rob@exa');
-  const session = await open(driver);
+  // A short quiet period so three confirmed attempts fit the action budget.
+  const session = await open(driver, { settleQuietMs: 20 });
   const app = createDevice(session, silentSink);
 
   await app.getByRole('button', { name: 'Explore' }).fill('rob@example.com');
@@ -273,10 +274,61 @@ test('fill dispatches again when the keyboard under-delivers, and reports the te
   expect(driver.calls.filter((call) => call.startsWith('fill')).length).toBe(3);
 });
 
-test('a fill that never lands names the locator, both values, and the attempts', async () => {
+test('fill refills when the field reverts during the settle wait', async () => {
+  const driver = createFakeDriver();
+  // The first fill lands, reads back correct, then reverts partway through the settle
+  // wait the way a controlled component's own render does. The second fill holds.
+  driver.revertingFills = 1;
+  driver.revertTo = 'rob';
+  driver.revertAfterMs = 40;
+  const session = await open(driver, { actionTimeout: 4000, settleQuietMs: 200 });
+  const app = createDevice(session, silentSink);
+
+  await app.getByRole('button', { name: 'Explore' }).fill('rob@example.com');
+
+  expect(driver.calls.filter((call) => call.startsWith('fill')).length).toBe(2);
+});
+
+test('fill paces its typing on the retry when the field drops characters at full speed', async () => {
+  const driver = createFakeDriver();
+  driver.minDelayMs = 40;
+  driver.tooFastOutcome = 'rob';
+  const session = await open(driver, { settleQuietMs: 20 });
+  const app = createDevice(session, silentSink);
+
+  await app.getByRole('button', { name: 'Explore' }).fill('rob@example.com');
+
+  expect(driver.fillDelays).toEqual([0, 40]);
+});
+
+test('fill stops rather than starting an attempt it cannot afford to confirm', async () => {
+  const driver = createFakeDriver();
+  driver.revertingFills = 10;
+  driver.revertTo = 'rob';
+  driver.revertAfterMs = 10;
+  // One attempt plus its 500ms confirmation fits in 800ms. A second does not, and
+  // starting one anyway would sleep another full quiet period past the deadline.
+  const session = await open(driver, { actionTimeout: 800, settleQuietMs: 500 });
+  const app = createDevice(session, silentSink);
+
+  const started = Date.now();
+  const error = await app
+    .getByRole('button', { name: 'Explore' })
+    .fill('rob@example.com')
+    .catch((thrown: unknown) => thrown);
+
+  expect(error).toBeInstanceOf(TappetError);
+  if (!(error instanceof TappetError)) return;
+  expect(error.info.kind).toBe('fill-unconfirmed');
+  expect(error.message).toContain(`Actual value: "rob"`);
+  expect(Date.now() - started).toBeLessThan(900);
+});
+
+test('a fill that never lands names the locator, both values, the attempts, and the delays', async () => {
   const driver = createFakeDriver();
   driver.fillOutcomes.push(...Array<string>(50).fill('r@example.com'));
-  const session = await open(driver);
+  // Room for more than three attempts, so the delay escalation is fully observable.
+  const session = await open(driver, { actionTimeout: 4000, settleQuietMs: 20 });
   const app = createDevice(session, silentSink);
 
   const error = await app
@@ -290,6 +342,11 @@ test('a fill that never lands names the locator, both values, and the attempts',
   expect(error.message).toContain(`Expected value: "rob@example.com"`);
   expect(error.message).toContain(`Actual value: "r@example.com"`);
   expect(error.message).toMatch(/after \d+ attempts/);
+  expect(error.message).toContain('Typing delays tried: 0ms, 40ms, 80ms');
+  if (error.info.kind !== 'fill-unconfirmed') return;
+  expect(error.info.delaysMs.length).toBe(error.info.attempts);
+  expect(error.info.delaysMs.slice(0, 3)).toEqual([0, 40, 80]);
+  expect(error.info.delaysMs.slice(3).every((one) => one === 80)).toBe(true);
 });
 
 test('a fill confirms against the node it wrote when the write changes the label it matched on', async () => {
@@ -312,6 +369,8 @@ test('a fill whose label follows its contents still re-dispatches and still repo
   driver.contentsBecomeLabel = true;
   driver.fillOutcomes.push(...Array<string>(50).fill('r@example.com'));
   const session = await open(driver, {
+    actionTimeout: 4000,
+    settleQuietMs: 20,
     platform: 'android',
     deviceName: 'Pixel 9',
     readyWhen: { text: 'Sign in' },

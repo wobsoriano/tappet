@@ -48,11 +48,13 @@ The key is `tappet-native-v1-<platform>-<hash>`. `actions/cache/restore` looks f
 
 The library source is deliberately left out of the hash. The sample app never imports tappet. It is a devDependency the specs use on the host, so a library change cannot alter the native build. `vp run -r build` stays unconditional for that reason, because the specs need the built library whether or not the app was rebuilt.
 
-### One retry in CI
+### Losing input on a slow runner
 
-The sample config sets `retries` to 1 when `CI` is set and 0 otherwise. A hosted runner has few cores, and a device-side race can lose a keystroke there in a way it never does on a developer's machine. Playwright discards the worker after a failure and the replacement reuses the same slot, so the retry reclaims the same device and reconnects to the same session. That is the path the session lifecycle is built for.
+A hosted runner has few cores, and a text field there can lose input that never goes missing on a developer's machine. The fix for that lives in the library. `fill` reads the field back twice with the settle wait between them, so a value that the app's own render puts back over what was typed is caught rather than trusted, and each retry paces its keystrokes more slowly than the last. [Basics](basics.md) has the detail.
 
-A retry is the intended recovery for a race on the device. It is not cover for a failing test. A test that fails both attempts is a real failure, and a test that needs its retry every run is a bug to fix rather than a flake to absorb.
+The sample config also sets `retries` to 1 when `CI` is set and 0 otherwise. That is a second line of defense and not the fix. Playwright discards the worker after a failure and the replacement reuses the same slot, so the retry reclaims the same device and reconnects to the same session, which is the path the session lifecycle is built for.
+
+A test that fails both attempts is a real failure. A test that needs its retry every run is a bug to fix rather than a flake to absorb.
 
 ### Artifacts
 
