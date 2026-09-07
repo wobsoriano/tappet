@@ -375,6 +375,101 @@ test('a fill whose label follows its contents still re-dispatches and still repo
   expect(error.message).toContain(`Actual value: "r@example.com"`);
 });
 
+/** One bullet per character, which is the whole of what an iOS SecureTextField reports. */
+function mask(length: number): string {
+  return '•'.repeat(length);
+}
+
+const SECRET = 's3cr3t-p4ssw0rd';
+
+function openLogin(driver: FakeDriver, overrides?: ParseInput) {
+  return open(driver, { readyWhen: { text: 'Sign in' }, ...overrides });
+}
+
+test('a fill of a secure field confirms against the mask it reads back', async () => {
+  const driver = createFakeDriver({ screens: ['ios-login'] });
+  driver.fillOutcomes.push(...Array<string>(50).fill(mask(SECRET.length)));
+  const session = await openLogin(driver, { actionTimeout: 4000, settleQuietMs: 20 });
+  const app = createDevice(session, silentSink);
+
+  await app.getByRole('secure-text-field').fill(SECRET);
+
+  expect(driver.calls.filter((call) => call.startsWith('fill')).length).toBe(1);
+});
+
+test('a secure field masking fewer characters than were typed keeps retrying and then fails', async () => {
+  const driver = createFakeDriver({ screens: ['ios-login'] });
+  driver.fillOutcomes.push(...Array<string>(50).fill(mask(SECRET.length - 3)));
+  const session = await openLogin(driver, { actionTimeout: 4000, settleQuietMs: 20 });
+  const app = createDevice(session, silentSink);
+
+  const error = await app
+    .getByRole('secure-text-field')
+    .fill(SECRET)
+    .catch((thrown: unknown) => thrown);
+
+  expect(driver.calls.filter((call) => call.startsWith('fill')).length).toBeGreaterThan(1);
+  expect(error).toBeInstanceOf(TappetError);
+  if (!(error instanceof TappetError)) return;
+  expect(error.info.kind).toBe('fill-unconfirmed');
+  if (error.info.kind !== 'fill-unconfirmed') return;
+  expect(error.info.attempts).toBeGreaterThan(1);
+});
+
+test('a secure field that never lands reports how much was typed and never the text', async () => {
+  const driver = createFakeDriver({ screens: ['ios-login'] });
+  driver.fillOutcomes.push(...Array<string>(50).fill(mask(SECRET.length - 3)));
+  const session = await openLogin(driver, { actionTimeout: 4000, settleQuietMs: 20 });
+  const app = createDevice(session, silentSink);
+
+  const error = await app
+    .getByRole('secure-text-field')
+    .fill(SECRET)
+    .catch((thrown: unknown) => thrown);
+
+  expect(error).toBeInstanceOf(TappetError);
+  if (!(error instanceof TappetError)) return;
+  expect(error.message).toContain(`Expected value: ${String(SECRET.length)} characters`);
+  expect(error.message).not.toContain(SECRET);
+  if (error.info.kind !== 'fill-unconfirmed') return;
+  expect(error.info.expected).toEqual({ kind: 'masked', length: SECRET.length });
+});
+
+test('a mask of the right length made of different characters is not a landed write', async () => {
+  const driver = createFakeDriver({ screens: ['ios-login'] });
+  // The placeholder an empty iOS secure field reports. It is the length of the
+  // text below, so only its distinct characters separate it from a real mask.
+  driver.fillOutcomes.push(...Array<string>(50).fill('Password'));
+  const session = await openLogin(driver, { actionTimeout: 4000, settleQuietMs: 20 });
+  const app = createDevice(session, silentSink);
+
+  const error = await app
+    .getByRole('secure-text-field')
+    .fill('hunter22')
+    .catch((thrown: unknown) => thrown);
+
+  expect(error).toBeInstanceOf(TappetError);
+  if (!(error instanceof TappetError)) return;
+  expect(error.info.kind).toBe('fill-unconfirmed');
+});
+
+test('a readable field next to a secure one is still confirmed on its exact contents', async () => {
+  const driver = createFakeDriver({ screens: ['ios-login'] });
+  driver.fillOutcomes.push(...Array<string>(50).fill(mask('rob@example.com'.length)));
+  const session = await openLogin(driver, { actionTimeout: 4000, settleQuietMs: 20 });
+  const app = createDevice(session, silentSink);
+
+  const error = await app
+    .getByRole('text-field')
+    .fill('rob@example.com')
+    .catch((thrown: unknown) => thrown);
+
+  expect(error).toBeInstanceOf(TappetError);
+  if (!(error instanceof TappetError)) return;
+  expect(error.info.kind).toBe('fill-unconfirmed');
+  expect(error.message).toContain(`Expected value: "rob@example.com"`);
+});
+
 test('a defaulted screenshot numbers its own path and returns what the driver resolved', async () => {
   const driver = createFakeDriver();
   const session = await open(driver);

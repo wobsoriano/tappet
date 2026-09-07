@@ -6,6 +6,7 @@ import { parseScreen, type Platform, type RawSnapshot, type Screen } from '../sr
 const FIXTURE_PLATFORMS = {
   home: 'ios',
   explore: 'ios',
+  'ios-login': 'ios',
   'android-home': 'android',
   'android-login': 'android',
 } satisfies Readonly<Record<string, Platform>>;

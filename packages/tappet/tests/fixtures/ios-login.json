@@ -1,0 +1,165 @@
+{
+  "success": true,
+  "data": {
+    "nodes": [
+      {
+        "index": 0,
+        "type": "Application",
+        "label": "awesome-todo",
+        "depth": 0,
+        "enabled": true,
+        "hittable": true,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 440,
+          "height": 956
+        },
+        "ref": "e1"
+      },
+      {
+        "index": 1,
+        "parentIndex": 0,
+        "type": "Window",
+        "depth": 1,
+        "enabled": true,
+        "hittable": true,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 440,
+          "height": 956
+        },
+        "ref": "e2"
+      },
+      {
+        "index": 2,
+        "parentIndex": 1,
+        "type": "Other",
+        "depth": 2,
+        "enabled": true,
+        "hittable": true,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 440,
+          "height": 956
+        },
+        "ref": "e3"
+      },
+      {
+        "index": 3,
+        "parentIndex": 2,
+        "type": "Other",
+        "identifier": "login",
+        "depth": 3,
+        "enabled": true,
+        "hittable": false,
+        "rect": {
+          "x": 24,
+          "y": 320,
+          "width": 392,
+          "height": 316
+        },
+        "ref": "e4"
+      },
+      {
+        "index": 4,
+        "parentIndex": 3,
+        "type": "StaticText",
+        "label": "Sign in",
+        "value": "Sign in",
+        "depth": 4,
+        "enabled": true,
+        "hittable": false,
+        "rect": {
+          "x": 24,
+          "y": 320,
+          "width": 392,
+          "height": 41
+        },
+        "ref": "e5"
+      },
+      {
+        "index": 5,
+        "parentIndex": 3,
+        "type": "TextField",
+        "label": "Email",
+        "value": "Email",
+        "identifier": "email",
+        "depth": 4,
+        "enabled": true,
+        "hittable": true,
+        "rect": {
+          "x": 24,
+          "y": 393,
+          "width": 392,
+          "height": 52
+        },
+        "ref": "e6"
+      },
+      {
+        "index": 6,
+        "parentIndex": 3,
+        "type": "SecureTextField",
+        "label": "Password",
+        "value": "Password",
+        "identifier": "password",
+        "depth": 4,
+        "enabled": true,
+        "hittable": true,
+        "rect": {
+          "x": 24,
+          "y": 461,
+          "width": 392,
+          "height": 52
+        },
+        "ref": "e7"
+      },
+      {
+        "index": 7,
+        "parentIndex": 3,
+        "type": "Button",
+        "label": "Continue",
+        "identifier": "continue",
+        "depth": 4,
+        "enabled": true,
+        "hittable": true,
+        "rect": {
+          "x": 24,
+          "y": 545,
+          "width": 392,
+          "height": 50
+        },
+        "ref": "e8"
+      }
+    ],
+    "truncated": false,
+    "appName": "com.wobsoriano.awesometodo",
+    "appBundleId": "com.wobsoriano.awesometodo",
+    "visibility": {
+      "partial": false,
+      "visibleNodeCount": 8,
+      "totalNodeCount": 8,
+      "reasons": []
+    },
+    "snapshotQuality": {
+      "state": "healthy",
+      "backend": "tree"
+    },
+    "snapshotDiagnostics": {
+      "stats": {
+        "count": 12,
+        "p50Ms": 64,
+        "p95Ms": 71,
+        "maxMs": 71,
+        "slowThresholdMs": 1500,
+        "platform": "ios",
+        "backends": {
+          "xctest": 12
+        }
+      }
+    },
+    "refsGeneration": 776612
+  }
+}
