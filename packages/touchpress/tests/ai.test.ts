@@ -1,4 +1,4 @@
-import { expect, test } from 'vite-plus/test';
+import { expect, test, vi } from 'vite-plus/test';
 import { jsonSchema, tool, type ToolSet } from 'ai';
 import { MockLanguageModelV4 } from 'ai/test';
 import { z } from 'zod';
@@ -274,4 +274,22 @@ test('the device tools are the ten that perceive and act, with no way to reach a
     // The one addressing key that survives, because a snapshot ref is how the model names a node.
     if (name === 'press' || name === 'fill') expect(required).toContain('target');
   }
+});
+
+test("a missing 'ai' package names the install command rather than failing to resolve a module", async () => {
+  vi.doMock('ai', () => {
+    throw new Error("Cannot find package 'ai'");
+  });
+  vi.resetModules();
+  const { loadAi } = await import('../src/ai/tools.ts');
+
+  // `resetModules` gives this call its own copy of errors.ts, so the class identity is a
+  // different one and the name is what identifies the error.
+  const error = await loadAi().catch((thrown: unknown) => thrown);
+  expect((error as TouchpressError).name).toBe('TouchpressError');
+  expect((error as TouchpressError).info).toEqual({ kind: 'ai-missing-peer' });
+  expect((error as TouchpressError).message).toContain('pnpm add -D ai');
+
+  vi.doUnmock('ai');
+  vi.resetModules();
 });
