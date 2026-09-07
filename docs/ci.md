@@ -44,14 +44,14 @@ Both jobs upload `apps/e2e/playwright-report` when they fail, with seven day ret
 
 ## Running the suite from a script
 
-The e2e script takes the project flag from the caller, so one script serves both jobs.
+The e2e script takes the project flag from the caller, so one script serves both jobs. Run it through pnpm, not `vp run`.
 
 ```sh
-vp run -F tappet-e2e test:e2e --project=ios
-vp run -F tappet-e2e test:e2e --project=android
+pnpm --filter tappet-e2e test:e2e --project=ios
+pnpm --filter tappet-e2e test:e2e --project=android
 ```
 
-Do not put a `--` before the flag. Vite Plus 0.3.0 takes trailing arguments as plain positionals after the task name, and a `--` is swallowed rather than forwarded, so the run silently covers every project instead of the one you asked for.
+`vp run` tracks every process a task starts through an IPC socket it passes in the environment. `agent-device` starts its daemon with that environment when no daemon is running, the daemon lives on after the suite, and `vp run` keeps waiting for it. The run prints its results and then hangs. pnpm passes no such environment, so the daemon starts clean and the command exits when Playwright does. The root `pnpm test:e2e` script is this pnpm command without a project flag, so it runs every project.
 
 ## What is not covered
 

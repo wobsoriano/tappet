@@ -8,7 +8,7 @@
     "check": "vp check",
     "test": "vp test",
     "build": "vp run -r build",
-    "test:e2e": "vp run -F tappet-e2e test:e2e --project=ios",
+    "test:e2e": "pnpm --filter tappet-e2e test:e2e",
     "prepare": "vp config"
   },
   "devDependencies": {

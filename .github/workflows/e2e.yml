@@ -68,7 +68,9 @@ jobs:
         working-directory: packages/tappet
         run: pnpm exec agent-device prepare ios-runner --platform ios --timeout 240000
 
-      - run: vp run -F tappet-e2e test:e2e --project=ios
+      # Through pnpm, not vp run. The agent-device daemon inherits vp run's task IPC environment
+      # and vp run then waits for it, so the step would hang after the suite finished.
+      - run: pnpm --filter tappet-e2e test:e2e --project=ios
 
       - if: failure()
         uses: actions/upload-artifact@v4
@@ -142,7 +144,7 @@ jobs:
           disable-animations: true
           script: |
             adb install -r apps/e2e/android/app/build/outputs/apk/release/app-release.apk
-            vp run -F tappet-e2e test:e2e --project=android
+            pnpm --filter tappet-e2e test:e2e --project=android
 
       - if: failure()
         uses: actions/upload-artifact@v4
