@@ -1,12 +1,22 @@
 import { existsSync } from 'node:fs';
 import path from 'node:path';
+import { anthropic } from '@ai-sdk/anthropic';
 import { defineConfig } from '@playwright/test';
 import type { TouchpressOptions } from 'touchpress';
 
-// AI_MODEL and its gateway key live in a gitignored .env next to this file on a developer machine
+// AI_MODEL and the provider key live in a gitignored .env next to this file on a developer machine
 // and in the workflow's secrets on CI, so the file is optional.
 const envFile = path.join(__dirname, '.env');
 if (existsSync(envFile)) process.loadEnvFile(envFile);
+
+// An Anthropic key makes AI_MODEL a bare Anthropic id. Without one, AI_MODEL is a gateway id
+// such as anthropic/claude-haiku-4-5, resolved against AI_GATEWAY_API_KEY.
+const aiModel =
+  process.env['AI_MODEL'] === undefined
+    ? undefined
+    : process.env['ANTHROPIC_API_KEY'] === undefined
+      ? process.env['AI_MODEL']
+      : anthropic(process.env['AI_MODEL']);
 
 // The device names are overridable because CI boots whatever model its runner image carries, which
 // is not the one on a developer's machine. Preflight turns a mismatch into one readable failure.
@@ -35,7 +45,7 @@ export default defineConfig<TouchpressOptions>({
   use: {
     app: 'dev.touchpress.e2e',
     readyWhen: { testId: 'home' },
-    aiModel: process.env['AI_MODEL'],
+    aiModel,
   },
   projects: [
     // One setup project per platform, off the same spec. A Playwright setup project has a single
