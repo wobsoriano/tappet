@@ -9,6 +9,7 @@
 export { setupTest, test } from './playwright/fixtures.ts';
 
 export { expect } from './playwright/expect.ts';
+export type { ScreenshotOptions } from './playwright/screenshot.ts';
 
 export { TappetError } from './core/errors.ts';
 export type { ErrorInfo, ExpectedValue } from './core/errors.ts';

@@ -163,7 +163,8 @@ await device.screenshot({ path: 'card.png' });
 The default path is numbered per call and goes through the same output directory the runner gives the test, so it is unique per test and per retry attempt. An explicit path is used as given. Nothing is attached to the report, so the caller decides whether the file belongs in the run's output. Each call is reported as one step.
 
 The agent-device CLI equivalent is `agent-device screenshot ./card.png`, which also takes `--scale` and `--overlay-refs`.
-Element screenshots are not supported through tappet yet.
+
+`device.screenshot()` saves the whole device. To compare one control's pixels against a committed baseline, reach for `toHaveScreenshot` on its locator, which crops the control out of the device's own screenshot. See [Assertions](assertions.md).
 
 ## Preflight
 

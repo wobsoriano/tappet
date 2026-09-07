@@ -1,7 +1,8 @@
 import { expect as base, type ExpectMatcherState } from '@playwright/test';
-import type { Locator } from '../core/device.ts';
+import type { Device, Locator } from '../core/device.ts';
 import type { Check, CheckName } from '../core/checks.ts';
 import { textMatch } from '../core/query.ts';
+import { assertScreenshot, type ScreenshotOptions } from './screenshot.ts';
 
 export type MatcherOptions = { timeout?: number };
 export type TextMatcherOptions = MatcherOptions & { exact?: boolean };
@@ -101,5 +102,16 @@ export const expect = base.extend({
     options?: MatcherOptions,
   ) {
     return runCheck(this, locator, { name: 'toHaveCount', expected }, options?.timeout);
+  },
+
+  // The one matcher that takes a device as well as a locator, because a whole screen is
+  // as much a thing to compare pixels of as one control is.
+  toHaveScreenshot(
+    this: ExpectMatcherState,
+    target: Device | Locator,
+    nameOrOptions?: string | ScreenshotOptions,
+    options?: ScreenshotOptions,
+  ) {
+    return assertScreenshot(this, target, nameOrOptions, options);
   },
 });

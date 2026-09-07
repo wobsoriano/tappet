@@ -78,6 +78,12 @@ export type Device = {
  */
 export type Locator = {
   readonly query: Query;
+  /**
+   * The device this locator was built from. A screenshot assertion needs the
+   * image and the tree behind it, and a locator carries neither, so this is
+   * how it reaches both.
+   */
+  readonly device: Device;
   /** The factory call this locator renders back to, used in step titles and failure messages. */
   readonly description: string;
   first(): Locator;
@@ -102,9 +108,9 @@ export type Locator = {
 };
 
 export function createDevice(session: DeviceSession, sink: ActionSink): Device {
-  const build = (query: Query): Locator => createLocator(session, sink, query);
+  const build = (query: Query): Locator => createLocator(session, sink, query, device);
   let screenshots = 0;
-  return {
+  const device: Device = {
     getByText: (text, options) => build({ name: textMatch(text, options?.exact) }),
     getByRole: (role, options) =>
       build(
@@ -128,21 +134,31 @@ export function createDevice(session: DeviceSession, sink: ActionSink): Device {
       return sink.step(renderTitle({ kind: 'screenshot', path }), () => session.screenshot(path));
     },
   };
+  return device;
 }
 
-function createLocator(session: DeviceSession, sink: ActionSink, query: Query): Locator {
+function createLocator(
+  session: DeviceSession,
+  sink: ActionSink,
+  query: Query,
+  device: Device,
+): Locator {
   const description = describeQuery(query);
-  const withIndex = (index: number): Locator => createLocator(session, sink, { ...query, index });
+  const withIndex = (index: number): Locator =>
+    createLocator(session, sink, { ...query, index }, device);
   return {
     query,
+    device,
     description,
     first: () => withIndex(0),
     nth: (index) => withIndex(index),
     filter: (options) =>
-      createLocator(session, sink, {
-        ...query,
-        filters: [...(query.filters ?? []), filterOf(options)],
-      }),
+      createLocator(
+        session,
+        sink,
+        { ...query, filters: [...(query.filters ?? []), filterOf(options)] },
+        device,
+      ),
     tap: (options) =>
       perform(session, sink, { kind: 'tap', query }, options, (device, ref, budget) =>
         device.tap(ref, budget),

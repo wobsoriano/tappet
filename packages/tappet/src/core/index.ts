@@ -52,6 +52,9 @@ export type { ProbeOptions, ProbeResult, ProbeTarget } from './probe.ts';
 export { describeQuery, normalizeText, textMatch } from './query.ts';
 export type { Filter, Query, Role, TextMatch } from './query.ts';
 
+export { compareScreenshot, cropScreenshot, relativeTo, sizeOf, toPixelBox } from './screenshot.ts';
+export type { Comparison, CompareOptions, PixelBox, Size } from './screenshot.ts';
+
 export { createScrollSearch, directionToward } from './scroll.ts';
 export type { ScrollDevice, ScrollSearch, ScrollTrail } from './scroll.ts';
 
