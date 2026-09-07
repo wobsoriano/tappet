@@ -3,7 +3,7 @@ import { jsonSchema, tool, type ToolSet } from 'ai';
 import { MockLanguageModelV4 } from 'ai/test';
 import { z } from 'zod';
 import { withAi } from '../src/ai/device.ts';
-import { runAct, runExtract } from '../src/ai/loop.ts';
+import { runAct, runExtract } from '../src/ai/act.ts';
 import { createDeviceTools } from '../src/ai/tools.ts';
 import type { Device } from '../src/core/device.ts';
 import { TouchpressError } from '../src/core/errors.ts';
@@ -72,10 +72,9 @@ function fakeTools(calls: string[]): ToolSet {
 }
 
 /**
- * The system text the model actually received. `act` and `extract` pass their
- * instructions to the AI SDK, and a parameter the installed version does not
- * know is dropped silently rather than rejected, so the prompt is the only
- * place that proves they arrived.
+ * The system text the model actually received. An instructions parameter the
+ * installed AI SDK does not know is dropped silently rather than rejected, so
+ * the prompt is the only place that proves it arrived.
  */
 function systemText(model: MockLanguageModelV4): string {
   const prompt = model.doGenerateCalls[0]?.prompt ?? [];

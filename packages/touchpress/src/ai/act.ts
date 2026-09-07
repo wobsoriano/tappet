@@ -14,7 +14,7 @@ export type ActRun = {
   readonly platform: Platform;
   readonly maxSteps: number;
   readonly timeout: number;
-  /** Read only when the loop fails, for the screen an `ai-blocked` or `ai-incomplete` message prints. */
+  /** Read only when the run fails, for the screen an `ai-blocked` or `ai-incomplete` message prints. */
   readonly screen: () => Promise<string>;
   /** Numbers this run's transcript, the way `device.screenshot` numbers its files. */
   readonly attempt: number;
@@ -30,7 +30,7 @@ export type ExtractRun<T> = {
 };
 
 /**
- * How the loop ends. The model says so by calling `done`, rather than the
+ * How the run ends. The model says so by calling `done`, rather than the
  * outcome being read out of free text, so a run that could not finish fails the
  * test instead of returning prose that reads like success.
  */
@@ -68,10 +68,11 @@ export function runAct(run: ActRun): Promise<string> {
   return run.sink.step(
     renderTitle({ kind: 'act', instruction: run.instruction }),
     async (): Promise<string> => {
-      const { generateText, hasToolCall, jsonSchema, stepCountIs, tool } = await loadAi();
+      const { ToolLoopAgent, hasToolCall, jsonSchema, stepCountIs, tool } = await loadAi();
 
-      const result = await generateText({
+      const agent = new ToolLoopAgent({
         model: run.model,
+        instructions: instructionsFor(run.platform),
         tools: {
           ...reporting(run.tools, run.sink),
           done: tool({
@@ -96,19 +97,23 @@ export function runAct(run: ActRun): Promise<string> {
             }),
           }),
         },
-        instructions: instructionsFor(run.platform),
-        prompt: run.instruction,
         stopWhen: [hasToolCall('done'), stepCountIs(run.maxSteps)],
-        abortSignal: AbortSignal.timeout(run.timeout),
-      }).catch(async (error: unknown) => {
-        if (!timedOut(error)) throw error;
-        throw new TouchpressError({
-          kind: 'ai-timeout',
-          instruction: run.instruction,
-          timeoutMs: run.timeout,
-          screen: await run.screen(),
-        });
       });
+
+      const result = await agent
+        .generate({
+          prompt: run.instruction,
+          abortSignal: AbortSignal.timeout(run.timeout),
+        })
+        .catch(async (error: unknown) => {
+          if (!timedOut(error)) throw error;
+          throw new TouchpressError({
+            kind: 'ai-timeout',
+            instruction: run.instruction,
+            timeoutMs: run.timeout,
+            screen: await run.screen(),
+          });
+        });
 
       await run.sink.attach({
         name: `ai-act-${String(run.attempt)}.json`,
@@ -161,12 +166,14 @@ export function runExtract<T>(run: ExtractRun<T>): Promise<T> {
   return run.sink.step(
     renderTitle({ kind: 'extract', question: run.question }),
     async (): Promise<T> => {
-      const { generateText, Output } = await loadAi();
-      const result = await generateText({
+      const { ToolLoopAgent, Output } = await loadAi();
+      const agent = new ToolLoopAgent({
         model: run.model,
         instructions: EXTRACT_INSTRUCTIONS,
-        prompt: [`Question: ${run.question}`, ``, `Screen:`, run.screen].join('\n'),
         output: Output.object({ schema: run.schema }),
+      });
+      const result = await agent.generate({
+        prompt: [`Question: ${run.question}`, ``, `Screen:`, run.screen].join('\n'),
         abortSignal: AbortSignal.timeout(run.timeout),
       });
       return result.output;
@@ -205,7 +212,7 @@ function reporting(tools: ToolSet, sink: ActionSink): ToolSet {
 /**
  * The `done` call is validated here rather than trusted, because a JSON schema
  * handed to `jsonSchema()` describes the tool to the model and validates
- * nothing. A malformed call is a loop that never reached an outcome.
+ * nothing. A malformed call is a run that never reached an outcome.
  */
 function outcomeOf(
   calls: readonly { toolName: string; input: unknown }[] | undefined,

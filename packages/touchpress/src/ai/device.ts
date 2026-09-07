@@ -4,7 +4,7 @@ import { TouchpressError } from '../core/errors.ts';
 import type { ActionSink } from '../core/report.ts';
 import { renderScreen } from '../core/screen.ts';
 import type { DeviceSession } from '../core/session.ts';
-import { runAct, runExtract } from './loop.ts';
+import { runAct, runExtract } from './act.ts';
 import { createDeviceTools } from './tools.ts';
 
 const DEFAULT_ACT_TIMEOUT_MS = 120_000;
