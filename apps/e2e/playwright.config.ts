@@ -19,6 +19,10 @@ export default defineConfig<TappetOptions>({
   // The deliberate-failure spec stays out of the default run. Include it with TAPPET_INCLUDE_FAILING=1.
   testIgnore: process.env['TAPPET_INCLUDE_FAILING'] === '1' ? [] : ['**/failing.spec.mts'],
   workers: 1,
+  // One retry in CI. A shared runner is slow enough that a device-side race can lose a keystroke,
+  // and Playwright replaces the worker on a failure, which is the path the session lifecycle is
+  // built for. The replacement reuses the same slot, so it reclaims the same device and session.
+  retries: process.env['CI'] ? 1 : 0,
   timeout: 120_000,
   expect: { timeout: 10_000 },
   reporter: [['list'], ['html', { open: 'never' }]],

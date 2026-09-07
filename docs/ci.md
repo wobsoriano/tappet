@@ -48,6 +48,12 @@ The key is `tappet-native-v1-<platform>-<hash>`. `actions/cache/restore` looks f
 
 The library source is deliberately left out of the hash. The sample app never imports tappet. It is a devDependency the specs use on the host, so a library change cannot alter the native build. `vp run -r build` stays unconditional for that reason, because the specs need the built library whether or not the app was rebuilt.
 
+### One retry in CI
+
+The sample config sets `retries` to 1 when `CI` is set and 0 otherwise. A hosted runner has few cores, and a device-side race can lose a keystroke there in a way it never does on a developer's machine. Playwright discards the worker after a failure and the replacement reuses the same slot, so the retry reclaims the same device and reconnects to the same session. That is the path the session lifecycle is built for.
+
+A retry is the intended recovery for a race on the device. It is not cover for a failing test. A test that fails both attempts is a real failure, and a test that needs its retry every run is a bug to fix rather than a flake to absorb.
+
 ### Artifacts
 
 Both jobs upload `apps/e2e/playwright-report` when they fail, with seven day retention. That report carries the `screen.png` and `screen.txt` attachments for every failed test, which is the whole reason to look at a failed device run.
