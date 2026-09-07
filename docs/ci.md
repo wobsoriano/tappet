@@ -2,6 +2,14 @@
 
 Two workflows live in `.github/workflows`. One is fast and runs on every push. The other boots devices and runs the real suite.
 
+The device workflow is manual for now. The repository has no Actions minutes left, so `e2e.yml` triggers on `workflow_dispatch` only and nothing starts it automatically. Start one by hand once there are minutes again.
+
+```sh
+gh workflow run e2e.yml
+```
+
+Until then the device suite is verified locally, against a booted simulator and a booted emulator. [Running the suite from a script](#running-the-suite-from-a-script) has the commands.
+
 ## `ci.yml`
 
 Runs on pushes to `main` and on every pull request, on `ubuntu-latest`. It checks out the repository, sets up Vite Plus with its cache, and runs the three commands you run locally.
@@ -18,7 +26,7 @@ Nothing here touches a device, so it finishes in about a minute and it is what g
 
 ## `e2e.yml`
 
-Two jobs, one per platform, with a 60 minute cap and a concurrency group on the branch so a new push cancels the run it replaced.
+Two jobs, one per platform, with a 60 minute cap and a concurrency group on the branch so a new run cancels the one it replaced. It triggers on `workflow_dispatch` only, for the reason above.
 
 The iOS job runs on `macos-26`. In order, it builds the library, boots an iPhone simulator through `futureware-tech/simulator-action` with `erase_before_boot` so every run starts from a clean device, builds `apps/e2e` in Release for the simulator, installs the app with `xcrun simctl install`, prepares the `agent-device` iOS runner, and runs the suite with `--project=ios`.
 

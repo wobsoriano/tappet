@@ -1,9 +1,8 @@
 name: e2e
 
+# The device suite runs on demand while the repository has no Actions minutes.
 on:
-  push:
-    branches: [main]
-  pull_request:
+  workflow_dispatch:
 
 concurrency:
   group: e2e-${{ github.ref }}
