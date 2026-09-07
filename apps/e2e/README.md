@@ -1,6 +1,6 @@
 # tappet-e2e
 
-The app `tappet` is tested against. An Expo SDK 57 project with expo-router, three screens, and a fake sign-in held in React state. Nothing here is a product. Every screen exists so a spec can name something on it.
+The app `tappet` is tested against. An Expo SDK 57 project with expo-router, four screens, and a fake sign-in held in React state. Nothing here is a product. Every screen exists so a spec can name something on it.
 
 ## Routes
 
@@ -9,6 +9,7 @@ The app `tappet` is tested against. An Expo SDK 57 project with expo-router, thr
 | `/`        | `app/index.tsx`   | Signed out, a Welcome heading and a Sign in button. Signed in, a greeting and a Profile button |
 | `/login`   | `app/login.tsx`   | Email and password fields, a Sign in button, an error only after a rejected attempt            |
 | `/profile` | `app/profile.tsx` | The signed-in name and email and a Sign out button. Redirects to `/login` when signed out      |
+| `/list`    | `app/list.tsx`    | Forty rows in a ScrollView and a Done button after the last one, for scrolling tests           |
 
 `src/auth.tsx` holds the whole auth model. The session is a union of `signed-out`, `signing-in`, and `signed-in`, so a screen switches on one value instead of reading a pile of booleans. State lives in React memory only, and that is the point. The library relaunches the app before every test, so each spec starts signed out with no cleanup code.
 
@@ -89,4 +90,6 @@ A `setup-ios` or `setup-android` project runs first and checks that the device t
 - `login.spec.mts` covers a rejected attempt, then a successful one through the pending state to the profile.
 - `profile.spec.mts` signs in, signs out, and expects the signed-out home back.
 - `relaunch.spec.mts` signs in in one test and expects the next test to start signed out, which is what per-test relaunch buys.
+- `list.spec.mts` scrolls a row into view and taps the button below the fold on a forty-row list.
+- `screenshot.spec.mts` compares the home screen and the Sign in button against committed baselines.
 - `failing.spec.mts` fails on purpose so the failure message and the `screen.png` and `screen.txt` attachments can be read. It is excluded from the default run. Include it with `TAPPET_INCLUDE_FAILING=1`.

@@ -13,7 +13,7 @@ Eight matchers, all on tappet's own `expect`, all retrying, all accepting `{ tim
 | `toHaveCount(n)`                  | the locator resolves to `n` distinct nodes |
 | `toHaveScreenshot(name, options)` | the pixels match a committed baseline      |
 
-They carry Playwright's own matcher names, but they are typed by their first parameter, so they surface on a tappet locator and on nothing else. Web locators are never mixed into the same `expect` here. `toHaveScreenshot` also takes the `device` itself, because a whole screen is as much a thing to compare pixels of as one control is.
+They carry Playwright's own matcher names, but they are typed by their first parameter, so they surface on a tappet locator and on nothing else. Web locators are never mixed into the same `expect` here. `toHaveScreenshot` also takes the `device` itself, for a whole-screen comparison.
 
 ```ts
 import { expect, test } from 'tappet';
@@ -93,9 +93,7 @@ await expect(device).toHaveScreenshot('home.png');
 await expect(device.getByRole('button', { name: 'Sign in' })).toHaveScreenshot('sign-in.png');
 ```
 
-A locator is cropped out of the device's own screenshot rather than captured separately. The tree reports the node's rect and the screenshot is a fixed number of pixels wide, so the image's width over the width of the window gives what one of the tree's units is worth in pixels, and the rect scaled by that is the crop. Both come off one capture, so a crop is never a rect from one moment against an image from another.
-
-Both units happen to line up on the devices this is tested against. `agent-device` writes the iOS simulator's screenshot at point resolution, and the Android tree already reports pixels, so the scale is 1 on both. It is derived rather than assumed, so a device that writes a 2x or 3x image still crops the right region.
+A locator is cropped out of the device's own screenshot, so the crop and the image come from one capture. The scale between the tree's units and the image's pixels is the image width divided by the window width. It measured 1 on both test devices, since agent-device writes the iOS simulator's screenshot at point resolution and the Android tree already reports pixels, but it is derived on every capture so a 2x or 3x image still crops the right region.
 
 ### Baselines
 
@@ -118,7 +116,7 @@ A baseline that does not exist yet is written. Whether that also passes is Playw
 | `mask`              | none             | locators whose rects are painted black in both images |
 | `timeout`           | `expect.timeout` | how long to keep re-capturing                         |
 
-Reach for `mask` rather than for a looser `maxDiffPixelRatio` when something on screen legitimately changes between runs. A clock or an avatar is one region, and hiding that region keeps the rest of the image as strict as it was, where a looser ratio blinds the whole thing.
+Use `mask` rather than a looser `maxDiffPixelRatio` when one region changes between runs, such as a clock or an avatar. A mask hides that region and keeps the rest of the image as strict as before.
 
 ```ts
 await expect(device).toHaveScreenshot('home.png', {
@@ -142,7 +140,7 @@ Timeout: 3000ms (4 captures)
 expected.png, actual.png and diff.png are attached to this test in the HTML report.
 ```
 
-The three PNGs go into the HTML report, with the diff painting every pixel that differed. Two images of different sizes report both sizes instead of a ratio, because no threshold or mask can rescue that and the numbers are what say so.
+The three PNGs go into the HTML report, and the diff paints every pixel that differed. Two images of different sizes report both sizes instead of a ratio.
 
 ```
 Received: the screenshot is 440x956 and the baseline is 100x44
@@ -150,4 +148,4 @@ Received: the screenshot is 440x956 and the baseline is 100x44
 
 ## Assertions tappet does not model
 
-Reach for `device.screen()` and assert on the tree with plain `expect`. See [Basics](basics.md).
+Use `device.screen()` and assert on the tree with plain `expect`. See [Basics](basics.md).

@@ -18,7 +18,7 @@ A session binds to a device on its first command, even a read-only one, which is
 
 Reads included. The driver advances a reference generation on every snapshot, and a reference pinned to an older generation is rejected before it dispatches. A read landing between a resolution and the action pinned to it would invalidate that pin, so one queue is what makes "snapshot, resolve, pin, act" atomic.
 
-Each action is therefore one unit. Capture a screen, resolve the locator, pin the node's reference to that screen's generation, dispatch, and re-capture and retry once if the driver reports the generation was superseded. A second rejection means the screen is changing faster than we can act on it, which is a real finding and is reported as one rather than retried forever.
+Each action is therefore one unit. Capture a screen, resolve the locator, pin the node's reference to that screen's generation, dispatch, and re-capture and retry once if the driver reports the generation was superseded. A second rejection means the screen is changing faster than tappet can act on it, and that is reported rather than retried forever.
 
 ## Relaunch
 
@@ -60,10 +60,10 @@ The worker fixture closes the session when the worker exits. `close` is idempote
 
 ## Running the CLI alongside a test run
 
-The `agent-device` CLI and the client tappet uses share one daemon, and a version mismatch makes each side restart it, which drops every open session. tappet pins `agent-device` as a dependency, so run the CLI through your workspace rather than a global install.
+The `agent-device` CLI and the client tappet uses share one daemon. A CLI at another version replaces that daemon on every call and drops every open session, which shows up as `SESSION_NOT_FOUND` in the middle of a suite. Run the CLI through the workspace so it is the pinned version.
 
 ```sh
 pnpm exec agent-device session list
 ```
 
-The workspace root pins `agent-device` as a devDependency at the library's exact version for one reason. `pnpm exec agent-device` resolves through the nearest `node_modules/.bin`, and a package that only reaches agent-device through tappet has no such binary, so the command would fall through to a globally installed CLI. A CLI at another version replaces the shared daemon on every call and drops every open session, which shows up as `SESSION_NOT_FOUND` in the middle of a suite. Pin the same version in any project that drives a device by hand next to tappet.
+`pnpm exec` resolves through the nearest `node_modules/.bin`, and a package that only reaches agent-device through tappet has no such binary, so the command would fall through to a global install. The workspace root pins `agent-device` at the library's exact version for that reason. Pin the same version in any project that drives a device by hand next to tappet.

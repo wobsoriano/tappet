@@ -44,53 +44,32 @@ await device.relaunch();
 await device.dismissDevOverlay();
 ```
 
-Actions wait for their target the way Playwright actions do. Playwright's own `use.actionTimeout` is the whole budget for one action, so waiting for the target and waiting for the screen to go quiet afterwards share it. Each action is reported as one step in the list and HTML reporters.
+Actions wait for their target the way Playwright actions do. Playwright's `use.actionTimeout` is the whole budget for one action, shared between waiting for the target and waiting for the screen to settle afterwards. Each action is one step in the list and HTML reporters.
 
-A fill step title names the locator and never the text.
+A fill step is titled by its locator and never by the text. The value goes in a nested step, added after the node is resolved, because the node's role decides how much may be printed. A field the platform marks secure, or one filled with `{ secret: true }`, reports a count.
 
 ```
 fill getByTestId('email')
   type "rob@example.com"
-```
-
-The value is a nested step, added once the node is resolved and the write has gone out. It has to be reported after the node rather than with the locator, because the node's role is what decides how much of the value may be printed. A field the device marks secure, or one you filled with `{ secret: true }`, reports a count instead.
-
-```
 fill getByTestId('password')
   type 7 characters
 ```
 
-`fill` is the one action that reads back what it wrote. A device keyboard drops early keystrokes often enough that a fill can under-deliver its text and still report success, so `fill` types again until the field holds what it was given or the budget runs out. Re-filling is safe because a fill replaces the field's contents rather than appending to them.
+`fill` reads back what it wrote. Device keyboards drop early keystrokes, and a controlled React Native input can put a stale value back over what the driver typed, so `fill` reads the field once, waits `settleQuietMs`, reads it again, and retries the whole fill until both reads hold the text or the action budget runs out. A secure field reports one mask character per character typed, so there the check is on length. Retrying replaces rather than appends. Pacing keystrokes with the driver's per-character delay was tried and removed, because that path appends. When the budget runs out the error names the value found and the attempts made, by length for a secret.
 
-The read back is two reads. Behind a controlled component the field gets written twice, once by the driver and once by the app's own render, and that second write can put a stale string back over what was just typed. A single read can land between the two and report a value that is already gone, so `fill` reads once, waits `settleQuietMs`, and reads again. Both have to agree before it returns.
+`secret` is fill's only extra option. It hides the value from the step and from the `fill-unconfirmed` error. It does not hide what the device reports afterwards. An assertion on that field's value still prints it, and on Android a plain text field reports its contents as its accessibility name, which puts them in the screen listing. Assert on what the credential got you rather than on the credential.
 
-That quiet period is reserved out of the action's budget rather than taken from what is left. A fill that cannot afford to confirm itself reports `fill-unconfirmed` instead of starting an attempt it would have to accept on a window that shrank to nothing.
-
-A retry re-sends the same fill. Pacing the keystrokes instead was tried and removed. The driver's per-character delay routes the write down a path that appends to the field rather than replacing it, so a paced retry turned `rob@example.com` into `r@example.comrob@example.com` and never converged. When the budget runs out, the error names the value that was actually there and the number of attempts.
-
-A secure field is read back differently, because it never reports its contents. It reports one masking character per character it holds, so what the read back checks there is the length. That still catches the dropped keystroke this exists for, because a short write is a short mask, and the failure names how many characters were typed rather than the text, so a password stays out of the terminal and out of the HTML report.
-
-Plenty of apps put a credential in a plain text field, and a snapshot gives tappet no way to tell. `{ secret: true }` says so.
-
-```ts
-await device.getByTestId('password').fill('hunter2', { secret: true });
-```
-
-The step and the failure then say as little as they would about a field the platform marked secure. The nested step reports a count, and `fill-unconfirmed` names both values by length. The read back itself is unchanged, because a plain field really does hand its contents back, so a secret fill is still confirmed character for character rather than by length.
-
-`secret` is fill's option alone. `tap`, `longPress` and `scrollIntoView` take `{ timeout }` and nothing else.
-
-`secret` covers what tappet says about the write. It does not cover what the device says about the field afterwards. The snapshot carries no mark for the field, so an assertion on that field's own value still prints what the field holds, and on Android a plain text field reports its contents as its accessibility name, which puts them in the screen listing. Assert on what the credential got you rather than on the credential.
+`relaunch()` relaunches the app and waits for the ready gate again. `dismissDevOverlay()` clears the React Native development warning overlay. It is never automatic, because the overlay is a real node and hiding it by default would suppress a warning a test might want to assert on.
 
 ## Reaching a target below the fold
 
-`tap`, `fill` and `longPress` scroll to their own target. A locator that resolves to nothing is not immediately a failure, so before the action gives up it looks for the node off screen and scrolls toward it, inside the same action budget. Most tests never have to say anything about scrolling.
+`tap`, `fill`, and `longPress` scroll to their own target. When a locator resolves to nothing, the action looks for the node off screen and scrolls toward it inside the same budget, so most tests never mention scrolling.
 
 ```ts
 await device.getByTestId('list-done').tap();
 ```
 
-`scrollIntoView()` does the scrolling and stops there, for when you want to see a node rather than act on it.
+`scrollIntoView()` scrolls and stops there.
 
 ```ts
 const row = device.getByTestId('row-30');
@@ -98,13 +77,7 @@ await row.scrollIntoView();
 await expect(row).toBeVisible();
 ```
 
-Both stop on the same condition. The locator resolves to exactly one node on the tree every other locator resolves against, which is the driver's visible-first view of the screen. A node the search found while looking is not a node a user can reach, so nothing acts on one.
-
-Which way to scroll comes from two places. The driver can hand back the full provider tree rather than its visible view, and on iOS that tree carries the rows a container has scrolled away. Their rects against the rect of the container clipping them say which way the target lies, so the search knows rather than guesses.
-
-Android's provider tree stops at the window. It carries more wrapper views than the visible one and not one extra row, so nothing there places an off-screen target. What is left is the scroll container itself, which reports that it is holding content above or below. The search scrolls that way and re-reads the screen until the target arrives. Same loop, weaker evidence.
-
-A search never reverses. Once it has scrolled one way, a hint pointing back the other way means the container ran out rather than that the target is behind it, so that is where the search stops. It also stops after twenty steps whatever the clock says, so a list that scrolls forever cannot spend the whole budget. A failure names the steps it took.
+Both stop when the locator resolves to one node on the driver's visible tree, the same tree every other locator uses. On iOS the driver's full tree also carries the rows a container has scrolled away, and their rects against the container's rect give the direction. On Android that tree has no off-screen rows, so the search reads the scroll container's own hint that it holds content above or below and scrolls that way until the row appears. A search never reverses, because at the end of a list the only remaining hint points back, and it stops after twenty steps regardless of the clock. Each scroll is a nested step under the action, and a failure names the steps taken.
 
 ```
 Locator never resolved to a node within 10000ms.
@@ -113,16 +86,7 @@ Locator: getByTestId('row-99')
 Scrolled: 3 steps down
 ```
 
-Every scroll a search takes is a nested step under the action, so a report shows what an action did to reach its target.
-
-```
-tap getByTestId('list-done')
-  scroll down
-```
-
-`device.scroll('down')` is still there for scrolling the screen without naming a target.
-
-`relaunch()` relaunches the app and waits for the ready gate again. `dismissDevOverlay()` clears the React Native development warning overlay. It is never automatic, because the overlay is a real node and hiding it by default would suppress a warning a test might want to assert on.
+`device.scroll('down')` scrolls the screen without naming a target.
 
 ## Reading values
 
@@ -164,7 +128,7 @@ The default path is numbered per call and goes through the same output directory
 
 The agent-device CLI equivalent is `agent-device screenshot ./card.png`, which also takes `--scale` and `--overlay-refs`.
 
-`device.screenshot()` saves the whole device. To compare one control's pixels against a committed baseline, reach for `toHaveScreenshot` on its locator, which crops the control out of the device's own screenshot. See [Assertions](assertions.md).
+`device.screenshot()` saves the whole device. To compare one control against a committed baseline, use `toHaveScreenshot` on its locator, which crops the control out of that screenshot. See [Assertions](assertions.md).
 
 ## Preflight
 
@@ -184,12 +148,8 @@ setupTest(
 );
 ```
 
-`setupTest` carries tappet's options and none of its fixtures. Tappet's own `test` would open a session through its auto `device` fixture, which is the very thing preflight runs ahead of.
+`setupTest` carries tappet's options and none of its fixtures. tappet's own `test` would open a session through its auto `device` fixture, and preflight has to run before any session exists.
 
 It returns `{ ok: true, device }` or `{ ok: false, problems }`, where every problem is one line ending in something to do about it. Run it as a Playwright setup project that the device projects depend on, so a missing simulator reads as one short failure rather than a launch timeout in every test.
 
-Give each platform its own setup project off this one spec. A setup project has a single `use`, so a shared one could only check one platform's device, and running the other platform would gate on a device that run has no reason to have booted. [Configuration](configuration.md) shows the wiring.
-
-## Specs must load as ES modules
-
-`agent-device` is ESM only. A spec that Node loads as CommonJS cannot resolve it. Inside a package without `"type": "module"`, such as an Expo app, name your specs `*.spec.mts`.
+Give each platform its own setup project off this one spec. A setup project has a single `use`, so one shared project could only ever check one platform's device. [Configuration](configuration.md) shows the wiring.
