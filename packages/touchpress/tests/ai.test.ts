@@ -71,6 +71,19 @@ function fakeTools(calls: string[]): ToolSet {
   };
 }
 
+/**
+ * The system text the model actually received. `act` and `extract` pass their
+ * instructions to the AI SDK, and a parameter the installed version does not
+ * know is dropped silently rather than rejected, so the prompt is the only
+ * place that proves they arrived.
+ */
+function systemText(model: MockLanguageModelV4): string {
+  const prompt = model.doGenerateCalls[0]?.prompt ?? [];
+  return prompt
+    .flatMap((message) => (message.role === 'system' ? [message.content] : []))
+    .join('\n');
+}
+
 function act(model: MockLanguageModelV4, sink = createRecordingSink(), maxSteps = 10) {
   const calls: string[] = [];
   const run = runAct({
@@ -108,6 +121,16 @@ test('act reports the instruction, nests every model command under it, and retur
     { title: 'snapshot', depth: 1, boxed: false },
     { title: 'press @a1', depth: 1, boxed: false },
   ]);
+});
+
+test('act tells the model how to drive the app rather than dropping its instructions', async () => {
+  const model = new MockLanguageModelV4({
+    doGenerate: [turn(done('completed', 'Already signed in'))],
+  });
+  const { run } = act(model);
+  await run;
+
+  expect(systemText(model)).toContain('snapshot');
 });
 
 test('a fill the model ran reports the text it typed as a nested boxed step', async () => {
@@ -234,6 +257,29 @@ test('extract validates the answer against the schema and reports the question',
 
   expect(answer).toEqual({ signedIn: true, reason: 'the greeting names Rob' });
   expect(sink.steps).toEqual([{ title: 'extract "Is a user signed in?"', depth: 0, boxed: false }]);
+});
+
+test('extract tells the model it is reading a tree rather than dropping its instructions', async () => {
+  const model = new MockLanguageModelV4({
+    doGenerate: (): Promise<Turn> =>
+      Promise.resolve({
+        content: [{ type: 'text', text: '{"signedIn":true}' }],
+        finishReason: { unified: 'stop', raw: undefined },
+        usage: USAGE,
+        warnings: [],
+      }),
+  });
+
+  await runExtract({
+    model,
+    screen: '@a1 [text] "Hi, Rob"',
+    question: 'Is a user signed in?',
+    schema: z.object({ signedIn: z.boolean() }),
+    sink: silentSink,
+    timeout: 10_000,
+  });
+
+  expect(systemText(model)).toContain('accessibility tree');
 });
 
 test('act and extract name the aiModel key when no model is configured', async () => {
