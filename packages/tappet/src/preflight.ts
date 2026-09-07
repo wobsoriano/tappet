@@ -17,12 +17,9 @@ export type PreflightReport =
   | { readonly ok: false; readonly problems: readonly string[] };
 
 /**
- * Answers whether the device a config names is actually booted, before any
- * session opens. A device that is not there is reported as problems rather
- * than thrown, so a runner names every one of them at once. A malformed config
- * still throws, the way it does everywhere else.
- *
- * `driver` is the seam adapters and unit tests inject.
+ * A device that is not booted is reported as problems rather than thrown, so a
+ * runner names every one of them at once. A malformed config still throws, the
+ * way it does everywhere else. `driver` is the seam tests inject.
  */
 export async function preflight(
   options: Partial<TappetOptions>,

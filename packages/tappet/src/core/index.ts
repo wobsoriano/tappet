@@ -1,11 +1,8 @@
 /**
- * The runner-independent surface. An adapter needs exactly this: open a
- * session per worker slot, build a `Device` per test over its own `ActionSink`,
- * and turn `Check` names into matchers via `probe`.
- *
- * No module under `core/` imports `@playwright/test` or `agent-device`, and no
- * agent-device type crosses this line. The one exception is this entry's
- * re-export of `preflight`, which needs a concrete driver.
+ * The runner-independent surface. No module under `core/` imports
+ * `@playwright/test` or `agent-device`, and no agent-device type crosses this
+ * line. The one exception is this entry's re-export of `preflight`, which needs
+ * a concrete driver.
  */
 
 export { createDevice } from './device.ts';

@@ -22,13 +22,10 @@ export function createClient(): Client {
 }
 
 /**
- * The only file that imports `agent-device`.
- *
- * Two jobs: translate domain requests into client calls with the session and
- * the device selection carried on every one of them, and translate the
+ * The only file that imports `agent-device`. Two jobs: translate domain requests
+ * into client calls carrying the session and device selection, and translate the
  * driver's error codes into `DeviceFailure`. Snapshot parsing is not one of
- * them; role normalization and label rules are domain knowledge and live in
- * `core/screen.ts`.
+ * them, because role normalization and label rules live in `core/screen.ts`.
  */
 export function createAgentDeviceDriver(
   client: Client,
@@ -156,11 +153,9 @@ function readNormalized(error: unknown): {
 }
 
 /**
- * Maps the driver's error vocabulary onto this library's.
- *
- * Timeouts and transport faults both arrive as `COMMAND_FAILED`, so the
- * message and `details.reason` separate them. That is a match against upstream
- * text and it is confined to this function for exactly that reason.
+ * Timeouts and transport faults both arrive as `COMMAND_FAILED`, so the message
+ * and `details.reason` separate them. That matches against upstream text, and it
+ * is confined to this function for exactly that reason.
  */
 export function classifyError(error: unknown): DeviceFailure {
   const normalized = readNormalized(error);
@@ -194,10 +189,10 @@ export function classifyError(error: unknown): DeviceFailure {
 }
 
 /**
- * A device claim made in another workspace does not appear in a session
- * listing run from here, so the owning session name in the error is the only
- * way to name it. It arrives in `details` on some paths and only in the
- * message text (`by session "lex"`) on others.
+ * A device claim made in another workspace does not appear in a session listing
+ * run from here, so the owning session name in the error is the only way to name
+ * it. It arrives in `details` on some paths and only in the message text
+ * (`by session "lex"`) on others.
  */
 function ownerOf(details: Record<string, unknown>, message: string): string | null {
   for (const key of ['session', 'owner', 'ownerSession']) {

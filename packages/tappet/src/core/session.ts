@@ -27,12 +27,10 @@ export type SessionState =
   | { readonly phase: 'broken'; readonly failure: DeviceFailure };
 
 /**
- * Serializes every command on one session, reads included.
- *
- * Reads could run in parallel per the driver's own rule, but a read between a
- * snapshot and the action pinned to it advances the ref generation and
- * invalidates the pin. One queue is what makes "snapshot, resolve, pin, act"
- * atomic.
+ * Serializes every command on one session, reads included. Reads could run in
+ * parallel per the driver's own rule, but a read between a snapshot and the
+ * action pinned to it advances the ref generation and invalidates the pin. One
+ * queue is what makes "snapshot, resolve, pin, act" atomic.
  */
 export type Queue = {
   enqueue<T>(body: () => Promise<T>): Promise<T>;
@@ -51,8 +49,6 @@ export function createQueue(): Queue {
 }
 
 /**
- * The device capabilities available inside one queued unit.
- *
  * Every mutation takes the budget it has left rather than reading
  * `actionTimeout` again, so waiting for a target and waiting for the screen to
  * settle share one allowance instead of each getting a full one.
@@ -61,9 +57,9 @@ export type SessionDevice = {
   capture(): Promise<Screen>;
   /**
    * The driver's full provider tree. Only a scroll search reads it, because it
-   * carries nodes no locator should resolve against: on iOS the rows a
-   * container has scrolled out of the window, and on both platforms the
-   * wrapper views the default tree collapses away.
+   * carries nodes no locator should resolve against: on iOS the rows scrolled
+   * out of the window, and on both platforms the wrappers the default tree
+   * collapses away.
    */
   captureRaw(): Promise<Screen>;
   tap(ref: PinnedRef, budgetMs: number): Promise<Settled>;
@@ -101,13 +97,12 @@ export type OpenSessionInput = {
 };
 
 /**
- * Convergent startup. Running it twice settles on one ready session.
- *
- * In order: reclaim a leftover session of our own name, open with the
- * selection carried on that first command, recover once from a device claimed
- * by a leftover of ours or under `onDeviceInUse: 'reclaim'`, recover once from
- * a session bound to another device, then hold until `readyWhen` resolves
- * because `open` returns while the JavaScript bundle is still loading.
+ * Convergent startup. Running it twice settles on one ready session. In order:
+ * reclaim a leftover session of the same name, open with the selection carried
+ * on that first command, recover once from a device claimed by a leftover or
+ * under `onDeviceInUse: 'reclaim'`, recover once from a session bound to another
+ * device, then hold until `readyWhen` resolves, because `open` returns while the
+ * JavaScript bundle is still loading.
  */
 export async function openSession(input: OpenSessionInput): Promise<DeviceSession> {
   const { options, sink } = input;

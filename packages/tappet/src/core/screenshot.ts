@@ -17,19 +17,16 @@ export type CompareOptions = {
   /** The share of the image allowed to differ before the comparison fails. */
   readonly maxDiffPixelRatio: number;
   /**
-   * Painted opaque black in both images before anything is compared, in the
-   * coordinates of the images being compared. A clock, an avatar, or anything
-   * else that legitimately changes between runs goes here rather than into a
-   * looser threshold, which would blind the whole image instead of one corner.
+   * Painted opaque black in both images before anything is compared. A clock, an
+   * avatar, or anything else that changes between runs goes here rather than
+   * into a looser threshold, which would blind the whole image.
    */
   readonly mask: readonly PixelBox[];
 };
 
 /**
- * Why two images did or did not agree.
- *
  * A size mismatch is its own case rather than a ratio of 1, because nothing
- * about a threshold or a mask can rescue it and the numbers are what say so.
+ * about a threshold or a mask can rescue it.
  */
 export type Comparison =
   | { readonly kind: 'match'; readonly ratio: number }
@@ -37,11 +34,8 @@ export type Comparison =
   | { readonly kind: 'size-mismatch'; readonly expected: Size; readonly actual: Size };
 
 /**
- * The whole of the image comparison, pure over two PNG buffers.
- *
- * The ratio is mismatched pixels over the image's own pixel count, so it
- * carries the same meaning whether the images are a whole device or one
- * cropped button.
+ * The ratio is mismatched pixels over the image's own pixel count, so it means
+ * the same whether the images are a whole device or one cropped button.
  */
 export function compareScreenshot(
   expected: Buffer,
@@ -71,11 +65,9 @@ export function compareScreenshot(
 }
 
 /**
- * Cuts a region out of a PNG.
- *
  * The box is clamped to the image, because a rect comes from a snapshot and a
- * screenshot is a separate capture: a control flush against the bottom edge
- * can round a pixel past it, and that is not a reason to fail an assertion.
+ * screenshot is a separate capture. A control flush against the bottom edge can
+ * round a pixel past it, and that is not a reason to fail an assertion.
  */
 export function cropScreenshot(source: Buffer, box: PixelBox): Buffer {
   const image = PNG.sync.read(source);
@@ -90,10 +82,7 @@ export function sizeOf(source: Buffer): Size {
   return { width: image.width, height: image.height };
 }
 
-/**
- * A snapshot rect scaled into image pixels and rounded outward, so a control's
- * own edge is never the thing that gets cut off.
- */
+/** Rounded outward, so a control's own edge is never the thing that gets cut off. */
 export function toPixelBox(
   rect: { readonly x: number; readonly y: number; readonly width: number; readonly height: number },
   scale: number,

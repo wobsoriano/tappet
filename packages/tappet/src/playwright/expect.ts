@@ -16,12 +16,9 @@ type MatcherResult = {
 };
 
 /**
- * The one place a matcher's timeout and negation are resolved.
- *
- * `this.timeout` is `expect.timeout` from the Playwright config, and
- * `this.isNot` selects the predicate the poll waits for, which is what makes
- * `.not.toBeVisible()` wait for a control to leave instead of checking once
- * and passing on a race.
+ * `this.timeout` is `expect.timeout` from the Playwright config. `this.isNot`
+ * selects the predicate the poll waits for, which is what makes
+ * `.not.toBeVisible()` wait for a control to leave instead of passing on a race.
  */
 async function runCheck(
   state: ExpectMatcherState,
@@ -42,7 +39,6 @@ async function runCheck(
   };
 }
 
-/** The four checks that read a node's own flags differ only by name, so they are built from one factory. */
 function retrying(
   name: Extract<CheckName, 'toBeVisible' | 'toBeEnabled' | 'toBeSelected' | 'toBeFocused'>,
 ) {
@@ -104,8 +100,6 @@ export const expect = base.extend({
     return runCheck(this, locator, { name: 'toHaveCount', expected }, options?.timeout);
   },
 
-  // The one matcher that takes a device as well as a locator, because a whole screen is
-  // as much a thing to compare pixels of as one control is.
   toHaveScreenshot(
     this: ExpectMatcherState,
     target: Device | Locator,

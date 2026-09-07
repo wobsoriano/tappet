@@ -7,20 +7,18 @@ import { openSession, type DeviceSession } from '../core/session.ts';
 import { createAgentDeviceDriver, createClient } from '../driver/agent-device.ts';
 
 const SESSION_FIXTURE_TIMEOUT_MS = 180_000;
-// The per-test relaunch and the evidence capture run in this fixture, not in the test body, so it
-// needs a budget of its own. Charged to the test timeout, a slow relaunch reads as a test timeout
-// instead of the launch failure it is.
+// The per-test relaunch and the evidence capture run in this fixture, not the test body, so it
+// needs its own budget. On the test timeout, a slow relaunch reads as a test timeout instead.
 const DEVICE_FIXTURE_TIMEOUT_MS = 120_000;
 
 /**
- * Tappet's options and none of its fixtures, for a setup project that has to
- * read the configuration before any session exists, such as one calling
- * `preflight`.
+ * Tappet's options and none of its fixtures, for a setup project that reads the
+ * configuration before any session exists, such as one calling `preflight`.
  *
- * `platform`, `app`, and `readyWhen` default to `undefined` here rather than to
- * a plausible value. A Playwright option fixture needs a default of its declared
+ * `platform`, `app`, and `readyWhen` default to `undefined` rather than to a
+ * plausible value. A Playwright option fixture needs a default of its declared
  * type, and `parseDeviceOptions` rejects `undefined` by name, so a config that
- * forgot a key and a config that never set one fail the same way.
+ * forgot a key and one that never set it fail the same way.
  */
 export const setupTest = base.extend<object, TappetOptions>({
   platform: [undefined, { option: true, scope: 'worker' }],
@@ -36,23 +34,17 @@ export const setupTest = base.extend<object, TappetOptions>({
   sessionPrefix: [TAPPET_DEFAULTS.sessionPrefix, { option: true, scope: 'worker' }],
 });
 
-/**
- * The worker session opened the app with a relaunch already, so the first test
- * in a worker does not need another one.
- */
+/** The worker session already opened the app with a relaunch, so the first test skips one. */
 const startedTests = new WeakSet<DeviceSession>();
 
 /**
- * Fixture graph: the options (worker, from `use`) feed `session` (worker),
- * which feeds `device` (test, auto).
- *
  * `device` is auto so evidence capture runs for every test in a device project,
  * whether or not the body touched it. Its teardown runs before the session's,
  * inside the separate budget Playwright grants after the test finishes, so a
  * timed-out test still gets a screenshot.
  *
- * Importing and extending `test` launches no browser: `browser`, `context`,
- * and `page` are lazy and non-auto, and nothing here names them.
+ * Importing and extending `test` launches no browser: `browser`, `context`, and
+ * `page` are lazy and non-auto, and nothing here names them.
  */
 export const test = setupTest.extend<{ device: Device }, { session: DeviceSession }>({
   session: [
@@ -126,8 +118,8 @@ function shouldCapture(testInfo: TestInfo, evidence: 'on-failure' | 'always' | '
 }
 
 /**
- * Resolves the running test on every call rather than capturing a `TestInfo`.
- * A worker outlives every test in it, so a captured one would file the second
+ * Resolves the running test on every call rather than capturing a `TestInfo`. A
+ * worker outlives every test in it, so a captured one would file the second
  * test's evidence under the first test's report entry.
  */
 export function playwrightSink(): ActionSink {

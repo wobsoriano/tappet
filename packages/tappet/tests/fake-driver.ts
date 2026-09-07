@@ -15,7 +15,6 @@ import { loadRaw, type FixtureName } from './fixtures.ts';
 
 export type FakeDriver = DeviceDriver & {
   readonly calls: string[];
-  /** What `listDevices` reports. */
   devices: DeviceInfo[];
   /** Each entry is consumed by one `open`. A `DeviceFailure` is thrown, anything else succeeds. */
   readonly openOutcomes: DeviceFailure[];
@@ -23,25 +22,22 @@ export type FakeDriver = DeviceDriver & {
   /** What a `raw: true` capture returns. Consumed like `screens`, and empty means the driver has no raw tree to offer. */
   rawScreens: FixtureName[];
   /**
-   * What each scroll leaves on screen, one entry per scroll. A scroll past the
-   * end of this queue changes nothing, which is what a container already at
-   * its end does.
+   * One entry per scroll. A scroll past the end of this queue changes nothing,
+   * which is what a container already at its end does.
    */
   onScroll: FixtureName[];
   /** Fails the next N mutations with a stale-ref rejection, the way a superseded generation does. */
   staleRefs: number;
   /**
-   * What the next fills actually leave in the field, one entry each. Anything
-   * beyond the queue lands whole, so a short queue models a device keyboard
-   * that drops keystrokes on the first tries and then behaves.
+   * What the next fills leave in the field, one entry each. Anything beyond the
+   * queue lands whole, so a short queue models a device keyboard that drops
+   * keystrokes on the first tries and then behaves.
    */
   readonly fillOutcomes: string[];
   /**
    * Models a controlled component whose own render writes a stale string back
-   * over what the driver typed. The next `revertingFills` fills each put
-   * `revertTo` in the field once `revertAfterMs` have passed since the write.
-   * The delay is real time, not a capture count, so a read-back that skipped
-   * its wait sees the value the driver wrote and misses the revert.
+   * over what the driver typed. The delay is real time, not a capture count, so
+   * a read-back that skipped its wait misses the revert.
    */
   revertingFills: number;
   revertAfterMs: number;
@@ -192,8 +188,7 @@ export type RecordedStep = {
 
 /**
  * The step titles a runner would print, in order, with the nesting a reporter
- * would indent by. A test asserting on these is asserting on what a terminal
- * and an HTML report end up holding.
+ * would indent by, so a test asserts on what a terminal and a report hold.
  */
 export function createRecordingSink(): ActionSink & { readonly steps: RecordedStep[] } {
   const steps: RecordedStep[] = [];

@@ -23,10 +23,8 @@ export type RoleOptions = { name?: string | RegExp; exact?: boolean };
 export type ActionOptions = { timeout?: number };
 
 /**
- * How one `.filter()` call narrows. `hasText` matches the node's own text or
- * any text in its subtree, while `has` means a strict descendant, which is the
- * asymmetry Playwright has. Text follows the default case-insensitive
- * substring rule.
+ * `hasText` matches the node's own text or any text in its subtree, while
+ * `has` needs a strict descendant. That asymmetry matches Playwright.
  */
 export type FilterOptions = {
   hasText?: string | RegExp;
@@ -36,74 +34,49 @@ export type FilterOptions = {
 };
 
 /**
- * `secret` is fill's alone. It cuts the report and any failure message back to
- * a character count whatever the written node's role, for a field holding a
- * credential the platform did not mark secure, which a snapshot gives no way
- * to detect. The write is still confirmed character for character, because a
- * field the platform left plain hands its exact contents back.
+ * `secret` reports only a character count, for a credential field the platform
+ * did not mark secure. The write is still confirmed character by character,
+ * because a plain field hands back its exact contents.
  */
 export type FillOptions = ActionOptions & { secret?: boolean };
 
-/**
- * What a test holds. One per test, cheap to build, and the only way into the
- * device. Locators are pure values until one of their async methods runs.
- */
 export type Device = {
-  /** Matches a node's accessibility name or its value, the way Playwright's `getByText` matches text. */
+  /** Matches a node's accessibility name or its value. */
   getByText(text: string | RegExp, options?: TextOptions): Locator;
   getByRole(role: Role, options?: RoleOptions): Locator;
   /** Matches the accessibility identifier, which is what a React Native `testID` becomes. */
   getByTestId(testId: string): Locator;
-  /** The escape hatch for anything the three factories cannot express. */
   locator(query: Query): Locator;
 
   scroll(direction: ScrollDirection): Promise<void>;
   /** Relaunches the app and waits for the ready gate again. */
   relaunch(): Promise<void>;
-  /**
-   * Clears the React Native development warning overlay. Never automatic: the
-   * overlay is a real node and hiding it by default would suppress a warning a
-   * test might want to see.
-   */
+  /** Never automatic, because hiding the overlay would suppress a warning a test might want to see. */
   dismissDevOverlay(): Promise<void>;
-  /** The parsed tree, for an assertion this library does not model. */
   screen(): Promise<Screen>;
-  /** Saves a screenshot and returns its path. Nothing is attached to the report, so the caller decides whether to. */
+  /** Returns the path. Nothing is attached to the report, so the caller decides whether to. */
   screenshot(options?: { path?: string }): Promise<string>;
 };
 
-/**
- * A query bound to a session. Holding one across an action is safe because it
- * stores a query, never a ref.
- */
+/** A query bound to a session. Safe to hold across an action, because it stores a query and never a ref. */
 export type Locator = {
   readonly query: Query;
-  /**
-   * The device this locator was built from. A screenshot assertion needs the
-   * image and the tree behind it, and a locator carries neither, so this is
-   * how it reaches both.
-   */
+  /** The device this locator came from. A screenshot assertion needs the image and the tree, and a locator carries neither. */
   readonly device: Device;
   /** The factory call this locator renders back to, used in step titles and failure messages. */
   readonly description: string;
   first(): Locator;
   /** Negative indexes count from the end, so `nth(-1)` is the last match. */
   nth(index: number): Locator;
-  /** Narrows the matches this locator already makes. Chains, and every call narrows further. */
   filter(options: FilterOptions): Locator;
   tap(options?: ActionOptions): Promise<void>;
   fill(text: string, options?: FillOptions): Promise<void>;
   longPress(durationMs?: number, options?: ActionOptions): Promise<void>;
-  /**
-   * Scrolls until this locator resolves to one node on the default tree.
-   * Returns at once when it already does. Actions do this for themselves, so
-   * reach for it when you want to see a node rather than act on it.
-   */
+  /** Actions scroll for themselves, so this is for seeing a node rather than acting on it. */
   scrollIntoView(options?: ActionOptions): Promise<void>;
   count(): Promise<number>;
-  /** The matched node's text off one fresh screen. Null when nothing matches; ambiguity fails the way an action does. */
+  /** The matched node's text off one fresh screen. Null when nothing matches. Ambiguity fails the way an action does. */
   textContent(): Promise<string | null>;
-  /** The retrying assertion primitive every adapter's matchers are built on. */
   expect(check: Check, options: ProbeOptions): Promise<ProbeResult>;
 };
 
@@ -226,33 +199,21 @@ function filterOf(options: FilterOptions): Filter {
 }
 
 /**
- * One action is one queued unit and one reported step.
+ * One action is one queued unit and one reported step. Ambiguity fails at once,
+ * because waiting cannot make a locator less ambiguous. A stale ref retries
+ * once, and a second one means the screen is changing faster than an action can
+ * land.
  *
- * Inside the queue: poll a fresh screen until the query resolves to exactly
- * one node, pin that node's ref to the screen it came from, and dispatch. An
- * ambiguous resolution fails at once with the list, because waiting cannot
- * make a locator less ambiguous. A stale-ref rejection re-captures and retries
- * once; a second one means the screen is changing faster than we can act on
- * it, which is a real finding and reported as one.
+ * `write` makes this a write that is read back. A device keyboard drops early
+ * keystrokes often enough that a fill can under-deliver and still report
+ * success, so fill dispatches again until the field holds what it was given.
+ * Re-filling is safe because a fill replaces the field's contents.
  *
- * `write` makes the action a write that is read back. A device keyboard
- * drops early keystrokes often enough that a fill can under-deliver its text
- * and still report success, so fill dispatches again until the field holds what
- * it was given or the budget runs out. Re-filling is safe because a fill
- * replaces the field's contents rather than appending to them.
- *
- * The read back is two reads, not one. Behind a controlled component the field
- * is written twice: once by the driver, then again by the app's own render,
- * which can push a stale string back over what the driver just typed. A single
- * read lands between those writes and reports a value that is already gone, so
- * the second read after the screen has had its quiet period is what proves the
- * value held. Each retry types slower than the last.
- *
- * What counts as proof comes from the written node's role, because a secure
- * field reports a mask rather than its contents and can only ever prove how
- * much it holds. The same classification decides how much of the text the
- * nested `type` step and any failure message are allowed to repeat back. See
- * `confirmationOf`.
+ * The read back is two reads. Behind a controlled component the field is
+ * written twice, by the driver and then by the app's own render, which can push
+ * a stale string over what the driver typed. The second read, after the quiet
+ * period, proves the value held. What counts as proof comes from the node's
+ * role, because a secure field reports a mask. See `confirmationOf`.
  */
 function perform(
   session: DeviceSession,
@@ -289,9 +250,8 @@ function perform(
         if (resolution.outcome === 'one') {
           const confirmation =
             write === undefined ? null : confirmationOf(resolution.node.role, write);
-          // A confirmed write needs its quiet period inside the budget, not whatever is
-          // left over. Confirming across a window that shrank to nothing is two reads
-          // back to back, which is the single read this exists to replace.
+          // A confirmed write needs its quiet period inside the budget. Without room for
+          // the wait, the two reads land back to back and prove nothing.
           if (
             confirmation !== null &&
             attempts > 0 &&
@@ -320,9 +280,8 @@ function perform(
               { box: true },
             );
           }
-          // The locator names the field until the first write lands, after which the
-          // written node names itself, because Android reports a text field's
-          // accessible name as its contents.
+          // Android reports a text field's accessible name as its contents, so the
+          // author's locator stops matching once a write lands. Track the node instead.
           target = identityOf(screen, resolution.node);
 
           screen = await device.capture();
@@ -353,7 +312,7 @@ function perform(
           });
         }
         // A write past its first attempt is looking for the node it already wrote, so a
-        // scroll there would be chasing a field that left rather than reaching a new one.
+        // scroll would follow a field that moved rather than reach a new one.
         if (attempts === 0 && (await search.step(screen, target, remaining))) {
           screen = await device.capture();
           continue;
@@ -366,13 +325,9 @@ function perform(
 }
 
 /**
- * Scrolls until the locator resolves, as one queued unit and one reported
- * step.
- *
- * The stop condition is the default tree, never the raw one. The raw tree is
- * how the search learns which way to go, and a node it carries is not
- * necessarily a node a user can reach, so a search that stopped on the raw
- * tree would hand an action a ref for something still off screen.
+ * The stop condition is the default tree, never the raw one. The raw tree says
+ * which way to go, but a node it carries may still be off screen, so stopping
+ * on it would hand an action a ref the user cannot reach.
  */
 function scrollIntoView(
   session: DeviceSession,
@@ -431,21 +386,14 @@ type Write = { readonly text: string; readonly secret: boolean };
 
 /**
  * What the written field proves about a write, and how much of that a message
- * may repeat back. Both come out of the same question, so they are answered
- * together and cannot drift apart.
+ * may repeat back. Both come from the same question, so they cannot drift.
  *
- * A secure field never reports its contents, only one masking character per
- * character it holds, so its length is both everything it can attest to and
- * everything it can disclose. Checking that length still catches the failure
- * this confirmation exists for, a device keyboard dropping keystrokes, because
- * a dropped keystroke is a shorter mask.
- *
- * A field the caller marked `secret` is a plain field that happens to hold a
- * credential the platform did not mark secure. It hands back its exact
- * contents, so it is confirmed character for character, and only the reporting
- * is cut back to a length. Folding it into `mask` would compare it the way a
- * mask is compared, which demands one repeated character, and a password read
- * back verbatim is never that.
+ * A secure field reports one masking character per character it holds, so its
+ * length is all it can attest to and all it can disclose. That still catches a
+ * keyboard dropping keystrokes, because a dropped keystroke is a shorter mask.
+ * `secret` is a plain field holding a credential, confirmed character by
+ * character with only the reporting cut to a length. Folding it into `mask`
+ * would demand one repeated character, which a password verbatim is not.
  */
 type Confirmation =
   | { readonly kind: 'mask'; readonly length: number }
@@ -459,9 +407,8 @@ function confirmationOf(role: Role, write: Write): Confirmation {
 
 function holds(confirmation: Confirmation, actual: string): boolean {
   switch (confirmation.kind) {
-    // Requiring the mask be one repeated character is what stops a placeholder that
-    // happens to be the right length, which is what an untouched secure field
-    // reports, from passing as a landed write.
+    // Requiring one repeated character stops a placeholder of the right length, which is
+    // what an untouched secure field reports, from passing as a landed write.
     case 'mask':
       return actual.length === confirmation.length && new Set(actual).size <= 1;
     case 'secret':
@@ -504,11 +451,7 @@ function typedOf(confirmation: Confirmation): Typed {
   }
 }
 
-/**
- * An actual value may be repeated back only as far as the expected one could
- * be, so a field the caller marked secret reports its length the same way a
- * secure field's mask does.
- */
+/** An actual value may be repeated back only as far as the expected one could be. */
 function disclose(expected: ExpectedValue, actual: string): ExpectedValue {
   return expected.kind === 'masked'
     ? { kind: 'masked', length: actual.length }
@@ -524,12 +467,10 @@ function valueAt(screen: Screen, target: Query): string | null {
 /**
  * How the written node is found again on the next snapshot.
  *
- * A testId is the app's own name for the node, but the driver copies an
- * ancestor's identifier onto every descendant that inherits it, so it names
- * this node alone only when it resolves to this node alone. Two inheriting
- * siblings would otherwise turn a landed fill into a strict-mode failure
- * listing a node the author's locator never matched. Position in the tree is
- * all a snapshot carries once the testId is ambiguous.
+ * The driver copies an ancestor's identifier onto every descendant that
+ * inherits it, so a testId names this node alone only when it resolves to this
+ * node alone. Two inheriting siblings would otherwise turn a landed fill into a
+ * strict-mode failure. Position in the tree is the fallback.
  */
 function identityOf(screen: Screen, node: ScreenNode): Query {
   if (node.testId !== null) {

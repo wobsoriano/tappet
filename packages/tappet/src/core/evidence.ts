@@ -3,12 +3,8 @@ import { renderScreen } from './screen.ts';
 import type { DeviceSession } from './session.ts';
 
 /**
- * Attaches `screen.png` and `screen.txt` through the sink.
- *
- * Never throws. A capture that fails records a note and returns, because
- * masking the test's real error with a screenshot error is worse than having
- * no screenshot. `screen.txt` is rendered by `renderScreen`, the same function
- * that builds the listing inside a failure message.
+ * Never throws. A capture that fails records a note and returns, because masking
+ * the test's real error with a screenshot error is worse than no screenshot.
  */
 export async function captureEvidence(session: DeviceSession, sink: ActionSink): Promise<void> {
   try {

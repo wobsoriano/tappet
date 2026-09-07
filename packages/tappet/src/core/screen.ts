@@ -18,10 +18,9 @@ export type Rect = {
 };
 
 /**
- * One node of a parsed screen. Deliberately not the driver's snapshot node:
- * `label` becomes `name`, `identifier` becomes `testId`, and `type` is
- * normalized into `role` with the platform spelling kept as `rawType` for
- * messages.
+ * One node of a parsed screen, not the driver's snapshot node: `label` becomes
+ * `name`, `identifier` becomes `testId`, and `type` is normalized into `role`
+ * with the platform spelling kept as `rawType`.
  *
  * Invariant: `parent` links form a forest rooted at nodes whose `parentIndex`
  * was absent, built once at parse time so an ancestor walk stays O(depth).
@@ -41,9 +40,9 @@ export type ScreenNode = {
   readonly selected: boolean;
   readonly focused: boolean;
   /**
-   * The driver's discovery hints on a scroll container: content of its own it
-   * is holding out of the window. They are the only thing that says which way
-   * to scroll on a platform whose raw tree stops at the window.
+   * The driver's hints that a scroll container holds content out of the window.
+   * The only thing that says which way to scroll on a platform whose raw tree
+   * stops at the window.
    */
   readonly hiddenContentAbove: boolean;
   readonly hiddenContentBelow: boolean;
@@ -68,9 +67,8 @@ declare const pinnedRefBrand: unique symbol;
 
 /**
  * A ref pinned to the generation it was minted from, in the driver's
- * `@e12~s776575` form. Only `pin` produces one. The driver rejects a pin from
- * a superseded generation before dispatch, which turns a silent mistap into a
- * deterministic failure the session can recover from.
+ * `@e12~s776575` form. The driver rejects a pin from a superseded generation
+ * before dispatch, which turns a silent mistap into a recoverable failure.
  */
 export type PinnedRef = string & { readonly [pinnedRefBrand]: true };
 
@@ -81,7 +79,7 @@ export type Resolution =
 
 /**
  * The structural shape of the driver's snapshot response. Declared here rather
- * than imported so the core never depends on `agent-device`; the real
+ * than imported so the core never depends on `agent-device`. The real
  * `CaptureSnapshotResult` satisfies it and so does a JSON fixture.
  */
 export type RawSnapshot = {
@@ -138,13 +136,11 @@ const IOS_ROLES: Readonly<Record<string, Role>> = {
 };
 
 /**
- * Observed on a booted Android emulator (API 36) snapshotting this repo's
- * React Native 0.86 sample app, except the trailing widget block, which this
- * app never renders and stays a plausible guess.
- *
- * `android.view.ViewGroup` is what every React Native `View` reports, testID
- * containers included, so it is stated here rather than left to the `other`
- * fall-through in `roleOf`.
+ * Observed on a booted Android emulator (API 36) snapshotting this repo's React
+ * Native 0.86 sample app, except the trailing widget block, which this app never
+ * renders and stays a plausible guess. `android.view.ViewGroup` is what every
+ * React Native `View` reports, testID containers included, so it is stated here
+ * rather than left to the `other` fall-through in `roleOf`.
  */
 const ANDROID_ROLES: Readonly<Record<string, Role>> = {
   'android.widget.Button': 'button',
@@ -173,11 +169,11 @@ function roleOf(rawType: string, platform: Platform): Role {
 }
 
 /**
- * The parse boundary. Everything past this point trusts its types.
+ * The parse boundary. Everything past it trusts its types.
  *
- * `inheritsLabel` and `inheritsIdentifier` mean the driver omitted a value
- * that string-equals the nearest ancestor's, so those are restored here rather
- * than leaving a hole a matcher would read as absent.
+ * `inheritsLabel` and `inheritsIdentifier` mean the driver omitted a value that
+ * string-equals the nearest ancestor's, so those are restored here rather than
+ * leaving a hole a matcher would read as absent.
  */
 export function parseScreen(raw: RawSnapshot, platform: Platform): Screen {
   const nodes: ScreenNode[] = [];
@@ -243,17 +239,14 @@ function inherited(
 
 /**
  * The single resolver, shared by actions and assertions so the two can never
- * disagree about which node was meant.
- *
- * Rule order: match every query field, then apply every `.filter()`, then
- * ancestor absorption, then `index`.
+ * disagree about which node was meant. Rule order: match every query field,
+ * apply every `.filter()`, absorb ancestors, then `index`.
  *
  * Ancestor absorption drops a match when a descendant match carries the same
- * string the query matched on. On the sample app "Live from the cloud" is
- * carried both by an `[other]` container and by its `[text]` child, and "Home"
- * by an `[other]` wrapper and the `[button]` inside it. Each pair is one thing
- * on screen. Matches in disjoint subtrees stay distinct, so "Explore" on the
- * Explore screen is still the heading and the tab button.
+ * string the query matched on. On the sample app an `[other]` container and its
+ * `[text]` child both carry "Live from the cloud", which is one thing on screen.
+ * Matches in disjoint subtrees stay distinct, so "Explore" on the Explore screen
+ * is still the heading and the tab button.
  */
 export function resolve(screen: Screen, query: Query): Resolution {
   const distinct = matchesOf(screen, query);
@@ -269,9 +262,9 @@ export function resolve(screen: Screen, query: Query): Resolution {
 }
 
 /**
- * Everything a query matches, before `index` and before strictness has an
- * opinion. `resolve` and the `has` filters share it, so an inner query means
- * exactly what the same locator would mean on its own.
+ * Everything a query matches, before `index` and before strictness. `resolve`
+ * and the `has` filters share it, so an inner query means what the same locator
+ * would mean on its own.
  */
 function matchesOf(screen: Screen, query: Query): readonly ScreenNode[] {
   const matched = screen.nodes.filter(
@@ -282,10 +275,7 @@ function matchesOf(screen: Screen, query: Query): readonly ScreenNode[] {
   return absorbAncestors(matched, query);
 }
 
-/**
- * The asymmetry mirrors Playwright. `hasText` looks at the candidate's own
- * text as well as its subtree's, while `has` means a strict descendant.
- */
+/** `hasText` includes the candidate's own text, while `has` needs a strict descendant. Mirrors Playwright. */
 function matchesFilter(screen: Screen, node: ScreenNode, filter: Filter): boolean {
   if (filter.hasText !== undefined && !subtreeHasText(screen, node, filter.hasText)) return false;
   if (filter.hasNotText !== undefined && subtreeHasText(screen, node, filter.hasNotText)) {
@@ -328,18 +318,16 @@ function matchesQuery(node: ScreenNode, query: Query): boolean {
 
 /**
  * The string the query matched this node on. Two nodes on one ancestor chain
- * sharing it are one thing on screen. A query that constrains no text falls
- * back to the node's name, so `getByRole('button')` does not collapse two
- * nested buttons that say different things.
+ * sharing it are one thing on screen. A query that constrains no text falls back
+ * to the node's name, so `getByRole('button')` does not collapse two nested
+ * buttons that say different things.
  *
  * A `hasText` filter names a string on screen, so it contributes the same
- * pattern to every candidate and collapses an ancestor chain to the innermost
- * container holding that text. Almost every React Native container reports
- * role `other`, so without this `getByRole('other').filter({ hasText })` would
- * match every wrapper around the text rather than the row the author meant.
- * `hasNotText`, `has` and `hasNot` name structure or an absence rather than a
- * string, and `.filter({ has })` legitimately matches sibling containers, so
- * they contribute nothing.
+ * pattern to every candidate and collapses a chain to the innermost container
+ * holding that text. Almost every React Native container reports role `other`,
+ * so without this `getByRole('other').filter({ hasText })` would match every
+ * wrapper rather than the row the author meant. `hasNotText`, `has` and `hasNot`
+ * name structure or an absence, so they contribute nothing.
  */
 function matchedText(node: ScreenNode, query: Query): string {
   const parts: string[] = [];
@@ -371,10 +359,7 @@ export function isDescendant(node: ScreenNode, ancestor: ScreenNode): boolean {
   return false;
 }
 
-/**
- * The named nodes closest to what the query asked for. A miss is usually a
- * wording drift, so listing near names is what makes the message actionable.
- */
+/** The named nodes closest to what the query asked for. A miss is usually a wording drift. */
 function nearestTo(screen: Screen, query: Query): readonly ScreenNode[] {
   const wanted = wantedText(query);
   const named = screen.nodes.filter((node) => node.name !== null || node.testId !== null);
@@ -407,13 +392,10 @@ function overlap(wanted: string, candidate: string): number {
 }
 
 /**
- * Mints a ref bound to the screen it came from.
- *
  * With a generation this is the driver's `@e12~s776575` form, which the driver
- * rejects once that generation is superseded. Without one the bare ref is
- * still correct, because the caller acts on the very next command and a frame
- * authorizes the refs it just emitted. It is weaker, not wrong, so this cannot
- * fail.
+ * rejects once that generation is superseded. Without one the bare ref is still
+ * correct, because the caller acts on the very next command and a frame
+ * authorizes the refs it just emitted. Weaker, not wrong, so this cannot fail.
  */
 export function pin(screen: Screen, node: ScreenNode): PinnedRef {
   const ref = screen.generation === null ? node.ref : `${node.ref}~s${String(screen.generation)}`;
@@ -422,8 +404,8 @@ export function pin(screen: Screen, node: ScreenNode): PinnedRef {
 
 /**
  * The one tree renderer, used by failure messages and by the `screen.txt`
- * attachment so the terminal and the report agree. The vocabulary is the CLI's
- * own `[role] "label"` form.
+ * attachment so terminal and report agree. The vocabulary is the CLI's own
+ * `[role] "label"` form.
  */
 export function renderScreen(screen: Screen, options?: { readonly maxNodes?: number }): string {
   const max = options?.maxNodes ?? screen.nodes.length;

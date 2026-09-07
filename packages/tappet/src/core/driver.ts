@@ -3,10 +3,9 @@ import type { PinnedRef, Platform, RawSnapshot } from './screen.ts';
 export type ScrollDirection = 'up' | 'down' | 'left' | 'right';
 
 /**
- * Which device to bind to. A session binds on its first command, so this rides
- * on `open` and on every command after it: a call sent without selection lands
- * on whichever device the daemon picks, which is not necessarily the one under
- * test.
+ * A session binds on its first command, so this rides on `open` and on every
+ * command after it. A call sent without selection lands on whichever device the
+ * daemon picks, which is not necessarily the one under test.
  */
 export type DeviceSelection = {
   readonly platform: Platform;
@@ -26,10 +25,7 @@ export type OpenRequest = {
   readonly relaunch: boolean;
 };
 
-/**
- * Proof that a device is bound. Only `open` mints one, so "we think we have a
- * device" cannot drift from "we have one".
- */
+/** Proof that a device is bound. Only `open` mints one, so a believed binding cannot drift from a real one. */
 export type Binding = {
   readonly session: string;
   readonly platform: Platform;
@@ -38,7 +34,6 @@ export type Binding = {
   readonly stateDir: string | null;
 };
 
-/** The driver's post-action observation. */
 export type Settled = {
   readonly settled: boolean;
   readonly waitedMs: number;
@@ -69,13 +64,11 @@ export type SettleOptions = {
 };
 
 /**
- * Which tree a capture asks for.
- *
- * `default` is the driver's visible-first view, which is what every locator
- * resolves against. `raw` is the full provider tree. On iOS it carries the
- * nodes a scroll container has moved out of the window, which is how a target
- * is located before it is on screen. On Android it carries no off-screen
- * content, only the wrapper views the default view collapses away.
+ * `default` is the driver's visible-first view, which every locator resolves
+ * against. `raw` is the full provider tree. On iOS it carries the nodes a scroll
+ * container moved out of the window, which is how a target is located before it
+ * is on screen. On Android it carries no off-screen content, only the wrappers
+ * the default view collapses away.
  */
 export type Tree = 'default' | 'raw';
 
@@ -85,17 +78,16 @@ export type CaptureOptions = {
 };
 
 /**
- * The port between the core and whatever drives a device. Nothing crossing it
- * is a transport type, which is what lets the core be unit-tested against a
- * captured snapshot.
+ * Nothing crossing this port is a transport type, which is what lets the core be
+ * unit-tested against a captured snapshot.
  *
- * Contract every implementation owes the core: `open` converges when called on
- * an already-open session; mutations take a `PinnedRef` and never a selector,
- * so the driver's own matcher is never a second opinion on which node was
- * meant; every failure throws a `TappetError` carrying a `DeviceFailure`.
+ * Contract every implementation owes the core. `open` converges when called on
+ * an already-open session. Mutations take a `PinnedRef` and never a selector, so
+ * the driver's own matcher is never a second opinion on which node was meant.
+ * Every failure throws a `TappetError` carrying a `DeviceFailure`.
  */
 export type DeviceDriver = {
-  /** Lists every device of the driver's selected platform, booted or not. It takes no session, so it is the one call that binds nothing. */
+  /** Takes no session, so it is the one call that binds nothing. */
   listDevices(): Promise<readonly DeviceInfo[]>;
   open(request: OpenRequest): Promise<Binding>;
   capture(options: CaptureOptions): Promise<RawSnapshot>;

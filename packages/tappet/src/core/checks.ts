@@ -2,8 +2,8 @@ import { matchesText, type TextMatch } from './query.ts';
 import type { Resolution, ScreenNode } from './screen.ts';
 
 /**
- * An assertion as data. Adapters turn each `name` into a matcher; the poll and
- * the message live in `probe`, so two runners produce identical failures.
+ * An assertion as data. Adapters turn each `name` into a matcher, and the poll
+ * and the message live in `probe`, so two runners produce identical failures.
  */
 export type Check =
   | { readonly name: 'toBeVisible' }
@@ -23,11 +23,9 @@ export type Verdict = {
 };
 
 /**
- * Pure evaluation of one check against one resolution.
- *
- * A `many` outcome never passes anything but `toHaveCount`: an ambiguous
- * locator is a strictness violation, and it reports through the same message
- * path as a plain mismatch rather than guessing which node was meant.
+ * A `many` outcome never passes anything but `toHaveCount`. An ambiguous locator
+ * is a strictness violation, and it reports through the same message path as a
+ * plain mismatch rather than guessing which node was meant.
  */
 export function evaluate(check: Check, resolution: Resolution): Verdict {
   if (check.name === 'toHaveCount') {

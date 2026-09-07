@@ -1,7 +1,7 @@
 import { preflight, setupTest } from 'tappet';
 
 // `setupTest` carries tappet's options and none of its fixtures. Tappet's `test` would open a
-// session through its auto `device` fixture, which is the very thing preflight runs ahead of.
+// device session through its auto `device` fixture, before preflight has checked the device.
 setupTest(
   'the project names a booted device',
   async ({ platform, app, readyWhen, deviceName, sessionPrefix }) => {

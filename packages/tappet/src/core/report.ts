@@ -7,12 +7,10 @@ export type EvidenceFile =
   | { readonly name: string; readonly body: string; readonly contentType: string };
 
 /**
- * The most a step title may say about text that was typed.
- *
- * A secure field never reports its contents, so a step that wrote to one says
- * how many characters it typed and nothing else. A caller can ask for the same
- * treatment on a field the platform did not mark secure, which is what keeps a
- * credential out of a terminal and out of an HTML report.
+ * The most a step title may say about text that was typed. A secure field never
+ * reports its contents, so a step that wrote to one says how many characters it
+ * typed and nothing else. A caller can ask for the same on a field the platform
+ * did not mark secure, which keeps a credential out of a terminal and a report.
  */
 export type Typed =
   | { readonly kind: 'text'; readonly value: string }
@@ -35,12 +33,12 @@ export type ActionRecord =
   | { readonly kind: 'dismiss-overlay' }
   | { readonly kind: 'screenshot'; readonly path: string };
 
-/** A boxed step reports as one line rather than as something to open, which is all a step with no body of its own has to show. */
+/** A boxed step reports as one line rather than as something to open. */
 export type StepOptions = { readonly box?: boolean };
 
 /**
- * The runner port. A runner with no step concept calls `body()` directly,
- * ignores `options`, and drops attachments.
+ * A runner with no step concept calls `body()` directly, ignores `options`, and
+ * drops attachments.
  *
  * Invariant: `step` invokes `body` exactly once and propagates its result and
  * its rejection unchanged. It reports, it never decides control flow.
@@ -56,7 +54,7 @@ export type ActionSink = {
 
 const FILL_TEXT_LIMIT = 40;
 
-/** Step titles are rendered here rather than in an adapter so every runner produces the same text. */
+/** Rendered here rather than in an adapter so every runner produces the same text. */
 export function renderTitle(record: ActionRecord): string {
   switch (record.kind) {
     case 'open':

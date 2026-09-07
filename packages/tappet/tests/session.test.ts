@@ -315,7 +315,7 @@ test('fill stops rather than starting an attempt it cannot afford to confirm', a
 test('a fill that never lands names the locator, both values, and the attempts', async () => {
   const driver = createFakeDriver();
   driver.fillOutcomes.push(...Array<string>(50).fill('r@example.com'));
-  // Room for more than three attempts, so the delay escalation is fully observable.
+  // Room for more than three attempts.
   const session = await open(driver, { actionTimeout: 4000, settleQuietMs: 20 });
   const app = createDevice(session, silentSink);
 

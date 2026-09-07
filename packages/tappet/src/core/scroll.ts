@@ -2,7 +2,7 @@ import type { ScrollDirection } from './driver.ts';
 import type { Query } from './query.ts';
 import { resolve, type Rect, type Screen, type ScreenNode } from './screen.ts';
 
-/** What a search did to reach its target, for a failure message. */
+/** For a failure message. */
 export type ScrollTrail = { readonly steps: number; readonly direction: ScrollDirection };
 
 /** What a scroll search needs from a session. A `SessionDevice` supplies it. */
@@ -12,13 +12,11 @@ export type ScrollDevice = {
 };
 
 /**
- * One search for a target that is not on screen yet.
- *
- * It owns two rules. A search never reverses, because a hint pointing back the
- * way it came means the container ran out rather than that the target is
- * behind us, and reversing turns a finished search into an oscillation that
- * burns the whole budget looking like progress. And it stops at `maxSteps`
- * whatever the clock says, so a screen that scrolls forever cannot.
+ * Two rules. A search never reverses, because a hint pointing back the way it
+ * came means the container ran out rather than that the target is behind, and
+ * reversing turns a finished search into an oscillation that burns the budget.
+ * And it stops at `maxSteps` whatever the clock says, so a screen that scrolls
+ * forever cannot run indefinitely.
  */
 export type ScrollSearch = {
   /** Null until the first step, then the one direction every later step uses. */
@@ -56,12 +54,10 @@ export function createScrollSearch(
 /**
  * Which way the target lies, or null when nothing on screen says.
  *
- * Two sources, in order of how much they know. The raw tree places the target
- * itself, so when it carries the node its rect against the rect of the scroll
- * container clipping it is an answer rather than a guess. That is the iOS
- * case. Android's raw tree stops at the window, so nothing there places an
- * off-screen row, and the only evidence left is the container saying it is
- * holding content of its own out of view.
+ * The raw tree places the target itself, so when it carries the node, its rect
+ * against the clipping container's rect is an answer rather than a guess. That
+ * is the iOS case. Android's raw tree stops at the window, so the only evidence
+ * left is the container reporting it holds content out of view.
  */
 export function directionToward(
   screen: Screen,
@@ -85,10 +81,8 @@ function outsideViewport(raw: Screen, query: Query): ScrollDirection | null {
 }
 
 /**
- * The rect of the nearest scrollable ancestor, which is the window onto the
- * content the target sits in. A scroll container reports its own visible rect
- * rather than the rect of everything it holds, so a target beyond that rect is
- * a target the container has scrolled away.
+ * A scroll container reports its own visible rect rather than the rect of
+ * everything it holds, so a target beyond that rect is one it scrolled away.
  */
 function clippingRect(node: ScreenNode): Rect | null {
   for (let walk = node.parent; walk !== null; walk = walk.parent) {

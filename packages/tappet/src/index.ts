@@ -1,9 +1,7 @@
 /**
- * What a test file imports.
- *
- * `defineConfig` is not re-exported. A config imports it from
- * `@playwright/test` and parameterizes it with `TappetOptions`, which keeps
- * this package from wrapping something it adds nothing to.
+ * `defineConfig` is not re-exported. A config imports it from `@playwright/test`
+ * and parameterizes it with `TappetOptions`, which keeps this package from
+ * wrapping something it adds nothing to.
  */
 
 export { setupTest, test } from './playwright/fixtures.ts';

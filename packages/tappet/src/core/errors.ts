@@ -2,23 +2,18 @@ import type { DeviceFailure } from './driver.ts';
 import type { ScrollTrail } from './scroll.ts';
 
 /**
- * The most a failure may say about the text that was typed.
- *
- * A readable field hands back its exact contents. A secure field replaces them
- * with one masking character per character it holds, so how much it holds is
- * the whole of what it can report. A field the caller marked secret discloses
- * a length as well, even though it was confirmed character for character. The
- * password has no representation in this union, which is what keeps it out of
- * a terminal and out of an HTML report.
+ * The most a failure may say about the text that was typed. A secure field
+ * reports one masking character per character it holds, so its length is all it
+ * can report, and a field marked secret discloses a length too. A password has
+ * no representation here, which keeps it out of a terminal and an HTML report.
  */
 export type ExpectedValue =
   | { readonly kind: 'exact'; readonly value: string }
   | { readonly kind: 'masked'; readonly length: number };
 
 /**
- * Every failure this library raises is one class with a closed `info` union,
- * so adapters and test authors switch on `info.kind` and the compiler names a
- * missing case when a kind is added.
+ * One class with a closed `info` union, so adapters and test authors switch on
+ * `info.kind` and the compiler names a missing case when a kind is added.
  */
 export type ErrorInfo =
   | { readonly kind: 'config'; readonly field: string; readonly detail: string }
@@ -147,11 +142,7 @@ function describeTrail(trail: ScrollTrail): string {
   return `${String(trail.steps)} step${trail.steps === 1 ? '' : 's'} ${trail.direction}`;
 }
 
-/**
- * How much of a value a message may repeat back. A masked value is reported by
- * its length alone, which is all a secure field, or a field the caller marked
- * secret, can be allowed to disclose.
- */
+/** A masked value is reported by its length alone, which is all a secure or secret field may disclose. */
 function describeValue(value: ExpectedValue): string {
   switch (value.kind) {
     case 'exact':

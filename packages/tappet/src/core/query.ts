@@ -1,9 +1,9 @@
 import type { ScreenNode } from './screen.ts';
 
 /**
- * The normalized role vocabulary, spelled the way `agent-device snapshot`
- * prints it so a failure listing and a manual snapshot read alike. iOS reports
- * XCUIElement type names and Android reports widget class names; both map here.
+ * Spelled the way `agent-device snapshot` prints it, so a failure listing and a
+ * manual snapshot read alike. iOS reports XCUIElement type names and Android
+ * reports widget class names, and both map here.
  *
  * Invariant: every raw type maps to exactly one role and an unrecognized type
  * maps to `other`. `other` is a real role, not a failure signal, because React
@@ -43,13 +43,12 @@ export type Filter = {
 /**
  * A pure conjunctive description of a node. Building one performs no I/O.
  *
- * Invariants: every field narrows, so an empty query matches every node.
- * `name` is compared against the node's name and its value, which is what
- * makes `getByText` behave like Playwright's. `filters` holds one entry per
- * `.filter()` call the author wrote, conjunctive inside an entry and across
- * them, so the rendered description reproduces the chain. `index` is the
- * strictness opt-out set by `.first()` and `.nth(n)`. Without it more than one
- * distinct match is an error.
+ * Invariants: every field narrows, so an empty query matches every node. `name`
+ * is compared against the node's name and its value, which is what makes
+ * `getByText` behave like Playwright's. `filters` holds one entry per
+ * `.filter()` call, conjunctive within and across entries. `index` is the
+ * strictness opt-out set by `.first()` and `.nth(n)`, and without it more than
+ * one distinct match is an error.
  */
 export type Query = {
   readonly testId?: TextMatch;
@@ -98,9 +97,8 @@ export function matchesText(match: TextMatch, candidate: string | null): boolean
 }
 
 /**
- * Renders a query back into the factory call that produces it, so the
- * `Locator:` line of a failure reads like the line the author wrote. The one
- * place a query is formatted.
+ * Renders a query back into the factory call that produces it, so the `Locator:`
+ * line of a failure reads like the line the author wrote.
  */
 export function describeQuery(query: Query): string {
   const suffix = `${describeFilters(query.filters)}${describeIndex(query.index)}`;

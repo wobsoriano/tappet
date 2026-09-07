@@ -8,7 +8,7 @@ import { sleep } from './session.ts';
 const POLL_INTERVAL_MS = 250;
 const SCREEN_LISTING_NODES = 60;
 
-/** What `probe` needs from a locator. A `Locator` supplies it; a unit test can supply a fake. */
+/** What `probe` needs from a locator. A `Locator` supplies it, and so can a fake. */
 export type ProbeTarget = {
   readonly query: Query;
   readonly description: string;
@@ -39,16 +39,12 @@ export type ProbeResult = {
 
 /**
  * Polls a fresh screen until the check agrees with `negate`, the budget runs
- * out, or the session breaks. The first evaluation happens immediately, so an
- * expectation that already holds costs one snapshot.
+ * out, or the session breaks. Never throws for a failed expectation, because the
+ * adapter hands `{ pass, message }` to its assertion library.
  *
- * Never throws for a failed expectation. It returns `{ pass, message }` and
- * the adapter hands that to its assertion library.
- *
- * Every early exit reports `pass: options.negate`, which is the value that
- * fails the assertion whether or not the caller wrote `.not`. An ambiguous
- * locator and a dead session are wrong under `.not` too, so neither may become
- * a pass by inversion.
+ * Every early exit reports `pass: options.negate`, the value that fails the
+ * assertion whether or not the caller wrote `.not`. An ambiguous locator and a
+ * dead session are wrong under `.not` too, so neither may pass by inversion.
  */
 export async function probe(
   target: ProbeTarget,
@@ -122,9 +118,7 @@ export async function probe(
 }
 
 /**
- * The failure text. It answers, in order, which locator, what was expected,
- * what the screen held, how long we waited, and what was on screen. The screen
- * listing comes from `renderScreen`, the same function that writes
+ * The screen listing comes from `renderScreen`, the same function that writes
  * `screen.txt`, so terminal and report agree.
  */
 export function formatFailure(input: {

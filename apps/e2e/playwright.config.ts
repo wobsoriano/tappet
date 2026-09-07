@@ -19,9 +19,8 @@ export default defineConfig<TappetOptions>({
   // The deliberate-failure spec stays out of the default run. Include it with TAPPET_INCLUDE_FAILING=1.
   testIgnore: process.env['TAPPET_INCLUDE_FAILING'] === '1' ? [] : ['**/failing.spec.mts'],
   workers: 1,
-  // A second line of defense, not the fix. The library confirms a fill against two reads, and this
-  // covers whatever still slips through on a shared runner. Playwright replaces the worker after a
-  // failure and the replacement reuses the slot, so a retry reclaims the same device and session.
+  // A second line of defense on a shared runner, not the fix. Playwright replaces the worker after
+  // a failure and the replacement reuses the slot, so a retry reclaims the same device and session.
   retries: process.env['CI'] ? 1 : 0,
   timeout: 120_000,
   expect: { timeout: 10_000 },
@@ -32,8 +31,7 @@ export default defineConfig<TappetOptions>({
   },
   projects: [
     // One setup project per platform, off the same spec. A Playwright setup project has a single
-    // `use`, so a shared one could only ever check one platform's device, and running the other
-    // platform would gate on a device that run has no reason to have booted.
+    // `use`, so a shared one could only ever gate on one platform's device.
     { name: 'setup-ios', testMatch: /preflight\.setup\.mts/, use: ios },
     { name: 'setup-android', testMatch: /preflight\.setup\.mts/, use: android },
     { name: 'ios', dependencies: ['setup-ios'], use: ios },

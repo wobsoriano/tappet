@@ -39,30 +39,26 @@ type MatcherResult = {
   actual: string | null;
 };
 
-/** What one capture found. A locator that is not on screen yet is retried, the way every other matcher retries. */
+/** A locator that is not on screen yet is retried, the way every other matcher retries. */
 type Attempt =
   | { readonly kind: 'unresolved'; readonly detail: string }
   | { readonly kind: 'captured'; readonly png: Buffer; readonly mask: readonly PixelBox[] };
 
 /**
- * Playwright numbers an unnamed screenshot per test, so two assertions in one
- * test do not write over each other's baseline. A retried test gets a fresh
- * `TestInfo`, so the numbering starts again and the same run reproduces the
- * same paths.
+ * Numbers an unnamed screenshot per test, so two assertions in one test do not
+ * write over each other's baseline. A retried test gets a fresh `TestInfo`, so
+ * the numbering starts again and the same run reproduces the same paths.
  */
 const ordinals = new WeakMap<TestInfo, number>();
 
 /**
- * `expect(device).toHaveScreenshot()` and `expect(locator).toHaveScreenshot()`.
- *
- * The baseline path comes from `testInfo.snapshotPath`, so `snapshotPathTemplate`,
- * the per-project suffix and `--update-snapshots` behave the way they do for
- * Playwright's own screenshot assertion rather than being reimplemented here.
+ * The baseline path comes from `testInfo.snapshotPath`, so
+ * `snapshotPathTemplate`, the per-project suffix and `--update-snapshots` behave
+ * the way they do for Playwright's own screenshot assertion.
  *
  * A locator's crop and every mask are resolved off one snapshot taken next to
  * the image. Rects from two snapshots would index into the image at two
- * different scroll positions, which is a crop of the wrong thing rather than a
- * failed assertion.
+ * different scroll positions, which crops the wrong thing rather than failing.
  */
 export async function assertScreenshot(
   state: ExpectMatcherState,
@@ -146,17 +142,13 @@ export async function assertScreenshot(
 }
 
 /**
- * One image of what the assertion covers, with every mask already in that
- * image's own coordinates.
- *
  * The scale is derived rather than asked for. A tree reports rects in whatever
- * units its platform uses and a screenshot is a fixed number of pixels wide,
- * so the image's own width over the widest rect on screen, which is the
- * window, is what one of those units is worth in pixels. It comes out at 1 on
+ * units its platform uses, so the image width over the widest rect on screen,
+ * which is the window, is what one unit is worth in pixels. It comes out at 1 on
  * both devices this is tested against, because agent-device writes the iOS
  * simulator's image at point resolution and the Android tree already reports
- * pixels. Deriving it rather than assuming 1 is what keeps a device that
- * writes a 2x or 3x image from cropping the wrong region.
+ * pixels. Deriving it keeps a device writing a 2x or 3x image from cropping the
+ * wrong region.
  */
 async function capture(
   target: Device | Locator,
@@ -202,7 +194,7 @@ function regionOf(screen: Screen, query: Query, scale: number): PixelBox | strin
   }
 }
 
-/** Every node a mask names. A mask hides a region rather than picking one node, so ambiguity is not an error here. */
+/** A mask hides a region rather than picking one node, so ambiguity is not an error here. */
 function boxesOf(screen: Screen, query: Query, scale: number): PixelBox[] {
   const resolution = resolve(screen, query);
   const nodes =

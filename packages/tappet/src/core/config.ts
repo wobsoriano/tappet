@@ -3,13 +3,12 @@ import { textMatch, type Query, type Role } from './query.ts';
 import type { Platform } from './screen.ts';
 
 /**
- * The keys tappet adds to Playwright's `use`. Each is its own option fixture,
- * so a project overrides one without restating the rest.
+ * The keys tappet adds to Playwright's `use`. Each is its own option fixture, so
+ * a project overrides one without restating the rest.
  *
- * Playwright types `use` as a partial of this, so a config may leave any key
- * out. `parseDeviceOptions` is what makes `platform`, `app`, and `readyWhen`
- * required. It runs once at worker start, names the key to fix, and nothing
- * downstream re-validates.
+ * Playwright types `use` as a partial of this, so a config may leave any key out.
+ * `parseDeviceOptions` is what makes `platform`, `app`, and `readyWhen` required.
+ * It runs once at worker start and nothing downstream re-validates.
  */
 export type TappetOptions = {
   /** Required. */
@@ -17,9 +16,8 @@ export type TappetOptions = {
   /** Required. Bundle id on iOS, package name on Android. Never a path to an artifact. */
   app: string | undefined;
   /**
-   * Required. The locator that means the JavaScript bundle finished loading.
-   * `open` returns as soon as the native process launches, so without this gate
-   * the first assertion would race the bundle.
+   * Required. `open` returns as soon as the native process launches, so without
+   * this gate the first assertion would race the JavaScript bundle.
    */
   readyWhen: ReadyQuery | undefined;
   /** Device name. An array is a pool indexed by the runner's worker slot. Unset means the first booted device. */
@@ -41,10 +39,9 @@ export type TappetOptions = {
 };
 
 /**
- * Every defaulted option in one place. The option fixtures declare these as
- * their fixture defaults and the parser falls back to the same values, so a
- * caller that reaches the parser without going through the fixtures, such as
- * `preflight`, resolves identically.
+ * The option fixtures declare these as their defaults and the parser falls back
+ * to the same values, so a caller that reaches the parser without the fixtures,
+ * such as `preflight`, resolves identically.
  */
 export const TAPPET_DEFAULTS: Omit<TappetOptions, 'platform' | 'app' | 'readyWhen' | 'deviceName'> =
   {
@@ -66,10 +63,9 @@ export type ReadyQuery =
   | { role: Role; name?: string };
 
 /**
- * Which device this configuration names. The three cases are separate because
- * only a pool can serve more than one worker slot: a single name and "whatever
- * is booted" both resolve to the same device for every worker, and two workers
- * on one device fight over the claim.
+ * The three cases are separate because only a pool can serve more than one
+ * worker slot. A single name and "whatever is booted" both resolve to the same
+ * device for every worker, and two workers on one device fight over the claim.
  */
 export type DeviceChoice =
   | { readonly kind: 'first-booted' }
@@ -111,10 +107,9 @@ const ROLES: readonly Role[] = [
 ];
 
 /**
- * The config boundary. The options arrive as `unknown` because a project can
- * omit any of them, or be written in JavaScript, and because `actionTimeout`
- * rides along from Playwright's own options. Every message names the key to
- * fix.
+ * The config boundary. Options arrive as `unknown` because a project can omit
+ * any of them, or be written in JavaScript, and because `actionTimeout` rides
+ * along from Playwright's own options. Every message names the key to fix.
  */
 export function parseDeviceOptions(raw: unknown): ResolvedOptions {
   const platform = read(raw, 'platform');
@@ -176,9 +171,9 @@ function read(source: unknown, key: string): unknown {
 }
 
 /**
- * Playwright's own `use.actionTimeout`, not one of tappet's options. Playwright
- * defaults it to 0, which means "no timeout" there and would mean "give up at
- * once" here, so 0 falls back the way an unset value does.
+ * Playwright's own `use.actionTimeout`, not one of tappet's. Playwright defaults
+ * it to 0, which means "no timeout" there and would mean "give up at once" here,
+ * so 0 falls back the way an unset value does.
  */
 function parseActionTimeout(value: unknown): number {
   if (value === 0) return DEFAULT_ACTION_TIMEOUT_MS;
@@ -232,10 +227,8 @@ function isStringArray(raw: unknown): raw is readonly string[] {
 }
 
 /**
- * The device for one worker slot.
- *
- * Anything but a pool serves slot 0 only. Two workers pointed at one device
- * both try to claim it, and because leftovers carrying our own session prefix
+ * Anything but a pool serves slot 0 only. Two workers pointed at one device both
+ * try to claim it, and because leftovers carrying this library's session prefix
  * are always reclaimed, the second worker would close the first worker's live
  * session mid-test. That has to be a config error, not a race.
  */
