@@ -53,6 +53,6 @@ pnpm --filter tappet-e2e test:e2e --project=android
 
 `vp run` tracks every process a task starts through an IPC socket it passes in the environment. `agent-device` starts its daemon with that environment when no daemon is running, the daemon lives on after the suite, and `vp run` keeps waiting for it. The run prints its results and then hangs. pnpm passes no such environment, so the daemon starts clean and the command exits when Playwright does. The root `pnpm test:e2e` script is this pnpm command without a project flag, so it runs every project. The workflows call `apps/e2e/node_modules/.bin/playwright` and `packages/tappet/node_modules/.bin/agent-device` directly instead, because `setup-vp` puts `vp` on the PATH but not `pnpm`.
 
-## What is not covered
+## What a run costs
 
-These workflows have not been run on GitHub. They are written against the documented behaviour of the actions they pin and validated locally with `actionlint`, which checks syntax, expressions, and shell, but not whether a simulator actually boots on a hosted runner.
+Both workflows have run green on GitHub-hosted runners. The first run of each job pays for a cold native build, about 26 minutes for the iOS Release build on `macos-26` and about 42 minutes for the Android Release build on `ubuntu-latest`, against under four minutes for the suite itself. The next change to the workflow is a cache of the built app keyed on its inputs, so a change that does not touch the sample app or the lockfile skips the build entirely.
