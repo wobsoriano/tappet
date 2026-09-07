@@ -29,7 +29,7 @@ export type {
 } from './driver.ts';
 
 export { TappetError } from './errors.ts';
-export type { ErrorInfo } from './errors.ts';
+export type { ErrorInfo, ExpectedValue } from './errors.ts';
 
 export { captureEvidence } from './evidence.ts';
 

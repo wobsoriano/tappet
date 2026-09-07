@@ -11,7 +11,7 @@ export { setupTest, test } from './playwright/fixtures.ts';
 export { expect } from './playwright/expect.ts';
 
 export { TappetError } from './core/errors.ts';
-export type { ErrorInfo } from './core/errors.ts';
+export type { ErrorInfo, ExpectedValue } from './core/errors.ts';
 
 export { preflight } from './preflight.ts';
 export type { PreflightDevice, PreflightReport } from './preflight.ts';

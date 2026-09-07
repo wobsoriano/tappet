@@ -1,6 +1,19 @@
 import type { DeviceFailure } from './driver.ts';
 
 /**
+ * What a field can prove about a write, and so the most a failure may say about
+ * the text that was typed.
+ *
+ * A readable field hands back its exact contents. A secure field replaces them
+ * with one masking character per character it holds, so how much it holds is
+ * the whole of what it can prove. The password has no representation in this
+ * union, which is what keeps it out of a terminal and out of an HTML report.
+ */
+export type ExpectedValue =
+  | { readonly kind: 'exact'; readonly value: string }
+  | { readonly kind: 'masked'; readonly length: number };
+
+/**
  * Every failure this library raises is one class with a closed `info` union,
  * so adapters and test authors switch on `info.kind` and the compiler names a
  * missing case when a kind is added.
@@ -43,7 +56,7 @@ export type ErrorInfo =
   | {
       readonly kind: 'fill-unconfirmed';
       readonly locator: string;
-      readonly expected: string;
+      readonly expected: ExpectedValue;
       readonly actual: string | null;
       readonly attempts: number;
       readonly timeoutMs: number;
@@ -110,7 +123,7 @@ function formatError(info: ErrorInfo): string {
         `fill left the field holding something else after ${String(info.attempts)} attempts in ${String(info.timeoutMs)}ms.`,
         ``,
         `Locator: ${info.locator}`,
-        `Expected value: "${info.expected}"`,
+        `Expected value: ${describeExpected(info.expected)}`,
         `Actual value: ${info.actual === null ? 'the locator stopped resolving' : `"${info.actual}"`}`,
         ``,
         `Screen:`,
@@ -121,6 +134,19 @@ function formatError(info: ErrorInfo): string {
     default: {
       const never: never = info;
       throw new Error(`unhandled error info ${JSON.stringify(never)}`);
+    }
+  }
+}
+
+function describeExpected(expected: ExpectedValue): string {
+  switch (expected.kind) {
+    case 'exact':
+      return `"${expected.value}"`;
+    case 'masked':
+      return `${String(expected.length)} characters (a secure field reports a mask, not its contents)`;
+    default: {
+      const never: never = expected;
+      throw new Error(`unhandled expected value ${JSON.stringify(never)}`);
     }
   }
 }

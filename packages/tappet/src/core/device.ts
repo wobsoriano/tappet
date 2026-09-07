@@ -1,6 +1,6 @@
 import { describeNode, type Check } from './checks.ts';
 import type { ScrollDirection, Settled } from './driver.ts';
-import { TappetError } from './errors.ts';
+import { TappetError, type ExpectedValue } from './errors.ts';
 import { probe, type ProbeOptions, type ProbeResult } from './probe.ts';
 import { describeQuery, textMatch, type Query, type Role } from './query.ts';
 import { renderTitle, type ActionRecord, type ActionSink } from './report.ts';
@@ -190,6 +190,10 @@ function createLocator(session: DeviceSession, sink: ActionSink, query: Query): 
  * read lands between those writes and reports a value that is already gone, so
  * the second read after the screen has had its quiet period is what proves the
  * value held. Each retry types slower than the last.
+ *
+ * What counts as proof comes from the written node's role, because a secure
+ * field reports a mask rather than its contents and can only ever prove how
+ * much it holds. See `expectedOf`.
  */
 function perform(
   session: DeviceSession,
@@ -209,11 +213,11 @@ function perform(
       let target: Query = record.query;
       let lastActual: string | null = null;
       let screen: Screen = await device.capture();
-      const unconfirmed = (): TappetError =>
+      const unconfirmed = (expected: ExpectedValue): TappetError =>
         new TappetError({
           kind: 'fill-unconfirmed',
           locator,
-          expected: expectedValue ?? '',
+          expected,
           actual: lastActual,
           attempts,
           timeoutMs: timeout,
@@ -230,15 +234,17 @@ function perform(
           });
         }
         if (resolution.outcome === 'one') {
+          const expected =
+            expectedValue === undefined ? null : expectedOf(resolution.node.role, expectedValue);
           // A confirmed write needs its quiet period inside the budget, not whatever is
           // left over. Confirming across a window that shrank to nothing is two reads
           // back to back, which is the single read this exists to replace.
           if (
-            expectedValue !== undefined &&
+            expected !== null &&
             attempts > 0 &&
             deadline - Date.now() <= session.options.settleQuietMs
           ) {
-            throw unconfirmed();
+            throw unconfirmed(expected);
           }
           let settled: Settled;
           try {
@@ -253,7 +259,7 @@ function perform(
           if (!settled.settled) {
             sink.note('settle', `${renderTitle(record)} finished before the screen went quiet`);
           }
-          if (expectedValue === undefined) return;
+          if (expected === null) return;
           // The locator names the field until the first write lands, after which the
           // written node names itself, because Android reports a text field's
           // accessible name as its contents.
@@ -261,17 +267,17 @@ function perform(
 
           screen = await device.capture();
           lastActual = valueAt(screen, target);
-          if (lastActual === expectedValue) {
+          if (lastActual !== null && holds(expected, lastActual)) {
             await sleep(session.options.settleQuietMs);
             screen = await device.capture();
             const second = valueAt(screen, target);
             // A locator that stopped resolving says nothing about the value, so the read
             // that did resolve stands. Only a different value is evidence of a revert.
-            if (second === expectedValue || second === null) return;
+            if (second === null || holds(expected, second)) return;
             lastActual = second;
           }
           const left = deadline - Date.now();
-          if (left <= 0) throw unconfirmed();
+          if (left <= 0) throw unconfirmed(expected);
           await sleep(Math.min(ACTION_POLL_MS, left));
           screen = await device.capture();
           continue;
@@ -290,6 +296,38 @@ function perform(
       }
     });
   });
+}
+
+/**
+ * What the written field is able to prove about the write.
+ *
+ * A secure field never reports its contents, only one masking character per
+ * character it holds, so its length is everything it can attest to. Checking
+ * that length still catches the failure this confirmation exists for, a device
+ * keyboard dropping keystrokes, because a dropped keystroke is a shorter mask.
+ */
+function expectedOf(role: Role, text: string): ExpectedValue {
+  return role === 'secure-text-field'
+    ? { kind: 'masked', length: text.length }
+    : { kind: 'exact', value: text };
+}
+
+/**
+ * Requiring the mask be one repeated character is what stops a placeholder that
+ * happens to be the right length, which is what an untouched secure field
+ * reports, from passing as a landed write.
+ */
+function holds(expected: ExpectedValue, actual: string): boolean {
+  switch (expected.kind) {
+    case 'exact':
+      return actual === expected.value;
+    case 'masked':
+      return actual.length === expected.length && new Set(actual).size <= 1;
+    default: {
+      const never: never = expected;
+      throw new Error(`unhandled expected value ${JSON.stringify(never)}`);
+    }
+  }
 }
 
 /** The field's current contents, or null once the locator stops resolving to exactly one node. */
