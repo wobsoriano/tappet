@@ -20,7 +20,7 @@ vp check          # format, lint, and type check every package
 vp test           # the library's unit tests
 ```
 
-The build leads. The sample app imports tangere through its exports map, which points at `dist`, so nothing can typecheck until the workspace is built.
+The build leads. The sample app imports touchpress through its exports map, which points at `dist`, so nothing can typecheck until the workspace is built.
 
 Nothing here touches a device, so it finishes in about a minute and it is what gates a pull request.
 
@@ -38,7 +38,7 @@ Both jobs build in Release, which bundles the JavaScript into the app. A develop
 
 ### Naming the device
 
-`TANGERE_ANDROID_DEVICE` has to match what `agent-device devices` prints, and for an emulator that is the AVD name with its underscores shown as spaces. An AVD created as `ci_api34` is `ci api34` there, so a config that names it `ci-api34` finds nothing and preflight fails with the booted names listed. The workflow sidesteps the trap by creating its AVD as `ci-api34`, with hyphens, and passing that same string through, so the two agree without a translation step.
+`TOUCHPRESS_ANDROID_DEVICE` has to match what `agent-device devices` prints, and for an emulator that is the AVD name with its underscores shown as spaces. An AVD created as `ci_api34` is `ci api34` there, so a config that names it `ci-api34` finds nothing and preflight fails with the booted names listed. The workflow sidesteps the trap by creating its AVD as `ci-api34`, with hyphens, and passing that same string through, so the two agree without a translation step.
 
 The same applies locally. The checked-in default is `Expo API 36`, which is the AVD `Expo_API_36`.
 
@@ -52,9 +52,9 @@ The Android emulator's AVD is cached the same way, keyed by API level, target, a
 
 The cold native build is what a run actually costs, so both jobs cache the artifact it produces. A step hashes the inputs the build reads, using `git ls-files -s` over the lockfile, the workspace file, and the sample app's `package.json`, `app.json`, `app`, `src`, and `assets`, piped to `git hash-object --stdin`. The iOS job folds in the Xcode version and the Android job folds in the API level, because the same sources build differently against a different toolchain.
 
-The key is `tangere-native-v1-<platform>-<hash>`. `actions/cache/restore` looks for the `.app` bundle on iOS and the release APK on Android. A hit skips both `expo prebuild` and the platform build. A miss runs them and `actions/cache/save` stores the artifact under the key that was just missed. Bump the `v1` when the build commands change, since the commands are not part of the hash.
+The key is `touchpress-native-v1-<platform>-<hash>`. `actions/cache/restore` looks for the `.app` bundle on iOS and the release APK on Android. A hit skips both `expo prebuild` and the platform build. A miss runs them and `actions/cache/save` stores the artifact under the key that was just missed. Bump the `v1` when the build commands change, since the commands are not part of the hash.
 
-The library source is deliberately left out of the hash. The sample app never imports tangere. It is a devDependency the specs use on the host, so a library change cannot alter the native build. `vp run -r build` stays unconditional for that reason, because the specs need the built library whether or not the app was rebuilt.
+The library source is deliberately left out of the hash. The sample app never imports touchpress. It is a devDependency the specs use on the host, so a library change cannot alter the native build. `vp run -r build` stays unconditional for that reason, because the specs need the built library whether or not the app was rebuilt.
 
 ### Losing input on a slow runner
 
@@ -73,11 +73,11 @@ Both jobs upload `apps/e2e/playwright-report` when they fail, with seven day ret
 The e2e script takes the project flag from the caller, so one script serves both jobs. Run it through pnpm, not `vp run`.
 
 ```sh
-pnpm --filter tangere-e2e test:e2e --project=ios
-pnpm --filter tangere-e2e test:e2e --project=android
+pnpm --filter touchpress-e2e test:e2e --project=ios
+pnpm --filter touchpress-e2e test:e2e --project=android
 ```
 
-`vp run` tracks every process a task starts through an IPC socket it passes in the environment. `agent-device` starts its daemon with that environment when no daemon is running, the daemon lives on after the suite, and `vp run` keeps waiting for it. The run prints its results and then hangs. pnpm passes no such environment, so the daemon starts clean and the command exits when Playwright does. The root `pnpm test:e2e` script is this pnpm command without a project flag, so it runs every project. The workflows call `apps/e2e/node_modules/.bin/playwright` and `packages/tangere/node_modules/.bin/agent-device` directly instead, because `setup-vp` puts `vp` on the PATH but not `pnpm`.
+`vp run` tracks every process a task starts through an IPC socket it passes in the environment. `agent-device` starts its daemon with that environment when no daemon is running, the daemon lives on after the suite, and `vp run` keeps waiting for it. The run prints its results and then hangs. pnpm passes no such environment, so the daemon starts clean and the command exits when Playwright does. The root `pnpm test:e2e` script is this pnpm command without a project flag, so it runs every project. The workflows call `apps/e2e/node_modules/.bin/playwright` and `packages/touchpress/node_modules/.bin/agent-device` directly instead, because `setup-vp` puts `vp` on the PATH but not `pnpm`.
 
 ## What a run costs
 

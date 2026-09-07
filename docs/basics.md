@@ -1,10 +1,10 @@
 # Basics
 
-A tangere test is a Playwright test. You import `test` and `expect` from `tangere` instead of from `@playwright/test`, and you get one extra fixture called `device`.
+A touchpress test is a Playwright test. You import `test` and `expect` from `touchpress` instead of from `@playwright/test`, and you get one extra fixture called `device`.
 
 ```ts
 // e2e/home.spec.ts
-import { expect, test } from 'tangere';
+import { expect, test } from 'touchpress';
 
 test('the signed-out home screen offers a way in', async ({ device }) => {
   await expect(device.getByRole('text', { name: 'Welcome' })).toHaveText('Welcome', {
@@ -14,7 +14,7 @@ test('the signed-out home screen offers a way in', async ({ device }) => {
 });
 ```
 
-No browser is launched. `browser`, `context`, and `page` are still there because `test` extends Playwright's own, but they are lazy and nothing in tangere names them.
+No browser is launched. `browser`, `context`, and `page` are still there because `test` extends Playwright's own, but they are lazy and nothing in touchpress names them.
 
 ## The `device` fixture
 
@@ -106,7 +106,7 @@ It takes one snapshot and reads it once. It does not retry, so use it to capture
 
 ## The whole tree
 
-`device.screen()` returns the parsed accessibility tree for an assertion tangere does not model.
+`device.screen()` returns the parsed accessibility tree for an assertion touchpress does not model.
 
 ```ts
 const screen = await device.screen();
@@ -136,7 +136,7 @@ The agent-device CLI equivalent is `agent-device screenshot ./card.png`, which a
 
 ```ts
 // e2e/preflight.setup.mts
-import { preflight, setupTest } from 'tangere';
+import { preflight, setupTest } from 'touchpress';
 
 setupTest(
   'the project names a booted device',
@@ -148,7 +148,7 @@ setupTest(
 );
 ```
 
-`setupTest` carries tangere's options and none of its fixtures. tangere's own `test` would open a session through its auto `device` fixture, and preflight has to run before any session exists.
+`setupTest` carries touchpress's options and none of its fixtures. touchpress's own `test` would open a session through its auto `device` fixture, and preflight has to run before any session exists.
 
 It returns `{ ok: true, device }` or `{ ok: false, problems }`, where every problem is one line ending in something to do about it. Run it as a Playwright setup project that the device projects depend on, so a missing simulator reads as one short failure rather than a launch timeout in every test.
 

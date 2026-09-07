@@ -2,13 +2,13 @@
 
 ## One session per worker slot
 
-tangere opens one `agent-device` session per Playwright worker slot and names it `${sessionPrefix}-${project}-${parallelIndex}`. The name is deterministic on purpose. Playwright discards a worker after any test failure and starts a replacement that reuses the same `parallelIndex`, so the replacement reconnects to the session the failed worker left behind instead of stranding it.
+touchpress opens one `agent-device` session per Playwright worker slot and names it `${sessionPrefix}-${project}-${parallelIndex}`. The name is deterministic on purpose. Playwright discards a worker after any test failure and starts a replacement that reuses the same `parallelIndex`, so the replacement reconnects to the session the failed worker left behind instead of stranding it.
 
 Startup is convergent. Running it twice settles on one ready session.
 
 1. Close any leftover session of that exact name.
 2. Launch the app with a relaunch, carrying the device selection on that first command.
-3. Recover once from a device claimed by one of tangere's own leftovers, or by any owner when `onDeviceInUse` is `'reclaim'`.
+3. Recover once from a device claimed by one of touchpress's own leftovers, or by any owner when `onDeviceInUse` is `'reclaim'`.
 4. Recover once from a session already bound to a different device.
 5. Hold until `readyWhen` resolves, or fail with the screen listing.
 
@@ -18,7 +18,7 @@ A session binds to a device on its first command, even a read-only one, which is
 
 Reads included. The driver advances a reference generation on every snapshot, and a reference pinned to an older generation is rejected before it dispatches. A read landing between a resolution and the action pinned to it would invalidate that pin, so one queue is what makes "snapshot, resolve, pin, act" atomic.
 
-Each action is therefore one unit. Capture a screen, resolve the locator, pin the node's reference to that screen's generation, dispatch, and re-capture and retry once if the driver reports the generation was superseded. A second rejection means the screen is changing faster than tangere can act on it, and that is reported rather than retried forever.
+Each action is therefore one unit. Capture a screen, resolve the locator, pin the node's reference to that screen's generation, dispatch, and re-capture and retry once if the driver reports the generation was superseded. A second rejection means the screen is changing faster than touchpress can act on it, and that is reported rather than retried forever.
 
 ## Relaunch
 
@@ -58,14 +58,14 @@ No `trace.zip` is produced, because no browser is involved. The HTML report is t
 
 ## Shutdown
 
-The worker fixture closes the session when the worker exits. `close` is idempotent, it reaches the closed state even when the driver call fails, and it never shuts the simulator down. tangere does not boot, build, install, or tear down devices.
+The worker fixture closes the session when the worker exits. `close` is idempotent, it reaches the closed state even when the driver call fails, and it never shuts the simulator down. touchpress does not boot, build, install, or tear down devices.
 
 ## Running the CLI alongside a test run
 
-The `agent-device` CLI and the client tangere uses share one daemon. A CLI at another version replaces that daemon on every call and drops every open session, which shows up as `SESSION_NOT_FOUND` in the middle of a suite. Run the CLI through the workspace so it is the pinned version.
+The `agent-device` CLI and the client touchpress uses share one daemon. A CLI at another version replaces that daemon on every call and drops every open session, which shows up as `SESSION_NOT_FOUND` in the middle of a suite. Run the CLI through the workspace so it is the pinned version.
 
 ```sh
 pnpm exec agent-device session list
 ```
 
-`pnpm exec` resolves through the nearest `node_modules/.bin`, and a package that only reaches agent-device through tangere has no such binary, so the command would fall through to a global install. The workspace root pins `agent-device` at the library's exact version for that reason. Pin the same version in any project that drives a device by hand next to tangere.
+`pnpm exec` resolves through the nearest `node_modules/.bin`, and a package that only reaches agent-device through touchpress has no such binary, so the command would fall through to a global install. The workspace root pins `agent-device` at the library's exact version for that reason. Pin the same version in any project that drives a device by hand next to touchpress.

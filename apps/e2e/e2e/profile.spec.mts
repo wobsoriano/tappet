@@ -1,4 +1,4 @@
-import { expect, test } from 'tangere';
+import { expect, test } from 'touchpress';
 
 test('signing out from the profile returns to the signed-out home', async ({ device }) => {
   await device.getByTestId('sign-in-link').tap();

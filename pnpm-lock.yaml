@@ -170,14 +170,14 @@ importers:
       '@types/react':
         specifier: ~19.2.2
         version: 19.2.18
-      tangere:
+      touchpress:
         specifier: workspace:*
-        version: link:../../packages/tangere
+        version: link:../../packages/touchpress
       typescript:
         specifier: ~6.0.3
         version: 6.0.3
 
-  packages/tangere:
+  packages/touchpress:
     dependencies:
       agent-device:
         specifier: 0.20.10

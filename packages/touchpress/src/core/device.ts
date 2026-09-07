@@ -1,6 +1,6 @@
 import { describeNode, type Check } from './checks.ts';
 import type { ScrollDirection, Settled } from './driver.ts';
-import { TangereError, type ExpectedValue } from './errors.ts';
+import { TouchpressError, type ExpectedValue } from './errors.ts';
 import { probe, type ProbeOptions, type ProbeResult } from './probe.ts';
 import { describeQuery, textMatch, type Filter, type Query, type Role } from './query.ts';
 import { createScrollSearch, type ScrollDevice } from './scroll.ts';
@@ -234,8 +234,8 @@ function perform(
       let target: Query = record.query;
       let lastActual: string | null = null;
       let screen: Screen = await device.capture();
-      const unconfirmed = (expected: ExpectedValue): TangereError =>
-        new TangereError({
+      const unconfirmed = (expected: ExpectedValue): TouchpressError =>
+        new TouchpressError({
           kind: 'fill-unconfirmed',
           locator,
           expected,
@@ -303,7 +303,7 @@ function perform(
         }
         const remaining = deadline - Date.now();
         if (remaining <= 0) {
-          throw new TangereError({
+          throw new TouchpressError({
             kind: 'not-found',
             locator,
             timeoutMs: timeout,
@@ -348,7 +348,7 @@ function scrollIntoView(
         if (resolution.outcome === 'one') return;
         const remaining = deadline - Date.now();
         if (remaining <= 0 || !(await search.step(screen, query, remaining))) {
-          throw new TangereError({
+          throw new TouchpressError({
             kind: 'not-found',
             locator,
             timeoutMs: timeout,
@@ -373,8 +373,8 @@ function reportingScrolls(device: SessionDevice, sink: ActionSink): ScrollDevice
   };
 }
 
-function ambiguous(locator: string, nodes: readonly ScreenNode[], screen: Screen): TangereError {
-  return new TangereError({
+function ambiguous(locator: string, nodes: readonly ScreenNode[], screen: Screen): TouchpressError {
+  return new TouchpressError({
     kind: 'strict-mode',
     locator,
     matches: nodes.map((node) => describeNode(node)),

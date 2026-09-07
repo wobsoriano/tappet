@@ -1,16 +1,16 @@
-import { TangereError } from './errors.ts';
+import { TouchpressError } from './errors.ts';
 import { textMatch, type Query, type Role } from './query.ts';
 import type { Platform } from './screen.ts';
 
 /**
- * The keys tangere adds to Playwright's `use`. Each is its own option fixture, so
+ * The keys touchpress adds to Playwright's `use`. Each is its own option fixture, so
  * a project overrides one without restating the rest.
  *
  * Playwright types `use` as a partial of this, so a config may leave any key out.
  * `parseDeviceOptions` is what makes `platform`, `app`, and `readyWhen` required.
  * It runs once at worker start and nothing downstream re-validates.
  */
-export type TangereOptions = {
+export type TouchpressOptions = {
   /** Required. */
   platform: Platform | undefined;
   /** Required. Bundle id on iOS, package name on Android. Never a path to an artifact. */
@@ -41,7 +41,7 @@ export type TangereOptions = {
   dismissDevOverlay: boolean;
   /** @default 'on-failure' */
   evidence: 'on-failure' | 'always' | 'off';
-  /** @default 'tangere'. Session names are `${prefix}-${project}-${parallelIndex}`. */
+  /** @default 'touchpress'. Session names are `${prefix}-${project}-${parallelIndex}`. */
   sessionPrefix: string;
 };
 
@@ -50,8 +50,8 @@ export type TangereOptions = {
  * to the same values, so a caller that reaches the parser without the fixtures,
  * such as `preflight`, resolves identically.
  */
-export const TANGERE_DEFAULTS: Omit<
-  TangereOptions,
+export const TOUCHPRESS_DEFAULTS: Omit<
+  TouchpressOptions,
   'platform' | 'app' | 'readyWhen' | 'deviceName' | 'launchUrl'
 > = {
   relaunch: 'per-test',
@@ -60,7 +60,7 @@ export const TANGERE_DEFAULTS: Omit<
   launchTimeout: 90_000,
   dismissDevOverlay: false,
   evidence: 'on-failure',
-  sessionPrefix: 'tangere',
+  sessionPrefix: 'touchpress',
 };
 
 const DEFAULT_ACTION_TIMEOUT_MS = 10_000;
@@ -141,40 +141,40 @@ export function parseDeviceOptions(raw: unknown): ResolvedOptions {
       'relaunch',
       read(raw, 'relaunch'),
       ['per-test', 'per-worker'],
-      TANGERE_DEFAULTS.relaunch,
+      TOUCHPRESS_DEFAULTS.relaunch,
     ),
     onDeviceInUse: oneOf(
       'onDeviceInUse',
       read(raw, 'onDeviceInUse'),
       ['fail', 'reclaim'],
-      TANGERE_DEFAULTS.onDeviceInUse,
+      TOUCHPRESS_DEFAULTS.onDeviceInUse,
     ),
     actionTimeout: parseActionTimeout(read(raw, 'actionTimeout')),
     settleQuietMs: positive(
       'settleQuietMs',
       read(raw, 'settleQuietMs'),
-      TANGERE_DEFAULTS.settleQuietMs,
+      TOUCHPRESS_DEFAULTS.settleQuietMs,
     ),
     launchTimeout: positive(
       'launchTimeout',
       read(raw, 'launchTimeout'),
-      TANGERE_DEFAULTS.launchTimeout,
+      TOUCHPRESS_DEFAULTS.launchTimeout,
     ),
     dismissDevOverlay: flag(
       'dismissDevOverlay',
       read(raw, 'dismissDevOverlay'),
-      TANGERE_DEFAULTS.dismissDevOverlay,
+      TOUCHPRESS_DEFAULTS.dismissDevOverlay,
     ),
     evidence: oneOf(
       'evidence',
       read(raw, 'evidence'),
       ['on-failure', 'always', 'off'],
-      TANGERE_DEFAULTS.evidence,
+      TOUCHPRESS_DEFAULTS.evidence,
     ),
     sessionPrefix: text(
       'sessionPrefix',
       read(raw, 'sessionPrefix'),
-      TANGERE_DEFAULTS.sessionPrefix,
+      TOUCHPRESS_DEFAULTS.sessionPrefix,
     ),
   };
 }
@@ -186,7 +186,7 @@ function read(source: unknown, key: string): unknown {
 }
 
 /**
- * Playwright's own `use.actionTimeout`, not one of tangere's. Playwright defaults
+ * Playwright's own `use.actionTimeout`, not one of touchpress's. Playwright defaults
  * it to 0, which means "no timeout" there and would mean "give up at once" here,
  * so 0 falls back the way an unset value does.
  */
@@ -271,7 +271,7 @@ export function deviceNameForSlot(options: ResolvedOptions, slot: number): strin
   }
 }
 
-function tooFewDevices(problem: string, slot: number): TangereError {
+function tooFewDevices(problem: string, slot: number): TouchpressError {
   return fail(
     'deviceName',
     `${problem}, but Playwright asked for worker slot ${String(slot)}. List one device name per worker, or set \`workers: 1\`.`,
@@ -319,6 +319,6 @@ function text(field: string, value: unknown, fallback: string): string {
   return value;
 }
 
-function fail(field: string, detail: string): TangereError {
-  return new TangereError({ kind: 'config', field, detail });
+function fail(field: string, detail: string): TouchpressError {
+  return new TouchpressError({ kind: 'config', field, detail });
 }

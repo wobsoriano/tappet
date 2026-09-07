@@ -176,7 +176,7 @@ Clerk's native sign-in view is the case that found this. It puts the identifier 
 @e66 [button] "Hide"                     #clerk.auth.signIn.password
 ```
 
-They sit on one parent rather than one ancestor chain, so absorption leaves them alone and `getByTestId('clerk.auth.signIn.password')` is ambiguous. `agent-device` refuses the same selector with `AMBIGUOUS_MATCH`, so this is the driver's reading too, not tangere's alone.
+They sit on one parent rather than one ancestor chain, so absorption leaves them alone and `getByTestId('clerk.auth.signIn.password')` is ambiguous. `agent-device` refuses the same selector with `AMBIGUOUS_MATCH`, so this is the driver's reading too, not touchpress's alone.
 
 Narrow with the role, which is what separates them.
 

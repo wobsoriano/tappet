@@ -7,7 +7,7 @@ import type {
   ScrollDirection,
   Settled,
 } from './driver.ts';
-import { TangereError } from './errors.ts';
+import { TouchpressError } from './errors.ts';
 import { describeQuery } from './query.ts';
 import { renderTitle, type ActionSink } from './report.ts';
 import { parseScreen, renderScreen, resolve, type PinnedRef, type Screen } from './screen.ts';
@@ -144,7 +144,7 @@ async function openWithRecovery(
         owner !== null &&
         (owner.startsWith(options.sessionPrefix) || options.onDeviceInUse === 'reclaim');
       if (!reclaimable) {
-        throw new TangereError({
+        throw new TouchpressError({
           kind: 'device-in-use',
           owner,
           device: deviceName ?? options.platform,
@@ -159,7 +159,7 @@ async function openWithRecovery(
       await driver.close(name);
       return await driver.open(request);
     }
-    throw new TangereError({
+    throw new TouchpressError({
       kind: 'launch-failed',
       app: options.app,
       device: deviceName ?? options.platform,
@@ -224,7 +224,7 @@ function createSession(
       if (remaining <= 0) break;
       await sleep(Math.min(READY_POLL_MS, remaining));
     }
-    throw new TangereError({
+    throw new TouchpressError({
       kind: 'not-ready',
       locator: describeQuery(options.readyWhen),
       timeoutMs: Date.now() - started,
@@ -260,14 +260,14 @@ function createSession(
   };
 }
 
-function unusable(state: SessionState): TangereError {
+function unusable(state: SessionState): TouchpressError {
   if (state.phase === 'broken')
-    return new TangereError({
+    return new TouchpressError({
       kind: 'driver',
       command: 'device command',
       failure: state.failure,
     });
-  return new TangereError({ kind: 'session-closed', command: 'run a device command' });
+  return new TouchpressError({ kind: 'session-closed', command: 'run a device command' });
 }
 
 /**
@@ -289,7 +289,7 @@ export function sessionName(options: ResolvedOptions, project: string, slot: num
 }
 
 export function failureOf(error: unknown): DeviceFailure | null {
-  if (!(error instanceof TangereError)) return null;
+  if (!(error instanceof TouchpressError)) return null;
   if (error.info.kind === 'driver') return error.info.failure;
   if (error.info.kind === 'launch-failed') return error.info.failure;
   return null;

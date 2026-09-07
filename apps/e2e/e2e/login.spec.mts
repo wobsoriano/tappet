@@ -1,4 +1,4 @@
-import { expect, test } from 'tangere';
+import { expect, test } from 'touchpress';
 
 test('the wrong password is rejected without leaving the login screen', async ({ device }) => {
   await device.getByTestId('sign-in-link').tap();

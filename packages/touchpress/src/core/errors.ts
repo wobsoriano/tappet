@@ -63,12 +63,12 @@ export type ErrorInfo =
     }
   | { readonly kind: 'driver'; readonly command: string; readonly failure: DeviceFailure };
 
-export class TangereError extends Error {
+export class TouchpressError extends Error {
   readonly info: ErrorInfo;
 
   constructor(info: ErrorInfo) {
     super(formatError(info));
-    this.name = 'TangereError';
+    this.name = 'TouchpressError';
     this.info = info;
   }
 }
@@ -76,7 +76,7 @@ export class TangereError extends Error {
 function formatError(info: ErrorInfo): string {
   switch (info.kind) {
     case 'config':
-      return `Invalid tangere option: use.${info.field} ${info.detail}`;
+      return `Invalid touchpress option: use.${info.field} ${info.detail}`;
     case 'device-in-use':
       return [
         `Device ${info.device} is held by ${info.owner === null ? 'another session' : `session "${info.owner}"`}.`,

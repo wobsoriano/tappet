@@ -13,7 +13,7 @@ test('parse fills every default', () => {
   expect(options.launchTimeout).toBe(90_000);
   expect(options.dismissDevOverlay).toBe(false);
   expect(options.evidence).toBe('on-failure');
-  expect(options.sessionPrefix).toBe('tangere');
+  expect(options.sessionPrefix).toBe('touchpress');
   expect(options.device).toEqual({ kind: 'first-booted' });
   expect(options.launchUrl).toBe(null);
 });
@@ -90,7 +90,7 @@ test("one device never serves a second worker, because the second would reclaim 
 });
 
 test('session names are deterministic so a replacement worker reuses one', () => {
-  const options = parseDeviceOptions({ ...minimal, sessionPrefix: 'tangere' });
-  expect(sessionName(options, 'ios', 2)).toBe('tangere-ios-2');
-  expect(sessionName(options, '', 0)).toBe('tangere-default-0');
+  const options = parseDeviceOptions({ ...minimal, sessionPrefix: 'touchpress' });
+  expect(sessionName(options, 'ios', 2)).toBe('touchpress-ios-2');
+  expect(sessionName(options, '', 0)).toBe('touchpress-default-0');
 });

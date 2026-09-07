@@ -1,4 +1,4 @@
-import { expect, test } from 'tangere';
+import { expect, test } from 'touchpress';
 
 test('the signed-out home screen looks the way it did', async ({ device }) => {
   await expect(device).toHaveScreenshot('home.png');

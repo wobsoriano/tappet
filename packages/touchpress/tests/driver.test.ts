@@ -52,12 +52,12 @@ test('a session bound to another device carries what it was bound to', () => {
   const failure = classifyError(
     new AppError(
       'INVALID_ARGS',
-      'open is already bound to session tangere-ios-0 on android device emulator-5554',
+      'open is already bound to session touchpress-ios-0 on android device emulator-5554',
     ),
   );
   expect(failure.kind).toBe('session-rebound');
   if (failure.kind !== 'session-rebound') return;
-  expect(failure.boundTo).toBe('session tangere-ios-0 on android device emulator-5554');
+  expect(failure.boundTo).toBe('session touchpress-ios-0 on android device emulator-5554');
 });
 
 test('the remaining codes map onto their own kinds', () => {

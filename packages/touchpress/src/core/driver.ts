@@ -86,7 +86,7 @@ export type CaptureOptions = {
  * Contract every implementation owes the core. `open` converges when called on
  * an already-open session. Mutations take a `PinnedRef` and never a selector, so
  * the driver's own matcher is never a second opinion on which node was meant.
- * Every failure throws a `TangereError` carrying a `DeviceFailure`.
+ * Every failure throws a `TouchpressError` carrying a `DeviceFailure`.
  */
 export type DeviceDriver = {
   /** Takes no session, so it is the one call that binds nothing. */

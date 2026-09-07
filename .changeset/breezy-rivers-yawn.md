@@ -1,5 +1,5 @@
 ---
-'tangere': patch
+'touchpress': patch
 ---
 
 Initial release

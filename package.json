@@ -1,14 +1,14 @@
 {
-  "name": "tangere-monorepo",
+  "name": "touchpress-monorepo",
   "version": "0.0.0",
   "private": true,
-  "description": "Workspace for tangere, end-to-end testing for mobile apps with the Playwright test runner.",
+  "description": "Workspace for touchpress, end-to-end testing for mobile apps with the Playwright test runner.",
   "type": "module",
   "scripts": {
     "check": "vp check",
     "test": "vp test",
     "build": "vp run -r build",
-    "test:e2e": "pnpm --filter tangere-e2e test:e2e",
+    "test:e2e": "pnpm --filter touchpress-e2e test:e2e",
     "prepare": "vp config",
     "release": "vp exec changeset publish"
   },

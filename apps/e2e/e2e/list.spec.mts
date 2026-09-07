@@ -1,4 +1,4 @@
-import { expect, test } from 'tangere';
+import { expect, test } from 'touchpress';
 
 test('a row far down the list is scrolled into view', async ({ device }) => {
   await device.getByTestId('list-link').tap();

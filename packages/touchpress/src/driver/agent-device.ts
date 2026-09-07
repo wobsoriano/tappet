@@ -10,7 +10,7 @@ import type {
   Settled,
   SettleOptions,
 } from '../core/driver.ts';
-import { TangereError } from '../core/errors.ts';
+import { TouchpressError } from '../core/errors.ts';
 import type { PinnedRef, RawSnapshot } from '../core/screen.ts';
 
 /** agent-device's root entry exports values only, so the client type is derived here and nowhere else. */
@@ -42,7 +42,7 @@ export function createAgentDeviceDriver(
     try {
       return await body();
     } catch (error) {
-      throw new TangereError({ kind: 'driver', command, failure: classifyError(error) });
+      throw new TouchpressError({ kind: 'driver', command, failure: classifyError(error) });
     }
   }
 

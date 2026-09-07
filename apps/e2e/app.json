@@ -1,15 +1,15 @@
 {
   "expo": {
-    "name": "tangere-e2e",
-    "slug": "tangere-e2e",
+    "name": "touchpress-e2e",
+    "slug": "touchpress-e2e",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "scheme": "tangeree2e",
+    "scheme": "touchpresse2e",
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "dev.tangere.e2e"
+      "bundleIdentifier": "dev.touchpress.e2e"
     },
     "android": {
       "adaptiveIcon": {
@@ -19,7 +19,7 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "dev.tangere.e2e"
+      "package": "dev.touchpress.e2e"
     },
     "web": {
       "favicon": "./assets/favicon.png"
