@@ -34,7 +34,7 @@ jobs:
       - name: Read the agent-device and Xcode versions for the cache key
         id: versions
         run: |
-          echo "agent_device=$(pnpm exec agent-device --version)" >> "$GITHUB_OUTPUT"
+          echo "agent_device=$(./node_modules/.bin/agent-device --version)" >> "$GITHUB_OUTPUT"
           echo "xcode=$(xcodebuild -version | head -1 | tr ' ' '-')" >> "$GITHUB_OUTPUT"
         working-directory: packages/tappet
 
@@ -66,11 +66,13 @@ jobs:
       # The test run reuses this daemon, because both sides are the workspace's pinned agent-device.
       - name: Prepare the iOS runner
         working-directory: packages/tappet
-        run: pnpm exec agent-device prepare ios-runner --platform ios --timeout 240000
+        run: ./node_modules/.bin/agent-device prepare ios-runner --platform ios --timeout 240000
 
-      # Through pnpm, not vp run. The agent-device daemon inherits vp run's task IPC environment
-      # and vp run then waits for it, so the step would hang after the suite finished.
-      - run: pnpm --filter tappet-e2e test:e2e --project=ios
+      # The workspace binary, not vp run. The agent-device daemon inherits vp run's task IPC
+      # environment and vp run then waits for it, so the step would hang after the suite finished.
+      # pnpm itself is not on PATH under setup-vp, which is why this is not `pnpm --filter`.
+      - run: ./node_modules/.bin/playwright test --project=ios
+        working-directory: apps/e2e
 
       - if: failure()
         uses: actions/upload-artifact@v4
@@ -86,6 +88,13 @@ jobs:
       TAPPET_ANDROID_DEVICE: ci-api34
     steps:
       - uses: actions/checkout@v5
+
+      # The Android SDK image plus a Release build do not fit next to the toolchains the image ships with.
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/share/boost /opt/ghc /usr/local/.ghcup /usr/share/swift "$AGENT_TOOLSDIRECTORY"
+          sudo docker image prune --all --force > /dev/null 2>&1 || true
+          df -h /
 
       - uses: actions/setup-java@v4
         with:
@@ -144,7 +153,7 @@ jobs:
           disable-animations: true
           script: |
             adb install -r apps/e2e/android/app/build/outputs/apk/release/app-release.apk
-            pnpm --filter tappet-e2e test:e2e --project=android
+            cd apps/e2e && ./node_modules/.bin/playwright test --project=android
 
       - if: failure()
         uses: actions/upload-artifact@v4
