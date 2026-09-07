@@ -9,9 +9,11 @@
     "test": "vp test",
     "build": "vp run -r build",
     "test:e2e": "pnpm --filter tappet-e2e test:e2e",
-    "prepare": "vp config"
+    "prepare": "vp config",
+    "release": "vp exec changeset publish"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.30.0",
     "agent-device": "0.20.10",
     "vite": "catalog:",
     "vite-plus": "catalog:"
