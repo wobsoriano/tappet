@@ -45,9 +45,7 @@ use: {
 A string is a gateway model id, which the AI SDK resolves against `AI_GATEWAY_API_KEY`.
 
 ```ts
-use: {
-  aiModel: 'anthropic/claude-sonnet-4.5';
-}
+use: { app: 'com.example.app', aiModel: 'anthropic/claude-sonnet-4.5' }
 ```
 
 A provider instance works the same way, for a project that already has its own credentials wired.
@@ -55,9 +53,7 @@ A provider instance works the same way, for a project that already has its own c
 ```ts
 import { anthropic } from '@ai-sdk/anthropic';
 
-use: {
-  aiModel: anthropic('claude-sonnet-4.5');
-}
+use: { app: 'com.example.app', aiModel: anthropic('claude-sonnet-4.5') }
 ```
 
 Leave it unset and `act` and `extract` fail naming the key. Nothing else reads it, so a config that sets it costs nothing until a test calls one of them.
