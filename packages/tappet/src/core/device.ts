@@ -3,6 +3,7 @@ import type { ScrollDirection, Settled } from './driver.ts';
 import { TappetError, type ExpectedValue } from './errors.ts';
 import { probe, type ProbeOptions, type ProbeResult } from './probe.ts';
 import { describeQuery, textMatch, type Filter, type Query, type Role } from './query.ts';
+import { createScrollSearch, type ScrollDevice } from './scroll.ts';
 import { renderTitle, type ActionRecord, type ActionSink, type Typed } from './report.ts';
 import {
   pin,
@@ -87,6 +88,12 @@ export type Locator = {
   tap(options?: ActionOptions): Promise<void>;
   fill(text: string, options?: FillOptions): Promise<void>;
   longPress(durationMs?: number, options?: ActionOptions): Promise<void>;
+  /**
+   * Scrolls until this locator resolves to one node on the default tree.
+   * Returns at once when it already does. Actions do this for themselves, so
+   * reach for it when you want to see a node rather than act on it.
+   */
+  scrollIntoView(options?: ActionOptions): Promise<void>;
   count(): Promise<number>;
   /** The matched node's text off one fresh screen. Null when nothing matches; ambiguity fails the way an action does. */
   textContent(): Promise<string | null>;
@@ -159,6 +166,7 @@ function createLocator(session: DeviceSession, sink: ActionSink, query: Query): 
         (device, ref, budget) => device.longPress(ref, held, budget),
       );
     },
+    scrollIntoView: (options) => scrollIntoView(session, sink, query, options),
     count: async () => {
       const resolution = resolve(await session.screen(), query);
       return resolution.outcome === 'many'
@@ -172,12 +180,7 @@ function createLocator(session: DeviceSession, sink: ActionSink, query: Query): 
       const resolution = resolve(screen, query);
       switch (resolution.outcome) {
         case 'many':
-          throw new TappetError({
-            kind: 'strict-mode',
-            locator: description,
-            matches: resolution.nodes.map((node) => describeNode(node)),
-            screen: renderScreen(screen),
-          });
+          throw ambiguous(description, resolution.nodes, screen);
         case 'none':
           return null;
         case 'one':
@@ -248,6 +251,7 @@ function perform(
   return sink.step(renderTitle(record), async () => {
     await session.run(async (device) => {
       const deadline = Date.now() + timeout;
+      const search = createScrollSearch(reportingScrolls(device, sink));
       let retriedStaleRef = false;
       let attempts = 0;
       let target: Query = record.query;
@@ -265,14 +269,7 @@ function perform(
         });
       for (;;) {
         const resolution = resolve(screen, target);
-        if (resolution.outcome === 'many') {
-          throw new TappetError({
-            kind: 'strict-mode',
-            locator,
-            matches: resolution.nodes.map((node) => describeNode(node)),
-            screen: renderScreen(screen),
-          });
-        }
+        if (resolution.outcome === 'many') throw ambiguous(locator, resolution.nodes, screen);
         if (resolution.outcome === 'one') {
           const confirmation =
             write === undefined ? null : confirmationOf(resolution.node.role, write);
@@ -336,12 +333,81 @@ function perform(
             locator,
             timeoutMs: timeout,
             screen: renderScreen(screen),
+            scrolled: search.trail(),
           });
+        }
+        // A write past its first attempt is looking for the node it already wrote, so a
+        // scroll there would be chasing a field that left rather than reaching a new one.
+        if (attempts === 0 && (await search.step(screen, target, remaining))) {
+          screen = await device.capture();
+          continue;
         }
         await sleep(Math.min(ACTION_POLL_MS, remaining));
         screen = await device.capture();
       }
     });
+  });
+}
+
+/**
+ * Scrolls until the locator resolves, as one queued unit and one reported
+ * step.
+ *
+ * The stop condition is the default tree, never the raw one. The raw tree is
+ * how the search learns which way to go, and a node it carries is not
+ * necessarily a node a user can reach, so a search that stopped on the raw
+ * tree would hand an action a ref for something still off screen.
+ */
+function scrollIntoView(
+  session: DeviceSession,
+  sink: ActionSink,
+  query: Query,
+  options: ActionOptions | undefined,
+): Promise<void> {
+  const timeout = options?.timeout ?? session.options.actionTimeout;
+  const locator = describeQuery(query);
+  return sink.step(renderTitle({ kind: 'scroll-into-view', query }), async () => {
+    await session.run(async (device) => {
+      const deadline = Date.now() + timeout;
+      const search = createScrollSearch(reportingScrolls(device, sink));
+      let screen = await device.capture();
+      for (;;) {
+        const resolution = resolve(screen, query);
+        if (resolution.outcome === 'many') throw ambiguous(locator, resolution.nodes, screen);
+        if (resolution.outcome === 'one') return;
+        const remaining = deadline - Date.now();
+        if (remaining <= 0 || !(await search.step(screen, query, remaining))) {
+          throw new TappetError({
+            kind: 'not-found',
+            locator,
+            timeoutMs: timeout,
+            screen: renderScreen(screen),
+            scrolled: search.trail(),
+          });
+        }
+        screen = await device.capture();
+      }
+    });
+  });
+}
+
+/** Every scroll a search takes is a nested step, so a report shows what an action did to reach its target. */
+function reportingScrolls(device: SessionDevice, sink: ActionSink): ScrollDevice {
+  return {
+    captureRaw: () => device.captureRaw(),
+    scroll: (direction, budgetMs) =>
+      sink.step(renderTitle({ kind: 'scroll', direction }), () =>
+        device.scroll(direction, budgetMs),
+      ),
+  };
+}
+
+function ambiguous(locator: string, nodes: readonly ScreenNode[], screen: Screen): TappetError {
+  return new TappetError({
+    kind: 'strict-mode',
+    locator,
+    matches: nodes.map((node) => describeNode(node)),
+    screen: renderScreen(screen),
   });
 }
 

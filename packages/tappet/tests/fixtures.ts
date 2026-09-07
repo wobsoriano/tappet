@@ -9,6 +9,12 @@ const FIXTURE_PLATFORMS = {
   'ios-login': 'ios',
   'android-home': 'android',
   'android-login': 'android',
+  'ios-list': 'ios',
+  'ios-list-raw': 'ios',
+  'ios-list-scrolled': 'ios',
+  'android-list': 'android',
+  'android-list-raw': 'android',
+  'android-list-scrolled': 'android',
 } satisfies Readonly<Record<string, Platform>>;
 
 export type FixtureName = keyof typeof FIXTURE_PLATFORMS;

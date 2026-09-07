@@ -59,6 +59,13 @@ export function createQueue(): Queue {
  */
 export type SessionDevice = {
   capture(): Promise<Screen>;
+  /**
+   * The driver's full provider tree. Only a scroll search reads it, because it
+   * carries nodes no locator should resolve against: on iOS the rows a
+   * container has scrolled out of the window, and on both platforms the
+   * wrapper views the default tree collapses away.
+   */
+  captureRaw(): Promise<Screen>;
   tap(ref: PinnedRef, budgetMs: number): Promise<Settled>;
   longPress(ref: PinnedRef, durationMs: number, budgetMs: number): Promise<Settled>;
   fill(ref: PinnedRef, text: string, budgetMs: number): Promise<Settled>;
@@ -183,7 +190,15 @@ function createSession(
 
   const device: SessionDevice = {
     capture: async () =>
-      parseScreen(await driver.capture({ timeoutMs: SNAPSHOT_TIMEOUT_MS }), options.platform),
+      parseScreen(
+        await driver.capture({ timeoutMs: SNAPSHOT_TIMEOUT_MS, tree: 'default' }),
+        options.platform,
+      ),
+    captureRaw: async () =>
+      parseScreen(
+        await driver.capture({ timeoutMs: SNAPSHOT_TIMEOUT_MS, tree: 'raw' }),
+        options.platform,
+      ),
     tap: (ref, budgetMs) => driver.tap(ref, settle(budgetMs)),
     longPress: (ref, durationMs, budgetMs) => driver.longPress(ref, durationMs, settle(budgetMs)),
     fill: (ref, text, budgetMs) => driver.fill(ref, text, settle(budgetMs)),

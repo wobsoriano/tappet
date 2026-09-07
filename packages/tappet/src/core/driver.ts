@@ -69,6 +69,22 @@ export type SettleOptions = {
 };
 
 /**
+ * Which tree a capture asks for.
+ *
+ * `default` is the driver's visible-first view, which is what every locator
+ * resolves against. `raw` is the full provider tree. On iOS it carries the
+ * nodes a scroll container has moved out of the window, which is how a target
+ * is located before it is on screen. On Android it carries no off-screen
+ * content, only the wrapper views the default view collapses away.
+ */
+export type Tree = 'default' | 'raw';
+
+export type CaptureOptions = {
+  readonly timeoutMs: number;
+  readonly tree: Tree;
+};
+
+/**
  * The port between the core and whatever drives a device. Nothing crossing it
  * is a transport type, which is what lets the core be unit-tested against a
  * captured snapshot.
@@ -82,7 +98,7 @@ export type DeviceDriver = {
   /** Lists every device of the driver's selected platform, booted or not. It takes no session, so it is the one call that binds nothing. */
   listDevices(): Promise<readonly DeviceInfo[]>;
   open(request: OpenRequest): Promise<Binding>;
-  capture(options: { readonly timeoutMs: number }): Promise<RawSnapshot>;
+  capture(options: CaptureOptions): Promise<RawSnapshot>;
   screenshot(path: string): Promise<string>;
   tap(ref: PinnedRef, options: SettleOptions): Promise<Settled>;
   longPress(ref: PinnedRef, durationMs: number, options: SettleOptions): Promise<Settled>;

@@ -1,4 +1,5 @@
 import type { DeviceFailure } from './driver.ts';
+import type { ScrollTrail } from './scroll.ts';
 
 /**
  * The most a failure may say about the text that was typed.
@@ -53,6 +54,8 @@ export type ErrorInfo =
       readonly locator: string;
       readonly timeoutMs: number;
       readonly screen: string;
+      /** What the search scrolled looking for it, or null when it never scrolled. */
+      readonly scrolled: ScrollTrail | null;
     }
   | {
       readonly kind: 'fill-unconfirmed';
@@ -115,6 +118,7 @@ function formatError(info: ErrorInfo): string {
         `Locator never resolved to a node within ${String(info.timeoutMs)}ms.`,
         ``,
         `Locator: ${info.locator}`,
+        ...(info.scrolled === null ? [] : [`Scrolled: ${describeTrail(info.scrolled)}`]),
         ``,
         `Screen:`,
         info.screen,
@@ -137,6 +141,10 @@ function formatError(info: ErrorInfo): string {
       throw new Error(`unhandled error info ${JSON.stringify(never)}`);
     }
   }
+}
+
+function describeTrail(trail: ScrollTrail): string {
+  return `${String(trail.steps)} step${trail.steps === 1 ? '' : 's'} ${trail.direction}`;
 }
 
 /**

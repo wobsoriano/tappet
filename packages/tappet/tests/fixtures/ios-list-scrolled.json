@@ -1,0 +1,941 @@
+{
+  "success": true,
+  "data": {
+    "nodes": [
+      {
+        "depth": 0,
+        "hittable": true,
+        "rect": {
+          "width": 440,
+          "height": 956,
+          "y": 0,
+          "x": 0
+        },
+        "label": "tappet-e2e",
+        "type": "Application",
+        "index": 0,
+        "enabled": true,
+        "ref": "e1"
+      },
+      {
+        "depth": 1,
+        "hittable": false,
+        "rect": {
+          "width": 440,
+          "height": 956,
+          "y": 0,
+          "x": 0
+        },
+        "label": "Vertical scroll bar, 2 pages",
+        "type": "Other",
+        "parentIndex": 0,
+        "index": 1,
+        "enabled": true,
+        "ref": "e2"
+      },
+      {
+        "depth": 2,
+        "hittable": false,
+        "rect": {
+          "width": 440,
+          "height": 956,
+          "y": 0,
+          "x": 0
+        },
+        "type": "Other",
+        "parentIndex": 1,
+        "index": 2,
+        "enabled": true,
+        "identifier": "list-screen",
+        "ref": "e3"
+      },
+      {
+        "depth": 2,
+        "hittable": false,
+        "type": "Other",
+        "label": "Row 1",
+        "rect": {
+          "width": 440,
+          "height": 892,
+          "y": 64,
+          "x": 0
+        },
+        "parentIndex": 1,
+        "index": 3,
+        "enabled": true,
+        "identifier": "list",
+        "ref": "e4"
+      },
+      {
+        "depth": 3,
+        "hittable": false,
+        "rect": {
+          "width": 440,
+          "height": 892.0000000000001,
+          "y": 64,
+          "x": 0
+        },
+        "label": "Row 1",
+        "type": "ScrollView",
+        "parentIndex": 3,
+        "index": 4,
+        "enabled": true,
+        "hiddenContentAbove": true,
+        "ref": "e5"
+      },
+      {
+        "depth": 4,
+        "hittable": false,
+        "rect": {
+          "width": 440,
+          "height": 1543.3333740234375,
+          "y": -587.3333333333334,
+          "x": 0
+        },
+        "label": "Row 1",
+        "type": "Other",
+        "parentIndex": 4,
+        "index": 5,
+        "enabled": true,
+        "ref": "e6"
+      },
+      {
+        "depth": 5,
+        "hittable": false,
+        "type": "StaticText",
+        "label": "Row 18",
+        "rect": {
+          "width": 392,
+          "height": 24,
+          "y": 48.66666666666663,
+          "x": 24
+        },
+        "parentIndex": 5,
+        "index": 6,
+        "enabled": true,
+        "identifier": "row-18",
+        "ref": "e7"
+      },
+      {
+        "depth": 6,
+        "hittable": false,
+        "rect": {
+          "width": 392,
+          "height": 24,
+          "y": 48.66666666666663,
+          "x": 24
+        },
+        "label": "Row 18",
+        "type": "StaticText",
+        "parentIndex": 6,
+        "index": 7,
+        "enabled": true,
+        "ref": "e8"
+      },
+      {
+        "depth": 5,
+        "hittable": false,
+        "type": "StaticText",
+        "label": "Row 19",
+        "rect": {
+          "width": 392,
+          "height": 24,
+          "y": 84.66666666666663,
+          "x": 24
+        },
+        "parentIndex": 5,
+        "index": 8,
+        "enabled": true,
+        "identifier": "row-19",
+        "ref": "e9"
+      },
+      {
+        "depth": 6,
+        "hittable": false,
+        "rect": {
+          "width": 392,
+          "height": 24,
+          "y": 84.66666666666663,
+          "x": 24
+        },
+        "label": "Row 19",
+        "type": "StaticText",
+        "parentIndex": 8,
+        "index": 9,
+        "enabled": true,
+        "ref": "e10"
+      },
+      {
+        "depth": 5,
+        "hittable": false,
+        "type": "StaticText",
+        "label": "Row 20",
+        "rect": {
+          "width": 392,
+          "height": 24,
+          "y": 120.66666666666663,
+          "x": 24
+        },
+        "parentIndex": 5,
+        "index": 10,
+        "enabled": true,
+        "identifier": "row-20",
+        "ref": "e11"
+      },
+      {
+        "depth": 6,
+        "index": 11,
+        "rect": {
+          "width": 392,
+          "height": 24,
+          "y": 120.66666666666663,
+          "x": 24
+        },
+        "type": "StaticText",
+        "parentIndex": 10,
+        "hittable": false,
+        "label": "Row 20",
+        "enabled": true,
+        "ref": "e12"
+      },
+      {
+        "depth": 5,
+        "index": 12,
+        "rect": {
+          "width": 392,
+          "height": 24,
+          "y": 156.66666666666663,
+          "x": 24
+        },
+        "type": "StaticText",
+        "parentIndex": 5,
+        "identifier": "row-21",
+        "hittable": false,
+        "label": "Row 21",
+        "enabled": true,
+        "ref": "e13"
+      },
+      {
+        "depth": 6,
+        "index": 13,
+        "rect": {
+          "width": 392,
+          "height": 24,
+          "y": 156.66666666666663,
+          "x": 24
+        },
+        "type": "StaticText",
+        "parentIndex": 12,
+        "hittable": false,
+        "label": "Row 21",
+        "enabled": true,
+        "ref": "e14"
+      },
+      {
+        "depth": 5,
+        "index": 14,
+        "rect": {
+          "width": 392,
+          "height": 24,
+          "y": 192.66666666666663,
+          "x": 24
+        },
+        "type": "StaticText",
+        "parentIndex": 5,
+        "identifier": "row-22",
+        "hittable": false,
+        "label": "Row 22",
+        "enabled": true,
+        "ref": "e15"
+      },
+      {
+        "depth": 6,
+        "index": 15,
+        "rect": {
+          "width": 392,
+          "height": 24,
+          "y": 192.66666666666663,
+          "x": 24
+        },
+        "type": "StaticText",
+        "parentIndex": 14,
+        "hittable": false,
+        "label": "Row 22",
+        "enabled": true,
+        "ref": "e16"
+      },
+      {
+        "depth": 5,
+        "index": 16,
+        "rect": {
+          "width": 392,
+          "height": 24,
+          "y": 228.66666666666663,
+          "x": 24
+        },
+        "type": "StaticText",
+        "parentIndex": 5,
+        "identifier": "row-23",
+        "hittable": false,
+        "label": "Row 23",
+        "enabled": true,
+        "ref": "e17"
+      },
+      {
+        "depth": 6,
+        "index": 17,
+        "rect": {
+          "width": 392,
+          "height": 24,
+          "y": 228.66666666666663,
+          "x": 24
+        },
+        "type": "StaticText",
+        "parentIndex": 16,
+        "hittable": false,
+        "label": "Row 23",
+        "enabled": true,
+        "ref": "e18"
+      },
+      {
+        "depth": 5,
+        "index": 18,
+        "rect": {
+          "width": 392,
+          "height": 24,
+          "y": 264.66666666666663,
+          "x": 24
+        },
+        "type": "StaticText",
+        "parentIndex": 5,
+        "identifier": "row-24",
+        "hittable": false,
+        "label": "Row 24",
+        "enabled": true,
+        "ref": "e19"
+      },
+      {
+        "depth": 6,
+        "index": 19,
+        "rect": {
+          "width": 392,
+          "height": 24,
+          "y": 264.66666666666663,
+          "x": 24
+        },
+        "type": "StaticText",
+        "parentIndex": 18,
+        "hittable": false,
+        "label": "Row 24",
+        "enabled": true,
+        "ref": "e20"
+      },
+      {
+        "depth": 5,
+        "index": 20,
+        "rect": {
+          "width": 392,
+          "height": 24,
+          "y": 300.66666666666663,
+          "x": 24
+        },
+        "type": "StaticText",
+        "parentIndex": 5,
+        "identifier": "row-25",
+        "hittable": false,
+        "label": "Row 25",
+        "enabled": true,
+        "ref": "e21"
+      },
+      {
+        "depth": 6,
+        "index": 21,
+        "rect": {
+          "width": 392,
+          "height": 24,
+          "y": 300.66666666666663,
+          "x": 24
+        },
+        "type": "StaticText",
+        "parentIndex": 20,
+        "hittable": false,
+        "label": "Row 25",
+        "enabled": true,
+        "ref": "e22"
+      },
+      {
+        "depth": 5,
+        "index": 22,
+        "rect": {
+          "width": 392,
+          "height": 24,
+          "y": 336.66666666666663,
+          "x": 24
+        },
+        "type": "StaticText",
+        "parentIndex": 5,
+        "identifier": "row-26",
+        "hittable": false,
+        "label": "Row 26",
+        "enabled": true,
+        "ref": "e23"
+      },
+      {
+        "depth": 6,
+        "index": 23,
+        "rect": {
+          "x": 24,
+          "width": 392,
+          "height": 24,
+          "y": 336.66666666666663
+        },
+        "type": "StaticText",
+        "parentIndex": 22,
+        "hittable": false,
+        "label": "Row 26",
+        "enabled": true,
+        "ref": "e24"
+      },
+      {
+        "depth": 5,
+        "index": 24,
+        "rect": {
+          "x": 24,
+          "width": 392,
+          "height": 24,
+          "y": 372.66666666666663
+        },
+        "type": "StaticText",
+        "parentIndex": 5,
+        "identifier": "row-27",
+        "hittable": false,
+        "label": "Row 27",
+        "enabled": true,
+        "ref": "e25"
+      },
+      {
+        "depth": 6,
+        "index": 25,
+        "rect": {
+          "x": 24,
+          "width": 392,
+          "height": 24,
+          "y": 372.66666666666663
+        },
+        "type": "StaticText",
+        "parentIndex": 24,
+        "hittable": false,
+        "label": "Row 27",
+        "enabled": true,
+        "ref": "e26"
+      },
+      {
+        "depth": 5,
+        "index": 26,
+        "rect": {
+          "x": 24,
+          "width": 392,
+          "height": 24,
+          "y": 408.66666666666663
+        },
+        "type": "StaticText",
+        "parentIndex": 5,
+        "identifier": "row-28",
+        "hittable": false,
+        "label": "Row 28",
+        "enabled": true,
+        "ref": "e27"
+      },
+      {
+        "depth": 6,
+        "index": 27,
+        "rect": {
+          "x": 24,
+          "width": 392,
+          "height": 24,
+          "y": 408.66666666666663
+        },
+        "type": "StaticText",
+        "parentIndex": 26,
+        "hittable": false,
+        "label": "Row 28",
+        "enabled": true,
+        "ref": "e28"
+      },
+      {
+        "depth": 5,
+        "index": 28,
+        "rect": {
+          "x": 24,
+          "width": 392,
+          "height": 24,
+          "y": 444.66666666666663
+        },
+        "type": "StaticText",
+        "parentIndex": 5,
+        "identifier": "row-29",
+        "hittable": false,
+        "label": "Row 29",
+        "enabled": true,
+        "ref": "e29"
+      },
+      {
+        "depth": 6,
+        "index": 29,
+        "rect": {
+          "x": 24,
+          "width": 392,
+          "height": 24,
+          "y": 444.66666666666663
+        },
+        "type": "StaticText",
+        "parentIndex": 28,
+        "hittable": false,
+        "label": "Row 29",
+        "enabled": true,
+        "ref": "e30"
+      },
+      {
+        "depth": 5,
+        "index": 30,
+        "rect": {
+          "x": 24,
+          "width": 392,
+          "height": 24,
+          "y": 480.66666666666663
+        },
+        "type": "StaticText",
+        "parentIndex": 5,
+        "identifier": "row-30",
+        "hittable": false,
+        "label": "Row 30",
+        "enabled": true,
+        "ref": "e31"
+      },
+      {
+        "depth": 6,
+        "index": 31,
+        "rect": {
+          "x": 24,
+          "width": 392,
+          "height": 24,
+          "y": 480.66666666666663
+        },
+        "type": "StaticText",
+        "parentIndex": 30,
+        "hittable": false,
+        "label": "Row 30",
+        "enabled": true,
+        "ref": "e32"
+      },
+      {
+        "type": "StaticText",
+        "enabled": true,
+        "rect": {
+          "x": 24,
+          "width": 392,
+          "height": 24,
+          "y": 516.6666666666666
+        },
+        "identifier": "row-31",
+        "label": "Row 31",
+        "depth": 5,
+        "hittable": false,
+        "index": 32,
+        "parentIndex": 5,
+        "ref": "e33"
+      },
+      {
+        "type": "StaticText",
+        "enabled": true,
+        "rect": {
+          "x": 24,
+          "width": 392,
+          "height": 24,
+          "y": 516.6666666666666
+        },
+        "label": "Row 31",
+        "depth": 6,
+        "hittable": false,
+        "index": 33,
+        "parentIndex": 32,
+        "ref": "e34"
+      },
+      {
+        "type": "StaticText",
+        "enabled": true,
+        "rect": {
+          "x": 24,
+          "width": 392,
+          "height": 24,
+          "y": 552.6666666666666
+        },
+        "identifier": "row-32",
+        "label": "Row 32",
+        "depth": 5,
+        "hittable": false,
+        "index": 34,
+        "parentIndex": 5,
+        "ref": "e35"
+      },
+      {
+        "type": "StaticText",
+        "enabled": true,
+        "rect": {
+          "x": 24,
+          "width": 392,
+          "height": 24,
+          "y": 552.6666666666666
+        },
+        "label": "Row 32",
+        "depth": 6,
+        "hittable": false,
+        "index": 35,
+        "parentIndex": 34,
+        "ref": "e36"
+      },
+      {
+        "type": "StaticText",
+        "enabled": true,
+        "rect": {
+          "x": 24,
+          "width": 392,
+          "height": 24,
+          "y": 588.6666666666666
+        },
+        "identifier": "row-33",
+        "label": "Row 33",
+        "depth": 5,
+        "hittable": false,
+        "index": 36,
+        "parentIndex": 5,
+        "ref": "e37"
+      },
+      {
+        "type": "StaticText",
+        "enabled": true,
+        "rect": {
+          "x": 24,
+          "width": 392,
+          "height": 24,
+          "y": 588.6666666666666
+        },
+        "label": "Row 33",
+        "depth": 6,
+        "hittable": false,
+        "index": 37,
+        "parentIndex": 36,
+        "ref": "e38"
+      },
+      {
+        "type": "StaticText",
+        "enabled": true,
+        "rect": {
+          "x": 24,
+          "width": 392,
+          "height": 24,
+          "y": 624.6666666666666
+        },
+        "identifier": "row-34",
+        "label": "Row 34",
+        "depth": 5,
+        "hittable": false,
+        "index": 38,
+        "parentIndex": 5,
+        "ref": "e39"
+      },
+      {
+        "type": "StaticText",
+        "enabled": true,
+        "rect": {
+          "x": 24,
+          "width": 392,
+          "height": 24,
+          "y": 624.6666666666666
+        },
+        "label": "Row 34",
+        "depth": 6,
+        "hittable": false,
+        "index": 39,
+        "parentIndex": 38,
+        "ref": "e40"
+      },
+      {
+        "type": "StaticText",
+        "enabled": true,
+        "rect": {
+          "x": 24,
+          "width": 392,
+          "height": 24,
+          "y": 660.6666666666666
+        },
+        "identifier": "row-35",
+        "label": "Row 35",
+        "depth": 5,
+        "hittable": false,
+        "index": 40,
+        "parentIndex": 5,
+        "ref": "e41"
+      },
+      {
+        "type": "StaticText",
+        "enabled": true,
+        "rect": {
+          "x": 24,
+          "width": 392,
+          "height": 24,
+          "y": 660.6666666666666
+        },
+        "label": "Row 35",
+        "depth": 6,
+        "hittable": false,
+        "index": 41,
+        "parentIndex": 40,
+        "ref": "e42"
+      },
+      {
+        "type": "StaticText",
+        "enabled": true,
+        "rect": {
+          "x": 24,
+          "width": 392,
+          "height": 24,
+          "y": 696.6666666666666
+        },
+        "identifier": "row-36",
+        "label": "Row 36",
+        "depth": 5,
+        "hittable": false,
+        "index": 42,
+        "parentIndex": 5,
+        "ref": "e43"
+      },
+      {
+        "type": "StaticText",
+        "enabled": true,
+        "rect": {
+          "x": 24,
+          "width": 392,
+          "height": 24,
+          "y": 696.6666666666666
+        },
+        "label": "Row 36",
+        "depth": 6,
+        "hittable": false,
+        "index": 43,
+        "parentIndex": 42,
+        "ref": "e44"
+      },
+      {
+        "type": "StaticText",
+        "enabled": true,
+        "rect": {
+          "x": 24,
+          "width": 392,
+          "height": 24,
+          "y": 732.6666666666666
+        },
+        "identifier": "row-37",
+        "label": "Row 37",
+        "depth": 5,
+        "hittable": false,
+        "index": 44,
+        "parentIndex": 5,
+        "ref": "e45"
+      },
+      {
+        "type": "StaticText",
+        "enabled": true,
+        "rect": {
+          "x": 24,
+          "width": 392,
+          "height": 24,
+          "y": 732.6666666666666
+        },
+        "label": "Row 37",
+        "depth": 6,
+        "hittable": false,
+        "index": 45,
+        "parentIndex": 44,
+        "ref": "e46"
+      },
+      {
+        "type": "StaticText",
+        "enabled": true,
+        "rect": {
+          "x": 24,
+          "width": 392,
+          "height": 24,
+          "y": 768.6666666666666
+        },
+        "identifier": "row-38",
+        "label": "Row 38",
+        "depth": 5,
+        "hittable": false,
+        "index": 46,
+        "parentIndex": 5,
+        "ref": "e47"
+      },
+      {
+        "type": "StaticText",
+        "enabled": true,
+        "rect": {
+          "x": 24,
+          "width": 392,
+          "height": 24,
+          "y": 768.6666666666666
+        },
+        "label": "Row 38",
+        "depth": 6,
+        "hittable": false,
+        "index": 47,
+        "parentIndex": 46,
+        "ref": "e48"
+      },
+      {
+        "type": "StaticText",
+        "enabled": true,
+        "rect": {
+          "x": 24,
+          "width": 392,
+          "height": 24,
+          "y": 804.6666666666666
+        },
+        "identifier": "row-39",
+        "label": "Row 39",
+        "depth": 5,
+        "hittable": false,
+        "index": 48,
+        "parentIndex": 5,
+        "ref": "e49"
+      },
+      {
+        "type": "StaticText",
+        "enabled": true,
+        "rect": {
+          "x": 24,
+          "width": 392,
+          "height": 24,
+          "y": 804.6666666666666
+        },
+        "label": "Row 39",
+        "depth": 6,
+        "hittable": false,
+        "index": 49,
+        "parentIndex": 48,
+        "ref": "e50"
+      },
+      {
+        "type": "StaticText",
+        "enabled": true,
+        "rect": {
+          "x": 24,
+          "width": 392,
+          "height": 24,
+          "y": 840.6666666666666
+        },
+        "identifier": "row-40",
+        "label": "Row 40",
+        "depth": 5,
+        "hittable": false,
+        "index": 50,
+        "parentIndex": 5,
+        "ref": "e51"
+      },
+      {
+        "type": "StaticText",
+        "enabled": true,
+        "rect": {
+          "x": 24,
+          "width": 392,
+          "height": 24,
+          "y": 840.6666666666666
+        },
+        "label": "Row 40",
+        "depth": 6,
+        "hittable": false,
+        "index": 51,
+        "parentIndex": 50,
+        "ref": "e52"
+      },
+      {
+        "type": "Button",
+        "enabled": true,
+        "rect": {
+          "x": 24,
+          "width": 87.66666412353516,
+          "height": 43.3333740234375,
+          "y": 888.6666666666666
+        },
+        "identifier": "list-done",
+        "label": "Done",
+        "depth": 5,
+        "hittable": false,
+        "index": 52,
+        "parentIndex": 5,
+        "ref": "e53"
+      },
+      {
+        "parentIndex": 4,
+        "index": 53,
+        "value": "100%",
+        "hittable": false,
+        "label": "Vertical scroll bar, 2 pages",
+        "enabled": true,
+        "rect": {
+          "x": 407,
+          "width": 30,
+          "height": 802.0000000000001,
+          "y": 92
+        },
+        "type": "Other",
+        "depth": 4,
+        "ref": "e54"
+      },
+      {
+        "parentIndex": 4,
+        "index": 54,
+        "value": "0%",
+        "hittable": false,
+        "label": "Horizontal scroll bar, 1 page",
+        "enabled": true,
+        "rect": {
+          "x": 62,
+          "width": 316,
+          "height": 30,
+          "y": 923.0000000000001
+        },
+        "type": "Other",
+        "depth": 4,
+        "ref": "e55"
+      }
+    ],
+    "truncated": false,
+    "appName": "dev.tappet.e2e",
+    "appBundleId": "dev.tappet.e2e",
+    "visibility": {
+      "partial": true,
+      "visibleNodeCount": 55,
+      "totalNodeCount": 55,
+      "reasons": ["scroll-hidden-above"]
+    },
+    "snapshotQuality": {
+      "state": "healthy",
+      "backend": "tree"
+    },
+    "snapshotDiagnostics": {
+      "stats": {
+        "count": 3,
+        "p50Ms": 117,
+        "p95Ms": 117,
+        "maxMs": 117,
+        "slowThresholdMs": 1500,
+        "platform": "ios",
+        "backends": {
+          "xctest": 3
+        }
+      }
+    },
+    "refsGeneration": 675979
+  }
+}

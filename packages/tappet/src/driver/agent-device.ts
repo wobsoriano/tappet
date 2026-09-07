@@ -83,7 +83,12 @@ export function createAgentDeviceDriver(
 
     capture: (options): Promise<RawSnapshot> =>
       run('snapshot', () =>
-        client.capture.snapshot({ ...where, forceFull: true, timeoutMs: options.timeoutMs }),
+        client.capture.snapshot({
+          ...where,
+          forceFull: true,
+          raw: options.tree === 'raw',
+          timeoutMs: options.timeoutMs,
+        }),
       ),
 
     screenshot: (path: string): Promise<string> =>

@@ -30,6 +30,7 @@ export type ActionRecord =
   | { readonly kind: 'fill'; readonly query: Query }
   | { readonly kind: 'typed'; readonly typed: Typed }
   | { readonly kind: 'scroll'; readonly direction: ScrollDirection }
+  | { readonly kind: 'scroll-into-view'; readonly query: Query }
   | { readonly kind: 'relaunch'; readonly app: string }
   | { readonly kind: 'dismiss-overlay' }
   | { readonly kind: 'screenshot'; readonly path: string };
@@ -70,6 +71,8 @@ export function renderTitle(record: ActionRecord): string {
       return renderTyped(record.typed);
     case 'scroll':
       return `scroll ${record.direction}`;
+    case 'scroll-into-view':
+      return `scrollIntoView ${describeQuery(record.query)}`;
     case 'relaunch':
       return `relaunch ${record.app}`;
     case 'dismiss-overlay':

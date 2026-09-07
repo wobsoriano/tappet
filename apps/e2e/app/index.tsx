@@ -5,9 +5,18 @@ import { useAuth, type Session } from '../src/auth';
 
 export default function Home() {
   const { session } = useAuth();
+  const router = useRouter();
   return (
     <View testID="home" style={styles.screen}>
       {content(session)}
+      <Pressable
+        testID="list-link"
+        accessibilityRole="button"
+        style={styles.button}
+        onPress={() => router.push('/list')}
+      >
+        <Text style={styles.buttonLabel}>List</Text>
+      </Pressable>
     </View>
   );
 }

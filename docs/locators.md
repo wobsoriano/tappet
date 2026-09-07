@@ -188,3 +188,17 @@ device.locator({
 ```
 
 A field can also be missing from the tree entirely. SwiftUI animates a control to near-zero opacity rather than removing it, and an element that faint is left out of the accessibility tree, so Clerk's email field appears only once something focuses it. Tap the placeholder, which is the node that carries the identifier while the field is hidden, and the field arrives.
+
+## A locator only ever resolves against what is on screen
+
+Every locator resolves against the driver's visible-first tree. A row a scroll container has moved out of the window is not in it, so a locator for that row resolves to nothing until something scrolls.
+
+Actions handle that themselves, and [Basics](basics.md) covers `scrollIntoView()`. What matters for a locator is that the tree the driver hands back for the whole screen is not the only tree it has. It can also hand back the full provider tree, and a scroll search reads that one to work out which way the target lies.
+
+The two trees disagree, and how much they disagree is a platform difference worth knowing.
+
+On iOS the provider tree is genuinely bigger. The sample app's forty-row list reports 58 nodes on the visible tree and 115 on the provider one, with every row present and the `Done` button at the bottom sitting at y 1540 against a scroll container whose own rect is 892 tall. A rect past the container that clips it is a target the container scrolled away, which is a fact rather than a hint.
+
+On Android the provider tree is bigger and no deeper. The same screen reports 43 nodes visible and 66 raw, and both carry the same 22 rows and neither carries `Done`. The extra nodes are wrapper views the visible tree collapses away. Nothing there places an off-screen row, so a search on Android falls back to the scroll container's own report that it is holding content above or below, and scrolls that way until the row arrives.
+
+Neither tree changes what a locator matches. A search reads the provider tree to decide where to go and always stops on the visible one, so no action ever pins a ref for a node a user cannot reach.

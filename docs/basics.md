@@ -38,6 +38,7 @@ await device.getByTestId('sign-in-link').tap();
 await device.getByTestId('email').fill('rob@example.com');
 await device.getByTestId('password').fill('hunter2', { secret: true });
 await device.getByTestId('menu').longPress(1500);
+await device.getByTestId('row-30').scrollIntoView();
 await device.scroll('down');
 await device.relaunch();
 await device.dismissDevOverlay();
@@ -77,9 +78,49 @@ await device.getByTestId('password').fill('hunter2', { secret: true });
 
 The step and the failure then say as little as they would about a field the platform marked secure. The nested step reports a count, and `fill-unconfirmed` names both values by length. The read back itself is unchanged, because a plain field really does hand its contents back, so a secret fill is still confirmed character for character rather than by length.
 
-`secret` is fill's option alone. `tap` and `longPress` take `{ timeout }` and nothing else.
+`secret` is fill's option alone. `tap`, `longPress` and `scrollIntoView` take `{ timeout }` and nothing else.
 
 `secret` covers what tappet says about the write. It does not cover what the device says about the field afterwards. The snapshot carries no mark for the field, so an assertion on that field's own value still prints what the field holds, and on Android a plain text field reports its contents as its accessibility name, which puts them in the screen listing. Assert on what the credential got you rather than on the credential.
+
+## Reaching a target below the fold
+
+`tap`, `fill` and `longPress` scroll to their own target. A locator that resolves to nothing is not immediately a failure, so before the action gives up it looks for the node off screen and scrolls toward it, inside the same action budget. Most tests never have to say anything about scrolling.
+
+```ts
+await device.getByTestId('list-done').tap();
+```
+
+`scrollIntoView()` does the scrolling and stops there, for when you want to see a node rather than act on it.
+
+```ts
+const row = device.getByTestId('row-30');
+await row.scrollIntoView();
+await expect(row).toBeVisible();
+```
+
+Both stop on the same condition. The locator resolves to exactly one node on the tree every other locator resolves against, which is the driver's visible-first view of the screen. A node the search found while looking is not a node a user can reach, so nothing acts on one.
+
+Which way to scroll comes from two places. The driver can hand back the full provider tree rather than its visible view, and on iOS that tree carries the rows a container has scrolled away. Their rects against the rect of the container clipping them say which way the target lies, so the search knows rather than guesses.
+
+Android's provider tree stops at the window. It carries more wrapper views than the visible one and not one extra row, so nothing there places an off-screen target. What is left is the scroll container itself, which reports that it is holding content above or below. The search scrolls that way and re-reads the screen until the target arrives. Same loop, weaker evidence.
+
+A search never reverses. Once it has scrolled one way, a hint pointing back the other way means the container ran out rather than that the target is behind it, so that is where the search stops. It also stops after twenty steps whatever the clock says, so a list that scrolls forever cannot spend the whole budget. A failure names the steps it took.
+
+```
+Locator never resolved to a node within 10000ms.
+
+Locator: getByTestId('row-99')
+Scrolled: 3 steps down
+```
+
+Every scroll a search takes is a nested step under the action, so a report shows what an action did to reach its target.
+
+```
+tap getByTestId('list-done')
+  scroll down
+```
+
+`device.scroll('down')` is still there for scrolling the screen without naming a target.
 
 `relaunch()` relaunches the app and waits for the ready gate again. `dismissDevOverlay()` clears the React Native development warning overlay. It is never automatic, because the overlay is a real node and hiding it by default would suppress a warning a test might want to assert on.
 
@@ -108,7 +149,7 @@ const screen = await device.screen();
 const labels = screen.nodes.filter((node) => node.role === 'button').map((node) => node.name);
 ```
 
-Each `ScreenNode` carries `ref`, `role`, `rawType`, `name`, `value`, `testId`, `rect`, `enabled`, `selected`, `focused`, its `index` among its siblings, a `parent` link, and its `depth`. The tree is frozen. It is one observation of the device, never refreshed in place, because every command the driver runs invalidates the refs a previous snapshot handed out.
+Each `ScreenNode` carries `ref`, `role`, `rawType`, `name`, `value`, `testId`, `rect`, `enabled`, `selected`, `focused`, `hiddenContentAbove`, `hiddenContentBelow`, its `index` among its siblings, a `parent` link, and its `depth`. The two hidden-content flags are the driver's own hints on a scroll container, and they are what a screen listing prints as `[more above]` and `[more below]`. The tree is frozen. It is one observation of the device, never refreshed in place, because every command the driver runs invalidates the refs a previous snapshot handed out.
 
 ## Screenshots
 

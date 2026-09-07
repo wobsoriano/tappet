@@ -40,6 +40,13 @@ export type ScreenNode = {
   readonly enabled: boolean;
   readonly selected: boolean;
   readonly focused: boolean;
+  /**
+   * The driver's discovery hints on a scroll container: content of its own it
+   * is holding out of the window. They are the only thing that says which way
+   * to scroll on a platform whose raw tree stops at the window.
+   */
+  readonly hiddenContentAbove: boolean;
+  readonly hiddenContentBelow: boolean;
 };
 
 /**
@@ -91,6 +98,8 @@ export type RawSnapshot = {
     readonly selected?: boolean;
     readonly focused?: boolean;
     readonly hintShowing?: boolean;
+    readonly hiddenContentAbove?: boolean;
+    readonly hiddenContentBelow?: boolean;
     readonly depth?: number;
     readonly parentIndex?: number;
     readonly inheritsLabel?: true;
@@ -191,6 +200,8 @@ export function parseScreen(raw: RawSnapshot, platform: Platform): Screen {
       enabled: source.enabled ?? true,
       selected: source.selected ?? false,
       focused: source.focused ?? false,
+      hiddenContentAbove: source.hiddenContentAbove ?? false,
+      hiddenContentBelow: source.hiddenContentBelow ?? false,
     };
     nodes.push(node);
     byIndex.set(node.index, node);
@@ -431,6 +442,8 @@ function renderNode(node: ScreenNode): string {
     node.selected ? 'selected' : null,
     node.focused ? 'focused' : null,
     node.enabled ? null : 'disabled',
+    node.hiddenContentAbove ? 'more above' : null,
+    node.hiddenContentBelow ? 'more below' : null,
   ]
     .filter((flag) => flag !== null)
     .map((flag) => ` [${flag}]`)

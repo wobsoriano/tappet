@@ -27,6 +27,7 @@ export type { DeviceChoice, ReadyQuery, ResolvedOptions, TappetOptions } from '.
 
 export type {
   Binding,
+  CaptureOptions,
   DeviceDriver,
   DeviceFailure,
   DeviceInfo,
@@ -34,6 +35,7 @@ export type {
   OpenRequest,
   ScrollDirection,
   Settled,
+  Tree,
 } from './driver.ts';
 
 export { TappetError } from './errors.ts';
@@ -49,6 +51,9 @@ export type { ProbeOptions, ProbeResult, ProbeTarget } from './probe.ts';
 
 export { describeQuery, normalizeText, textMatch } from './query.ts';
 export type { Filter, Query, Role, TextMatch } from './query.ts';
+
+export { createScrollSearch, directionToward } from './scroll.ts';
+export type { ScrollDevice, ScrollSearch, ScrollTrail } from './scroll.ts';
 
 export { renderTitle, silentSink } from './report.ts';
 export type { ActionRecord, ActionSink, EvidenceFile, StepOptions, Typed } from './report.ts';

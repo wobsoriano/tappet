@@ -1,0 +1,829 @@
+{
+  "success": true,
+  "data": {
+    "nodes": [
+      {
+        "index": 0,
+        "type": "android.widget.TextView",
+        "label": "9:12",
+        "value": "9:12",
+        "identifier": "com.android.systemui:id/clock",
+        "bundleId": "com.android.systemui",
+        "rect": {
+          "x": 42,
+          "y": 45,
+          "width": 104,
+          "height": 43
+        },
+        "enabled": true,
+        "visibleToUser": true,
+        "depth": 0,
+        "ref": "e1"
+      },
+      {
+        "index": 1,
+        "type": "android.widget.ImageView",
+        "label": "Android System notification: ",
+        "bundleId": "com.android.systemui",
+        "rect": {
+          "x": 146,
+          "y": 1,
+          "width": 58,
+          "height": 131
+        },
+        "enabled": true,
+        "visibleToUser": true,
+        "depth": 0,
+        "ref": "e2"
+      },
+      {
+        "index": 2,
+        "type": "android.widget.ImageView",
+        "label": "Wifi signal full.",
+        "identifier": "com.android.systemui:id/wifi_signal",
+        "bundleId": "com.android.systemui",
+        "rect": {
+          "x": 891,
+          "y": 46,
+          "width": 39,
+          "height": 39
+        },
+        "enabled": true,
+        "visibleToUser": true,
+        "depth": 0,
+        "ref": "e3"
+      },
+      {
+        "index": 3,
+        "type": "android.widget.FrameLayout",
+        "label": "T-Mobile, one bar.",
+        "identifier": "com.android.systemui:id/mobile_combo",
+        "bundleId": "com.android.systemui",
+        "rect": {
+          "x": 930,
+          "y": 37,
+          "width": 39,
+          "height": 58
+        },
+        "enabled": true,
+        "visibleToUser": true,
+        "depth": 0,
+        "ref": "e4"
+      },
+      {
+        "index": 4,
+        "type": "android.widget.ImageView",
+        "identifier": "com.android.systemui:id/mobile_signal",
+        "bundleId": "com.android.systemui",
+        "rect": {
+          "x": 930,
+          "y": 46,
+          "width": 39,
+          "height": 39
+        },
+        "enabled": true,
+        "visibleToUser": true,
+        "depth": 1,
+        "parentIndex": 3,
+        "ref": "e5"
+      },
+      {
+        "index": 5,
+        "type": "android.widget.LinearLayout",
+        "label": "Battery 100 percent.",
+        "identifier": "com.android.systemui:id/battery",
+        "bundleId": "com.android.systemui",
+        "rect": {
+          "x": 985,
+          "y": 49,
+          "width": 20,
+          "height": 34
+        },
+        "enabled": true,
+        "visibleToUser": true,
+        "depth": 0,
+        "ref": "e6"
+      },
+      {
+        "index": 6,
+        "type": "android.widget.ImageView",
+        "bundleId": "com.android.systemui",
+        "rect": {
+          "x": 985,
+          "y": 49,
+          "width": 20,
+          "height": 34
+        },
+        "enabled": true,
+        "visibleToUser": true,
+        "depth": 1,
+        "parentIndex": 5,
+        "ref": "e7"
+      },
+      {
+        "index": 7,
+        "type": "android.widget.FrameLayout",
+        "bundleId": "dev.tappet.e2e",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 1080,
+          "height": 2400
+        },
+        "enabled": true,
+        "visibleToUser": true,
+        "depth": 0,
+        "ref": "e8"
+      },
+      {
+        "index": 8,
+        "type": "android.widget.LinearLayout",
+        "bundleId": "dev.tappet.e2e",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 1080,
+          "height": 2400
+        },
+        "enabled": true,
+        "visibleToUser": true,
+        "depth": 1,
+        "parentIndex": 7,
+        "ref": "e9"
+      },
+      {
+        "index": 9,
+        "type": "android.widget.FrameLayout",
+        "bundleId": "dev.tappet.e2e",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 1080,
+          "height": 2400
+        },
+        "enabled": true,
+        "visibleToUser": true,
+        "depth": 2,
+        "parentIndex": 8,
+        "ref": "e10"
+      },
+      {
+        "index": 10,
+        "type": "android.widget.LinearLayout",
+        "identifier": "dev.tappet.e2e:id/action_bar_root",
+        "bundleId": "dev.tappet.e2e",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 1080,
+          "height": 2400
+        },
+        "enabled": true,
+        "visibleToUser": true,
+        "depth": 3,
+        "parentIndex": 9,
+        "ref": "e11"
+      },
+      {
+        "index": 11,
+        "type": "android.widget.FrameLayout",
+        "identifier": "android:id/content",
+        "bundleId": "dev.tappet.e2e",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 1080,
+          "height": 2400
+        },
+        "enabled": true,
+        "visibleToUser": true,
+        "depth": 4,
+        "parentIndex": 10,
+        "ref": "e12"
+      },
+      {
+        "index": 12,
+        "type": "android.widget.FrameLayout",
+        "bundleId": "dev.tappet.e2e",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 1080,
+          "height": 2400
+        },
+        "enabled": true,
+        "visibleToUser": true,
+        "depth": 5,
+        "parentIndex": 11,
+        "ref": "e13"
+      },
+      {
+        "index": 13,
+        "type": "android.view.ViewGroup",
+        "bundleId": "dev.tappet.e2e",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 1080,
+          "height": 2400
+        },
+        "enabled": true,
+        "visibleToUser": true,
+        "depth": 6,
+        "parentIndex": 12,
+        "ref": "e14"
+      },
+      {
+        "index": 14,
+        "type": "android.view.ViewGroup",
+        "bundleId": "dev.tappet.e2e",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 1080,
+          "height": 2400
+        },
+        "enabled": true,
+        "visibleToUser": true,
+        "depth": 7,
+        "parentIndex": 13,
+        "ref": "e15"
+      },
+      {
+        "index": 15,
+        "type": "android.view.ViewGroup",
+        "bundleId": "dev.tappet.e2e",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 1080,
+          "height": 2400
+        },
+        "enabled": true,
+        "visibleToUser": true,
+        "depth": 8,
+        "parentIndex": 14,
+        "ref": "e16"
+      },
+      {
+        "index": 16,
+        "type": "android.widget.ScrollView",
+        "bundleId": "dev.tappet.e2e",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 1080,
+          "height": 2400
+        },
+        "enabled": true,
+        "visibleToUser": true,
+        "depth": 9,
+        "parentIndex": 15,
+        "ref": "e17"
+      },
+      {
+        "index": 17,
+        "type": "android.view.ViewGroup",
+        "bundleId": "dev.tappet.e2e",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 1080,
+          "height": 2400
+        },
+        "enabled": true,
+        "visibleToUser": true,
+        "depth": 10,
+        "parentIndex": 16,
+        "ref": "e18"
+      },
+      {
+        "index": 18,
+        "type": "android.view.ViewGroup",
+        "bundleId": "dev.tappet.e2e",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 1080,
+          "height": 2400
+        },
+        "enabled": true,
+        "visibleToUser": true,
+        "depth": 11,
+        "parentIndex": 17,
+        "ref": "e19"
+      },
+      {
+        "index": 19,
+        "type": "android.view.ViewGroup",
+        "identifier": "list-screen",
+        "bundleId": "dev.tappet.e2e",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 1080,
+          "height": 2400
+        },
+        "enabled": true,
+        "visibleToUser": true,
+        "depth": 12,
+        "parentIndex": 18,
+        "ref": "e20"
+      },
+      {
+        "index": 20,
+        "type": "android.widget.ScrollView",
+        "identifier": "list",
+        "bundleId": "dev.tappet.e2e",
+        "rect": {
+          "x": 0,
+          "y": 168,
+          "width": 1080,
+          "height": 2232
+        },
+        "enabled": true,
+        "visibleToUser": true,
+        "hittable": true,
+        "depth": 12,
+        "parentIndex": 18,
+        "hiddenContentAbove": true,
+        "ref": "e21"
+      },
+      {
+        "index": 21,
+        "type": "android.view.ViewGroup",
+        "bundleId": "dev.tappet.e2e",
+        "rect": {
+          "x": 0,
+          "y": 168,
+          "width": 1080,
+          "height": 2232
+        },
+        "enabled": true,
+        "visibleToUser": true,
+        "depth": 13,
+        "parentIndex": 20,
+        "ref": "e22"
+      },
+      {
+        "index": 22,
+        "type": "android.widget.TextView",
+        "label": "Row 21",
+        "value": "Row 21",
+        "identifier": "row-21",
+        "bundleId": "dev.tappet.e2e",
+        "rect": {
+          "x": 63,
+          "y": 168,
+          "width": 954,
+          "height": 38
+        },
+        "enabled": true,
+        "visibleToUser": true,
+        "depth": 14,
+        "parentIndex": 21,
+        "ref": "e23"
+      },
+      {
+        "index": 23,
+        "type": "android.widget.TextView",
+        "label": "Row 22",
+        "value": "Row 22",
+        "identifier": "row-22",
+        "bundleId": "dev.tappet.e2e",
+        "rect": {
+          "x": 63,
+          "y": 238,
+          "width": 954,
+          "height": 71
+        },
+        "enabled": true,
+        "visibleToUser": true,
+        "depth": 14,
+        "parentIndex": 21,
+        "ref": "e24"
+      },
+      {
+        "index": 24,
+        "type": "android.widget.TextView",
+        "label": "Row 23",
+        "value": "Row 23",
+        "identifier": "row-23",
+        "bundleId": "dev.tappet.e2e",
+        "rect": {
+          "x": 63,
+          "y": 340,
+          "width": 954,
+          "height": 71
+        },
+        "enabled": true,
+        "visibleToUser": true,
+        "depth": 14,
+        "parentIndex": 21,
+        "ref": "e25"
+      },
+      {
+        "index": 25,
+        "type": "android.widget.TextView",
+        "label": "Row 24",
+        "value": "Row 24",
+        "identifier": "row-24",
+        "bundleId": "dev.tappet.e2e",
+        "rect": {
+          "x": 63,
+          "y": 443,
+          "width": 954,
+          "height": 71
+        },
+        "enabled": true,
+        "visibleToUser": true,
+        "depth": 14,
+        "parentIndex": 21,
+        "ref": "e26"
+      },
+      {
+        "index": 26,
+        "type": "android.widget.TextView",
+        "label": "Row 25",
+        "value": "Row 25",
+        "identifier": "row-25",
+        "bundleId": "dev.tappet.e2e",
+        "rect": {
+          "x": 63,
+          "y": 545,
+          "width": 954,
+          "height": 71
+        },
+        "enabled": true,
+        "visibleToUser": true,
+        "depth": 14,
+        "parentIndex": 21,
+        "ref": "e27"
+      },
+      {
+        "index": 27,
+        "type": "android.widget.TextView",
+        "label": "Row 26",
+        "value": "Row 26",
+        "identifier": "row-26",
+        "bundleId": "dev.tappet.e2e",
+        "rect": {
+          "x": 63,
+          "y": 648,
+          "width": 954,
+          "height": 71
+        },
+        "enabled": true,
+        "visibleToUser": true,
+        "depth": 14,
+        "parentIndex": 21,
+        "ref": "e28"
+      },
+      {
+        "index": 28,
+        "type": "android.widget.TextView",
+        "label": "Row 27",
+        "value": "Row 27",
+        "identifier": "row-27",
+        "bundleId": "dev.tappet.e2e",
+        "rect": {
+          "x": 63,
+          "y": 750,
+          "width": 954,
+          "height": 71
+        },
+        "enabled": true,
+        "visibleToUser": true,
+        "depth": 14,
+        "parentIndex": 21,
+        "ref": "e29"
+      },
+      {
+        "index": 29,
+        "type": "android.widget.TextView",
+        "label": "Row 28",
+        "value": "Row 28",
+        "identifier": "row-28",
+        "bundleId": "dev.tappet.e2e",
+        "rect": {
+          "x": 63,
+          "y": 853,
+          "width": 954,
+          "height": 71
+        },
+        "enabled": true,
+        "visibleToUser": true,
+        "depth": 14,
+        "parentIndex": 21,
+        "ref": "e30"
+      },
+      {
+        "index": 30,
+        "type": "android.widget.TextView",
+        "label": "Row 29",
+        "value": "Row 29",
+        "identifier": "row-29",
+        "bundleId": "dev.tappet.e2e",
+        "rect": {
+          "x": 63,
+          "y": 955,
+          "width": 954,
+          "height": 71
+        },
+        "enabled": true,
+        "visibleToUser": true,
+        "depth": 14,
+        "parentIndex": 21,
+        "ref": "e31"
+      },
+      {
+        "index": 31,
+        "type": "android.widget.TextView",
+        "label": "Row 30",
+        "value": "Row 30",
+        "identifier": "row-30",
+        "bundleId": "dev.tappet.e2e",
+        "rect": {
+          "x": 63,
+          "y": 1058,
+          "width": 954,
+          "height": 71
+        },
+        "enabled": true,
+        "visibleToUser": true,
+        "depth": 14,
+        "parentIndex": 21,
+        "ref": "e32"
+      },
+      {
+        "index": 32,
+        "type": "android.widget.TextView",
+        "label": "Row 31",
+        "value": "Row 31",
+        "identifier": "row-31",
+        "bundleId": "dev.tappet.e2e",
+        "rect": {
+          "x": 63,
+          "y": 1160,
+          "width": 954,
+          "height": 71
+        },
+        "enabled": true,
+        "visibleToUser": true,
+        "depth": 14,
+        "parentIndex": 21,
+        "ref": "e33"
+      },
+      {
+        "index": 33,
+        "type": "android.widget.TextView",
+        "label": "Row 32",
+        "value": "Row 32",
+        "identifier": "row-32",
+        "bundleId": "dev.tappet.e2e",
+        "rect": {
+          "x": 63,
+          "y": 1263,
+          "width": 954,
+          "height": 71
+        },
+        "enabled": true,
+        "visibleToUser": true,
+        "depth": 14,
+        "parentIndex": 21,
+        "ref": "e34"
+      },
+      {
+        "index": 34,
+        "type": "android.widget.TextView",
+        "label": "Row 33",
+        "value": "Row 33",
+        "identifier": "row-33",
+        "bundleId": "dev.tappet.e2e",
+        "rect": {
+          "x": 63,
+          "y": 1365,
+          "width": 954,
+          "height": 71
+        },
+        "enabled": true,
+        "visibleToUser": true,
+        "depth": 14,
+        "parentIndex": 21,
+        "ref": "e35"
+      },
+      {
+        "index": 35,
+        "type": "android.widget.TextView",
+        "label": "Row 34",
+        "value": "Row 34",
+        "identifier": "row-34",
+        "bundleId": "dev.tappet.e2e",
+        "rect": {
+          "x": 63,
+          "y": 1468,
+          "width": 954,
+          "height": 71
+        },
+        "enabled": true,
+        "visibleToUser": true,
+        "depth": 14,
+        "parentIndex": 21,
+        "ref": "e36"
+      },
+      {
+        "index": 36,
+        "type": "android.widget.TextView",
+        "label": "Row 35",
+        "value": "Row 35",
+        "identifier": "row-35",
+        "bundleId": "dev.tappet.e2e",
+        "rect": {
+          "x": 63,
+          "y": 1570,
+          "width": 954,
+          "height": 71
+        },
+        "enabled": true,
+        "visibleToUser": true,
+        "depth": 14,
+        "parentIndex": 21,
+        "ref": "e37"
+      },
+      {
+        "index": 37,
+        "type": "android.widget.TextView",
+        "label": "Row 36",
+        "value": "Row 36",
+        "identifier": "row-36",
+        "bundleId": "dev.tappet.e2e",
+        "rect": {
+          "x": 63,
+          "y": 1673,
+          "width": 954,
+          "height": 71
+        },
+        "enabled": true,
+        "visibleToUser": true,
+        "depth": 14,
+        "parentIndex": 21,
+        "ref": "e38"
+      },
+      {
+        "index": 38,
+        "type": "android.widget.TextView",
+        "label": "Row 37",
+        "value": "Row 37",
+        "identifier": "row-37",
+        "bundleId": "dev.tappet.e2e",
+        "rect": {
+          "x": 63,
+          "y": 1775,
+          "width": 954,
+          "height": 71
+        },
+        "enabled": true,
+        "visibleToUser": true,
+        "depth": 14,
+        "parentIndex": 21,
+        "ref": "e39"
+      },
+      {
+        "index": 39,
+        "type": "android.widget.TextView",
+        "label": "Row 38",
+        "value": "Row 38",
+        "identifier": "row-38",
+        "bundleId": "dev.tappet.e2e",
+        "rect": {
+          "x": 63,
+          "y": 1878,
+          "width": 954,
+          "height": 71
+        },
+        "enabled": true,
+        "visibleToUser": true,
+        "depth": 14,
+        "parentIndex": 21,
+        "ref": "e40"
+      },
+      {
+        "index": 40,
+        "type": "android.widget.TextView",
+        "label": "Row 39",
+        "value": "Row 39",
+        "identifier": "row-39",
+        "bundleId": "dev.tappet.e2e",
+        "rect": {
+          "x": 63,
+          "y": 1980,
+          "width": 954,
+          "height": 71
+        },
+        "enabled": true,
+        "visibleToUser": true,
+        "depth": 14,
+        "parentIndex": 21,
+        "ref": "e41"
+      },
+      {
+        "index": 41,
+        "type": "android.widget.TextView",
+        "label": "Row 40",
+        "value": "Row 40",
+        "identifier": "row-40",
+        "bundleId": "dev.tappet.e2e",
+        "rect": {
+          "x": 63,
+          "y": 2083,
+          "width": 954,
+          "height": 71
+        },
+        "enabled": true,
+        "visibleToUser": true,
+        "depth": 14,
+        "parentIndex": 21,
+        "ref": "e42"
+      },
+      {
+        "index": 42,
+        "type": "android.widget.Button",
+        "label": "Done",
+        "identifier": "list-done",
+        "bundleId": "dev.tappet.e2e",
+        "rect": {
+          "x": 63,
+          "y": 2217,
+          "width": 224,
+          "height": 120
+        },
+        "enabled": true,
+        "visibleToUser": true,
+        "hittable": true,
+        "depth": 14,
+        "parentIndex": 21,
+        "ref": "e43"
+      },
+      {
+        "index": 43,
+        "type": "android.widget.TextView",
+        "label": "Done",
+        "value": "Done",
+        "bundleId": "dev.tappet.e2e",
+        "rect": {
+          "x": 126,
+          "y": 2248,
+          "width": 98,
+          "height": 57
+        },
+        "enabled": true,
+        "visibleToUser": true,
+        "depth": 15,
+        "parentIndex": 42,
+        "ref": "e44"
+      }
+    ],
+    "truncated": false,
+    "appName": "dev.tappet.e2e",
+    "appBundleId": "dev.tappet.e2e",
+    "visibility": {
+      "partial": true,
+      "visibleNodeCount": 44,
+      "totalNodeCount": 44,
+      "reasons": ["scroll-hidden-above"]
+    },
+    "androidSnapshot": {
+      "backend": "android-helper",
+      "helperVersion": "0.20.10",
+      "helperApiVersion": "2",
+      "helperTransport": "persistent-session",
+      "helperSessionReused": true,
+      "installReason": "current",
+      "waitForIdleTimeoutMs": 500,
+      "waitForIdleQuietMs": 100,
+      "timeoutMs": 2000,
+      "maxDepth": 128,
+      "maxNodes": 5000,
+      "rootPresent": true,
+      "captureMode": "interactive-windows",
+      "windowCount": 2,
+      "nodeCount": 89,
+      "helperTruncated": false,
+      "elapsedMs": 251
+    },
+    "snapshotDiagnostics": {
+      "stats": {
+        "count": 5,
+        "p50Ms": 219,
+        "p95Ms": 1045,
+        "maxMs": 1045,
+        "slowThresholdMs": 1500,
+        "platform": "android",
+        "backends": {
+          "android": 5
+        }
+      }
+    },
+    "refsGeneration": 568216
+  }
+}

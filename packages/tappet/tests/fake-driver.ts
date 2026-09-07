@@ -1,9 +1,11 @@
 import type {
   Binding,
+  CaptureOptions,
   DeviceDriver,
   DeviceFailure,
   DeviceInfo,
   OpenRequest,
+  ScrollDirection,
   SettleOptions,
 } from '../src/core/driver.ts';
 import { TappetError } from '../src/core/errors.ts';
@@ -18,6 +20,14 @@ export type FakeDriver = DeviceDriver & {
   /** Each entry is consumed by one `open`. A `DeviceFailure` is thrown, anything else succeeds. */
   readonly openOutcomes: DeviceFailure[];
   screens: FixtureName[];
+  /** What a `raw: true` capture returns. Consumed like `screens`, and empty means the driver has no raw tree to offer. */
+  rawScreens: FixtureName[];
+  /**
+   * What each scroll leaves on screen, one entry per scroll. A scroll past the
+   * end of this queue changes nothing, which is what a container already at
+   * its end does.
+   */
+  onScroll: FixtureName[];
   /** Fails the next N mutations with a stale-ref rejection, the way a superseded generation does. */
   staleRefs: number;
   /**
@@ -44,7 +54,11 @@ export type FakeDriver = DeviceDriver & {
   contentsBecomeLabel: boolean;
 };
 
-export function createFakeDriver(options?: { screens?: FixtureName[] }): FakeDriver {
+export function createFakeDriver(options?: {
+  screens?: FixtureName[];
+  rawScreens?: FixtureName[];
+  onScroll?: FixtureName[];
+}): FakeDriver {
   const calls: string[] = [];
   const openOutcomes: DeviceFailure[] = [];
   const fillOutcomes: string[] = [];
@@ -58,6 +72,8 @@ export function createFakeDriver(options?: { screens?: FixtureName[] }): FakeDri
     revertAfterMs: 0,
     revertTo: '',
     screens: options?.screens ?? ['home'],
+    rawScreens: options?.rawScreens ?? [],
+    onScroll: options?.onScroll ?? [],
     staleRefs: 0,
     contentsBecomeLabel: false,
     devices: [
@@ -83,16 +99,17 @@ export function createFakeDriver(options?: { screens?: FixtureName[] }): FakeDri
       });
     },
 
-    capture: (): Promise<RawSnapshot> => {
-      calls.push('capture');
+    capture: (options: CaptureOptions): Promise<RawSnapshot> => {
+      calls.push(options.tree === 'raw' ? 'capture raw' : 'capture');
       if (pendingRevert !== null && Date.now() >= pendingRevert.at) {
         written.set(pendingRevert.key, pendingRevert.value);
         pendingRevert = null;
       }
-      const name =
-        driver.screens.length > 1
-          ? (driver.screens.shift() ?? 'home')
-          : (driver.screens[0] ?? 'home');
+      const queue = options.tree === 'raw' ? driver.rawScreens : driver.screens;
+      // An empty raw queue is a driver with no raw tree to offer, which is what a
+      // platform whose raw capture stops at the window amounts to.
+      if (queue.length === 0) return Promise.resolve({ nodes: [] });
+      const name = queue.length > 1 ? (queue.shift() ?? 'home') : (queue[0] ?? 'home');
       const raw = loadRaw(name);
       if (written.size === 0) return Promise.resolve(raw);
       return Promise.resolve({
@@ -132,8 +149,10 @@ export function createFakeDriver(options?: { screens?: FixtureName[] }): FakeDri
       }
       return settled;
     },
-    scroll: (direction) => {
+    scroll: (direction: ScrollDirection) => {
       calls.push(`scroll ${direction}`);
+      const next = driver.onScroll.shift();
+      if (next !== undefined) driver.screens = [next];
       return Promise.resolve();
     },
     dismissDevOverlay: () => {
