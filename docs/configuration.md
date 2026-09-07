@@ -62,6 +62,7 @@ A skipped test opens no session, because tappet's `device` fixture is never set 
 | `app`               | required       | bundle id or package name, never a path to an artifact                                  |
 | `readyWhen`         | required       | the locator that means the bundle loaded. `{ text }`, `{ testId }`, or `{ role, name }` |
 | `deviceName`        | first booted   | device name. An array is a pool indexed by Playwright's `parallelIndex`                 |
+| `launchUrl`         | none           | a deep link to launch the app with, on the launch and on every relaunch                 |
 | `relaunch`          | `'per-test'`   | or `'per-worker'`                                                                       |
 | `onDeviceInUse`     | `'fail'`       | or `'reclaim'`. Leftovers carrying tappet's own prefix are always reclaimed             |
 | `settleQuietMs`     | `500`          | the quiet window that ends the post-action settle                                       |
@@ -79,6 +80,24 @@ use: { app: 'com.example.app', readyWhen: { testId: 'home' }, actionTimeout: 15_
 ```
 
 The value is the whole budget for one action, so waiting for the target and waiting for the screen to go quiet afterwards share it.
+
+## Launching through a deep link
+
+`launchUrl` opens the app with a URL rather than plainly, on the worker's launch and on every relaunch after it. Leave it unset for a release build, which has nothing to deep link into.
+
+An Expo development client needs it. That build is a shell around a server picker, so launching it plainly lands on its own "DEVELOPMENT SERVERS" list rather than on your app, and the ready gate times out reporting that screen. The URL that skips the picker names the Metro server to load.
+
+```ts
+use: {
+  app: 'com.example.app',
+  readyWhen: { text: 'Welcome' },
+  launchUrl: 'com.example.app://expo-development-client/?url=http://localhost:8081',
+}
+```
+
+The scheme has to be one only the app under test registers. An Expo app registers its `scheme` from `app.json` as well as its bundle id, and the `scheme` is the one a second build of the same app also claims. Two builds claiming it means the system picks which one receives the link, and it may not be the one `app` names, so the bundle id is the safer scheme. `xcrun simctl listapps <udid>` lists what is installed if you need to check.
+
+`localhost` works against a simulator, which shares the host's network. A physical device needs the host's address on the LAN.
 
 ## `readyWhen` is required
 

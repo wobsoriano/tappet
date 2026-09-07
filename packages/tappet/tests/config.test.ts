@@ -15,6 +15,14 @@ test('parse fills every default', () => {
   expect(options.evidence).toBe('on-failure');
   expect(options.sessionPrefix).toBe('tappet');
   expect(options.device).toEqual({ kind: 'first-booted' });
+  expect(options.launchUrl).toBe(null);
+});
+
+test('launchUrl passes through as given, and an empty one names itself', () => {
+  const url = 'com.example.app://expo-development-client/?url=http://localhost:8081';
+  expect(parseDeviceOptions({ ...minimal, launchUrl: url }).launchUrl).toBe(url);
+  expect(() => parseDeviceOptions({ ...minimal, launchUrl: '' })).toThrow(/use\.launchUrl/);
+  expect(() => parseDeviceOptions({ ...minimal, launchUrl: 8081 })).toThrow(/use\.launchUrl/);
 });
 
 test('the unset option fixture defaults are rejected, one required key at a time', () => {

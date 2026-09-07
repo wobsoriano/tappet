@@ -132,7 +132,7 @@ async function openWithRecovery(
   name: string,
   deviceName: string | null,
 ): Promise<Binding> {
-  const request = { app: options.app, relaunch: true };
+  const request = { app: options.app, relaunch: true, url: options.launchUrl };
   try {
     return await driver.open(request);
   } catch (error) {
@@ -243,7 +243,7 @@ function createSession(
     relaunch: (sink) =>
       sink.step(renderTitle({ kind: 'relaunch', app: options.app }), async () => {
         // Relaunching with the session's own selection is what keeps `open` legal on an already-bound session.
-        await run(() => driver.open({ app: options.app, relaunch: true }));
+        await run(() => driver.open({ app: options.app, relaunch: true, url: options.launchUrl }));
         if (options.dismissDevOverlay) await run(() => driver.dismissDevOverlay());
         await awaitReady(Date.now() + options.launchTimeout);
       }),

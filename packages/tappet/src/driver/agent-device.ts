@@ -64,6 +64,7 @@ export function createAgentDeviceDriver(
           ...where,
           app: request.app,
           relaunch: request.relaunch,
+          ...(request.url === null ? {} : { url: request.url }),
         });
         return {
           session: result.session,

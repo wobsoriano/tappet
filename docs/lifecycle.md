@@ -28,6 +28,8 @@ Each action is therefore one unit. Capture a screen, resolve the locator, pin th
 
 `device.relaunch()` does the same thing on demand inside a test.
 
+Every one of those launches carries `launchUrl` when it is set, the worker's first launch included, so a development client returns to your app rather than to its server picker between tests. See [Configuration](configuration.md) for the URL shape.
+
 ## DEVICE_IN_USE
 
 A device claim is a file in the `agent-device` state directory, and it outlives the process that made it. A claim made in another workspace does not show up in a session listing run from yours, but it still blocks a launch.

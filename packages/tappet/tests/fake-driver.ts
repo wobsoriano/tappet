@@ -82,7 +82,8 @@ export function createFakeDriver(options?: {
     },
 
     open: (request: OpenRequest): Promise<Binding> => {
-      calls.push(`open ${request.app} relaunch=${String(request.relaunch)}`);
+      const url = request.url === null ? '' : ` url=${request.url}`;
+      calls.push(`open ${request.app} relaunch=${String(request.relaunch)}${url}`);
       const failure = openOutcomes.shift();
       if (failure !== undefined)
         return Promise.reject(new TappetError({ kind: 'driver', command: 'open', failure }));

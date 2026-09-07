@@ -23,6 +23,8 @@ export type DeviceInfo = {
 export type OpenRequest = {
   readonly app: string;
   readonly relaunch: boolean;
+  /** A deep link to launch the app with, or null to launch it plainly. */
+  readonly url: string | null;
 };
 
 /** Proof that a device is bound. Only `open` mints one, so a believed binding cannot drift from a real one. */

@@ -22,6 +22,13 @@ export type TappetOptions = {
   readyWhen: ReadyQuery | undefined;
   /** Device name. An array is a pool indexed by the runner's worker slot. Unset means the first booted device. */
   deviceName: string | readonly string[] | undefined;
+  /**
+   * A deep link to open the app with, on the launch and on every relaunch.
+   * Unset launches the app plainly, which is what a release build wants. An
+   * Expo development client needs one, because launching it plainly shows its
+   * own server picker rather than the app.
+   */
+  launchUrl: string | undefined;
   /** @default 'per-test' */
   relaunch: 'per-test' | 'per-worker';
   /** @default 'fail'. Sessions carrying this library's own prefix are always reclaimed. */
@@ -43,16 +50,18 @@ export type TappetOptions = {
  * to the same values, so a caller that reaches the parser without the fixtures,
  * such as `preflight`, resolves identically.
  */
-export const TAPPET_DEFAULTS: Omit<TappetOptions, 'platform' | 'app' | 'readyWhen' | 'deviceName'> =
-  {
-    relaunch: 'per-test',
-    onDeviceInUse: 'fail',
-    settleQuietMs: 500,
-    launchTimeout: 90_000,
-    dismissDevOverlay: false,
-    evidence: 'on-failure',
-    sessionPrefix: 'tappet',
-  };
+export const TAPPET_DEFAULTS: Omit<
+  TappetOptions,
+  'platform' | 'app' | 'readyWhen' | 'deviceName' | 'launchUrl'
+> = {
+  relaunch: 'per-test',
+  onDeviceInUse: 'fail',
+  settleQuietMs: 500,
+  launchTimeout: 90_000,
+  dismissDevOverlay: false,
+  evidence: 'on-failure',
+  sessionPrefix: 'tappet',
+};
 
 const DEFAULT_ACTION_TIMEOUT_MS = 10_000;
 
@@ -78,6 +87,7 @@ export type ResolvedOptions = {
   readonly app: string;
   readonly readyWhen: Query;
   readonly device: DeviceChoice;
+  readonly launchUrl: string | null;
   readonly relaunch: 'per-test' | 'per-worker';
   readonly onDeviceInUse: 'fail' | 'reclaim';
   readonly actionTimeout: number;
@@ -126,6 +136,7 @@ export function parseDeviceOptions(raw: unknown): ResolvedOptions {
     app,
     readyWhen: parseReadyWhen(read(raw, 'readyWhen')),
     device: parseDeviceChoice(read(raw, 'deviceName')),
+    launchUrl: optionalText('launchUrl', read(raw, 'launchUrl')),
     relaunch: oneOf(
       'relaunch',
       read(raw, 'relaunch'),
@@ -287,6 +298,13 @@ function positive(field: string, value: unknown, fallback: number): number {
 function flag(field: string, value: unknown, fallback: boolean): boolean {
   if (value === undefined) return fallback;
   if (typeof value !== 'boolean') throw fail(field, 'must be true or false.');
+  return value;
+}
+
+function optionalText(field: string, value: unknown): string | null {
+  if (value === undefined) return null;
+  if (typeof value !== 'string' || value.length === 0)
+    throw fail(field, 'must be a non-empty string.');
   return value;
 }
 

@@ -40,6 +40,17 @@ test('openSession reclaims a leftover of its own name, opens, and holds for the 
   expect(session.state().phase).toBe('ready');
 });
 
+test('launchUrl rides on the launch and on every relaunch', async () => {
+  const launchUrl = 'com.example.app://expo-development-client/?url=http://localhost:8081';
+  const driver = createFakeDriver();
+  const session = await open(driver, { launchUrl });
+  await session.relaunch(silentSink);
+  expect(driver.calls.filter((call) => call.startsWith('open'))).toEqual([
+    `open com.wobsoriano.awesometodo relaunch=true url=${launchUrl}`,
+    `open com.wobsoriano.awesometodo relaunch=true url=${launchUrl}`,
+  ]);
+});
+
 test('a device held by one of our own leftovers is reclaimed and the open retried once', async () => {
   const driver = createFakeDriver();
   driver.openOutcomes.push({
