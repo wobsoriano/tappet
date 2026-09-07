@@ -170,12 +170,18 @@ importers:
       '@types/react':
         specifier: ~19.2.2
         version: 19.2.18
+      ai:
+        specifier: ^7.0.93
+        version: 7.0.93
       touchpress:
         specifier: workspace:*
         version: link:../../packages/touchpress
       typescript:
         specifier: ~6.0.3
         version: 6.0.3
+      zod:
+        specifier: ^4.5.4
+        version: 4.5.4
 
   packages/touchpress:
     dependencies:

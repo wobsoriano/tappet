@@ -28,6 +28,7 @@ export default defineConfig<TouchpressOptions>({
   use: {
     app: 'dev.touchpress.e2e',
     readyWhen: { testId: 'home' },
+    aiModel: process.env['AI_MODEL'],
   },
   projects: [
     // One setup project per platform, off the same spec. A Playwright setup project has a single
