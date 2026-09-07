@@ -1,9 +1,9 @@
 # tappet
 
 > [!WARNING]
-> tappet is experimental. The API will change between minor versions, so pin the version you install. All testing so far has been on an iOS simulator and an Android emulator. Physical devices and cloud device farms are untested.
+> tappet is highly experimental. Use at your own risk.
 
-tappet runs end-to-end tests for mobile apps on the Playwright test runner. It drives a booted simulator or emulator through Callstack [`agent-device`](https://agent-device.dev/) and launches no browser. A failing test prints the screen it was looking at and attaches a screenshot and a tree listing to the HTML report.
+tappet runs e2e tests for mobile apps on the Playwright test runner. It drives a booted simulator or emulator through Callstack [`agent-device`](https://agent-device.dev/).
 
 ```ts
 import { expect, test } from 'tappet';
@@ -20,13 +20,6 @@ test('the right credentials land on the profile', async ({ app }) => {
 ```
 
 ## Usage
-
-### Requirements
-
-- Node 22.12 or newer. It can `require` ES modules, so a CommonJS project such as an Expo app keeps plain `.spec.ts` files.
-- A booted simulator or emulator. Boot it yourself or with `agent-device device boot`.
-- Your app already installed on that device. tappet never builds, installs, or boots anything.
-- Your bundler running if the build needs one. For a React Native development build that is Metro on port 8081, and nothing else may hold that port.
 
 ### Install
 
