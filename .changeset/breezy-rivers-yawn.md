@@ -1,5 +1,0 @@
----
-'touchpress': patch
----
-
-Initial release
