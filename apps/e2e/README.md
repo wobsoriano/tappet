@@ -1,6 +1,6 @@
-# tappet-e2e
+# tangere-e2e
 
-The app `tappet` is tested against. An Expo SDK 57 project with expo-router, four screens, and a fake sign-in held in React state. Nothing here is a product. Every screen exists so a spec can name something on it.
+The app `tangere` is tested against. An Expo SDK 57 project with expo-router, four screens, and a fake sign-in held in React state. Nothing here is a product. Every screen exists so a spec can name something on it.
 
 ## Routes
 
@@ -51,7 +51,7 @@ The password field is deliberately not `secureTextEntry`. iOS reads a secure fie
 The library must be built first, because this app imports it by package name and resolves its `dist`.
 
 ```sh
-pnpm --filter tappet build     # or: vp run -r build, from the repo root
+pnpm --filter tangere build     # or: vp run -r build, from the repo root
 ```
 
 Then, from this directory, build and install the app on a booted simulator and start Metro. The build takes several minutes the first time.
@@ -80,11 +80,11 @@ pnpm test:e2e --project=ios
 pnpm test:e2e --project=android
 ```
 
-A `setup-ios` or `setup-android` project runs first and checks that the device the project names is booted. `TAPPET_IOS_DEVICE` and `TAPPET_ANDROID_DEVICE` override those names, which is how CI points the suite at whatever its runner booted.
+A `setup-ios` or `setup-android` project runs first and checks that the device the project names is booted. `TANGERE_IOS_DEVICE` and `TANGERE_ANDROID_DEVICE` override those names, which is how CI points the suite at whatever its runner booted.
 
 ## The specs
 
-`e2e/` holds them. They are `.mts` rather than `.ts` only because this app consumes tappet through a workspace link. Playwright transpiles the linked `dist` as source and then cannot `require` `agent-device`, which ships only ES modules. A project that installs tappet from npm keeps plain `.spec.ts` files, which was verified with a packed tarball on Node 22.
+`e2e/` holds them. They are `.mts` rather than `.ts` only because this app consumes tangere through a workspace link. Playwright transpiles the linked `dist` as source and then cannot `require` `agent-device`, which ships only ES modules. A project that installs tangere from npm keeps plain `.spec.ts` files, which was verified with a packed tarball on Node 22.
 
 - `home.spec.mts` reads the signed-out home through `getByRole`.
 - `login.spec.mts` covers a rejected attempt, then a successful one through the pending state to the profile.
@@ -92,4 +92,4 @@ A `setup-ios` or `setup-android` project runs first and checks that the device t
 - `relaunch.spec.mts` signs in in one test and expects the next test to start signed out, which is what per-test relaunch buys.
 - `list.spec.mts` scrolls a row into view and taps the button below the fold on a forty-row list.
 - `screenshot.spec.mts` compares the home screen and the Sign in button against committed baselines.
-- `failing.spec.mts` fails on purpose so the failure message and the `screen.png` and `screen.txt` attachments can be read. It is excluded from the default run. Include it with `TAPPET_INCLUDE_FAILING=1`.
+- `failing.spec.mts` fails on purpose so the failure message and the `screen.png` and `screen.txt` attachments can be read. It is excluded from the default run. Include it with `TANGERE_INCLUDE_FAILING=1`.

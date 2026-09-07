@@ -1,6 +1,6 @@
-import { preflight, setupTest } from 'tappet';
+import { preflight, setupTest } from 'tangere';
 
-// `setupTest` carries tappet's options and none of its fixtures. Tappet's `test` would open a
+// `setupTest` carries tangere's options and none of its fixtures. Tangere's `test` would open a
 // device session through its auto `device` fixture, before preflight has checked the device.
 setupTest(
   'the project names a booted device',

@@ -1,5 +1,5 @@
 ---
-'tappet': patch
+'tangere': patch
 ---
 
 Initial release

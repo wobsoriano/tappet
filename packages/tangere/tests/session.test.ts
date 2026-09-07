@@ -1,13 +1,13 @@
 import { expect, test } from 'vite-plus/test';
 import { createDevice } from '../src/core/device.ts';
-import { parseDeviceOptions, type TappetOptions } from '../src/core/config.ts';
-import { TappetError } from '../src/core/errors.ts';
+import { parseDeviceOptions, type TangereOptions } from '../src/core/config.ts';
+import { TangereError } from '../src/core/errors.ts';
 import { silentSink } from '../src/core/report.ts';
 import { openSession } from '../src/core/session.ts';
 import { createFakeDriver, createRecordingSink, type FakeDriver } from './fake-driver.ts';
 
-/** What the fixtures hand the parser: tappet's options plus Playwright's own `actionTimeout`. */
-type ParseInput = Partial<TappetOptions> & { actionTimeout?: number };
+/** What the fixtures hand the parser: tangere's options plus Playwright's own `actionTimeout`. */
+type ParseInput = Partial<TangereOptions> & { actionTimeout?: number };
 
 const options: ParseInput = {
   platform: 'ios',
@@ -31,9 +31,9 @@ function open(driver: FakeDriver, overrides?: ParseInput) {
 test('openSession reclaims a leftover of its own name, opens, and holds for the ready gate', async () => {
   const driver = createFakeDriver();
   const session = await open(driver);
-  expect(session.name).toBe('tappet-ios-0');
+  expect(session.name).toBe('tangere-ios-0');
   expect(driver.calls).toEqual([
-    'close tappet-ios-0',
+    'close tangere-ios-0',
     'open com.wobsoriano.awesometodo relaunch=true',
     'capture',
   ]);
@@ -55,11 +55,11 @@ test('a device held by one of our own leftovers is reclaimed and the open retrie
   const driver = createFakeDriver();
   driver.openOutcomes.push({
     kind: 'device-busy',
-    owner: 'tappet-ios-1',
-    detail: `in use by session "tappet-ios-1"`,
+    owner: 'tangere-ios-1',
+    detail: `in use by session "tangere-ios-1"`,
   });
   await open(driver);
-  expect(driver.calls).toContain('close tappet-ios-1');
+  expect(driver.calls).toContain('close tangere-ios-1');
   expect(driver.calls.filter((call) => call.startsWith('open')).length).toBe(2);
 });
 
@@ -71,8 +71,8 @@ test('a device held by a foreign session names the owner and the release command
     detail: `in use by session "lex"`,
   });
   const error = await open(driver).catch((thrown: unknown) => thrown);
-  expect(error).toBeInstanceOf(TappetError);
-  if (!(error instanceof TappetError)) return;
+  expect(error).toBeInstanceOf(TangereError);
+  if (!(error instanceof TangereError)) return;
   expect(error.info.kind).toBe('device-in-use');
   expect(error.message).toContain(`session "lex"`);
   expect(error.message).toContain('agent-device close --session lex');
@@ -94,7 +94,7 @@ test('a session bound to another device is closed by name and reopened once', as
     detail: 'already bound',
   });
   await open(driver);
-  expect(driver.calls.filter((call) => call === 'close tappet-ios-0').length).toBe(2);
+  expect(driver.calls.filter((call) => call === 'close tangere-ios-0').length).toBe(2);
 });
 
 test('a bundle that never loads fails with the ready locator and the screen listing', async () => {
@@ -102,8 +102,8 @@ test('a bundle that never loads fails with the ready locator and the screen list
   const error = await open(driver, { readyWhen: { text: 'Fresh start' } }).catch(
     (thrown: unknown) => thrown,
   );
-  expect(error).toBeInstanceOf(TappetError);
-  if (!(error instanceof TappetError)) return;
+  expect(error).toBeInstanceOf(TangereError);
+  if (!(error instanceof TangereError)) return;
   expect(error.info.kind).toBe('not-ready');
   expect(error.message).toContain("readyWhen: getByText('Fresh start')");
   expect(error.message).toContain(`@e35 [button] "Explore"`);
@@ -134,8 +134,8 @@ test('an ambiguous locator fails an action at once with every match listed', asy
     .getByText('Explore')
     .tap()
     .catch((thrown: unknown) => thrown);
-  expect(error).toBeInstanceOf(TappetError);
-  if (!(error instanceof TappetError)) return;
+  expect(error).toBeInstanceOf(TangereError);
+  if (!(error instanceof TangereError)) return;
   expect(error.info.kind).toBe('strict-mode');
   expect(error.message).toContain(`@e12 [text] "Explore"`);
   expect(error.message).toContain(`@e35 [button] "Explore"`);
@@ -164,8 +164,8 @@ test('a stale ref re-captures and retries once, then reports', async () => {
     .getByRole('button', { name: 'Home' })
     .tap()
     .catch((thrown: unknown) => thrown);
-  expect(error).toBeInstanceOf(TappetError);
-  if (!(error instanceof TappetError)) return;
+  expect(error).toBeInstanceOf(TangereError);
+  if (!(error instanceof TangereError)) return;
   expect(error.message).toContain('the screen changed before the action reached it');
 });
 
@@ -179,8 +179,8 @@ test('an action waits for its target and then reports what was on screen', async
     .tap()
     .catch((thrown: unknown) => thrown);
   expect(Date.now() - started).toBeGreaterThanOrEqual(400);
-  expect(error).toBeInstanceOf(TappetError);
-  if (!(error instanceof TappetError)) return;
+  expect(error).toBeInstanceOf(TangereError);
+  if (!(error instanceof TangereError)) return;
   expect(error.info.kind).toBe('not-found');
   expect(error.message).toContain(`@e14 [text] "GET STARTED"`);
 });
@@ -229,7 +229,7 @@ test('a device that goes away breaks the session and every later call names the 
   const session = await open(driver);
   driver.capture = () =>
     Promise.reject(
-      new TappetError({
+      new TangereError({
         kind: 'driver',
         command: 'snapshot',
         failure: { kind: 'device-missing', detail: 'simulator shut down' },
@@ -254,8 +254,8 @@ test('a ready gate that times out reports what it actually waited', async () => 
     readyWhen: { text: 'Fresh start' },
     launchTimeout: 500,
   }).catch((thrown: unknown) => thrown);
-  expect(error).toBeInstanceOf(TappetError);
-  if (!(error instanceof TappetError) || error.info.kind !== 'not-ready') return;
+  expect(error).toBeInstanceOf(TangereError);
+  if (!(error instanceof TangereError) || error.info.kind !== 'not-ready') return;
   expect(error.info.timeoutMs).toBeLessThanOrEqual(600);
   expect(error.info.timeoutMs).toBeGreaterThan(0);
 });
@@ -316,8 +316,8 @@ test('fill stops rather than starting an attempt it cannot afford to confirm', a
     .fill('rob@example.com')
     .catch((thrown: unknown) => thrown);
 
-  expect(error).toBeInstanceOf(TappetError);
-  if (!(error instanceof TappetError)) return;
+  expect(error).toBeInstanceOf(TangereError);
+  if (!(error instanceof TangereError)) return;
   expect(error.info.kind).toBe('fill-unconfirmed');
   expect(error.message).toContain(`Actual value: "rob"`);
   expect(Date.now() - started).toBeLessThan(900);
@@ -335,8 +335,8 @@ test('a fill that never lands names the locator, both values, and the attempts',
     .fill('rob@example.com')
     .catch((thrown: unknown) => thrown);
 
-  expect(error).toBeInstanceOf(TappetError);
-  if (!(error instanceof TappetError)) return;
+  expect(error).toBeInstanceOf(TangereError);
+  if (!(error instanceof TangereError)) return;
   expect(error.info.kind).toBe('fill-unconfirmed');
   expect(error.message).toContain(`Expected value: "rob@example.com"`);
   expect(error.message).toContain(`Actual value: "r@example.com"`);
@@ -379,8 +379,8 @@ test('a fill whose label follows its contents still re-dispatches and still repo
     .catch((thrown: unknown) => thrown);
 
   expect(driver.calls.filter((call) => call.startsWith('fill')).length).toBeGreaterThan(1);
-  expect(error).toBeInstanceOf(TappetError);
-  if (!(error instanceof TappetError)) return;
+  expect(error).toBeInstanceOf(TangereError);
+  if (!(error instanceof TangereError)) return;
   expect(error.info.kind).toBe('fill-unconfirmed');
   expect(error.message).toContain(`Locator: getByRole('text-field', { name: 'Email' })`);
   expect(error.message).toContain(`Actual value: "r@example.com"`);
@@ -420,8 +420,8 @@ test('a secure field masking fewer characters than were typed keeps retrying and
     .catch((thrown: unknown) => thrown);
 
   expect(driver.calls.filter((call) => call.startsWith('fill')).length).toBeGreaterThan(1);
-  expect(error).toBeInstanceOf(TappetError);
-  if (!(error instanceof TappetError)) return;
+  expect(error).toBeInstanceOf(TangereError);
+  if (!(error instanceof TangereError)) return;
   expect(error.info.kind).toBe('fill-unconfirmed');
   if (error.info.kind !== 'fill-unconfirmed') return;
   expect(error.info.attempts).toBeGreaterThan(1);
@@ -438,8 +438,8 @@ test('a secure field that never lands reports how much was typed and never the t
     .fill(SECRET)
     .catch((thrown: unknown) => thrown);
 
-  expect(error).toBeInstanceOf(TappetError);
-  if (!(error instanceof TappetError)) return;
+  expect(error).toBeInstanceOf(TangereError);
+  if (!(error instanceof TangereError)) return;
   expect(error.message).toContain(`Expected value: ${String(SECRET.length)} characters`);
   expect(error.message).not.toContain(SECRET);
   if (error.info.kind !== 'fill-unconfirmed') return;
@@ -459,8 +459,8 @@ test('a mask of the right length made of different characters is not a landed wr
     .fill('hunter22')
     .catch((thrown: unknown) => thrown);
 
-  expect(error).toBeInstanceOf(TappetError);
-  if (!(error instanceof TappetError)) return;
+  expect(error).toBeInstanceOf(TangereError);
+  if (!(error instanceof TangereError)) return;
   expect(error.info.kind).toBe('fill-unconfirmed');
 });
 
@@ -475,8 +475,8 @@ test('a readable field next to a secure one is still confirmed on its exact cont
     .fill('rob@example.com')
     .catch((thrown: unknown) => thrown);
 
-  expect(error).toBeInstanceOf(TappetError);
-  if (!(error instanceof TappetError)) return;
+  expect(error).toBeInstanceOf(TangereError);
+  if (!(error instanceof TangereError)) return;
   expect(error.info.kind).toBe('fill-unconfirmed');
   expect(error.message).toContain(`Expected value: "rob@example.com"`);
 });
@@ -535,8 +535,8 @@ test('a fill marked secret that never lands reports both values as lengths', asy
     .fill(SECRET, { secret: true })
     .catch((thrown: unknown) => thrown);
 
-  expect(error).toBeInstanceOf(TappetError);
-  if (!(error instanceof TappetError)) return;
+  expect(error).toBeInstanceOf(TangereError);
+  if (!(error instanceof TangereError)) return;
   expect(error.info.kind).toBe('fill-unconfirmed');
   expect(error.message).not.toContain(SECRET);
   expect(error.message).toContain(`Expected value: ${String(SECRET.length)} characters`);
@@ -596,8 +596,8 @@ test('textContent refuses an ambiguous locator and lists every match', async () 
     .getByText('Explore')
     .textContent()
     .catch((thrown: unknown) => thrown);
-  expect(error).toBeInstanceOf(TappetError);
-  if (!(error instanceof TappetError)) return;
+  expect(error).toBeInstanceOf(TangereError);
+  if (!(error instanceof TangereError)) return;
   expect(error.info.kind).toBe('strict-mode');
   expect(error.message).toContain(`@e12 [text] "Explore"`);
   expect(error.message).toContain(`@e35 [button] "Explore"`);

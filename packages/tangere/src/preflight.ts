@@ -3,7 +3,7 @@
  * driver, and no module under `core/` may import `agent-device`.
  */
 
-import { parseDeviceOptions, type DeviceChoice, type TappetOptions } from './core/config.ts';
+import { parseDeviceOptions, type DeviceChoice, type TangereOptions } from './core/config.ts';
 import type { DeviceDriver, DeviceInfo } from './core/driver.ts';
 import { describeFailure } from './core/errors.ts';
 import type { Platform } from './core/screen.ts';
@@ -22,7 +22,7 @@ export type PreflightReport =
  * way it does everywhere else. `driver` is the seam tests inject.
  */
 export async function preflight(
-  options: Partial<TappetOptions>,
+  options: Partial<TangereOptions>,
   driver?: DeviceDriver,
 ): Promise<PreflightReport> {
   const resolved = parseDeviceOptions(options);

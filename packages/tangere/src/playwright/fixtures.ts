@@ -1,5 +1,5 @@
 import { test as base, type TestInfo } from '@playwright/test';
-import { parseDeviceOptions, TAPPET_DEFAULTS, type TappetOptions } from '../core/config.ts';
+import { parseDeviceOptions, TANGERE_DEFAULTS, type TangereOptions } from '../core/config.ts';
 import { createDevice, type Device } from '../core/device.ts';
 import { captureEvidence } from '../core/evidence.ts';
 import { silentSink, type ActionSink, type EvidenceFile } from '../core/report.ts';
@@ -12,7 +12,7 @@ const SESSION_FIXTURE_TIMEOUT_MS = 180_000;
 const DEVICE_FIXTURE_TIMEOUT_MS = 120_000;
 
 /**
- * Tappet's options and none of its fixtures, for a setup project that reads the
+ * Tangere's options and none of its fixtures, for a setup project that reads the
  * configuration before any session exists, such as one calling `preflight`.
  *
  * `platform`, `app`, and `readyWhen` default to `undefined` rather than to a
@@ -20,19 +20,19 @@ const DEVICE_FIXTURE_TIMEOUT_MS = 120_000;
  * type, and `parseDeviceOptions` rejects `undefined` by name, so a config that
  * forgot a key and one that never set it fail the same way.
  */
-export const setupTest = base.extend<object, TappetOptions>({
+export const setupTest = base.extend<object, TangereOptions>({
   platform: [undefined, { option: true, scope: 'worker' }],
   app: [undefined, { option: true, scope: 'worker' }],
   readyWhen: [undefined, { option: true, scope: 'worker' }],
   deviceName: [undefined, { option: true, scope: 'worker' }],
   launchUrl: [undefined, { option: true, scope: 'worker' }],
-  relaunch: [TAPPET_DEFAULTS.relaunch, { option: true, scope: 'worker' }],
-  onDeviceInUse: [TAPPET_DEFAULTS.onDeviceInUse, { option: true, scope: 'worker' }],
-  settleQuietMs: [TAPPET_DEFAULTS.settleQuietMs, { option: true, scope: 'worker' }],
-  launchTimeout: [TAPPET_DEFAULTS.launchTimeout, { option: true, scope: 'worker' }],
-  dismissDevOverlay: [TAPPET_DEFAULTS.dismissDevOverlay, { option: true, scope: 'worker' }],
-  evidence: [TAPPET_DEFAULTS.evidence, { option: true, scope: 'worker' }],
-  sessionPrefix: [TAPPET_DEFAULTS.sessionPrefix, { option: true, scope: 'worker' }],
+  relaunch: [TANGERE_DEFAULTS.relaunch, { option: true, scope: 'worker' }],
+  onDeviceInUse: [TANGERE_DEFAULTS.onDeviceInUse, { option: true, scope: 'worker' }],
+  settleQuietMs: [TANGERE_DEFAULTS.settleQuietMs, { option: true, scope: 'worker' }],
+  launchTimeout: [TANGERE_DEFAULTS.launchTimeout, { option: true, scope: 'worker' }],
+  dismissDevOverlay: [TANGERE_DEFAULTS.dismissDevOverlay, { option: true, scope: 'worker' }],
+  evidence: [TANGERE_DEFAULTS.evidence, { option: true, scope: 'worker' }],
+  sessionPrefix: [TANGERE_DEFAULTS.sessionPrefix, { option: true, scope: 'worker' }],
 });
 
 /** The worker session already opened the app with a relaunch, so the first test skips one. */
@@ -80,7 +80,7 @@ export const test = setupTest.extend<{ device: Device }, { session: DeviceSessio
         dismissDevOverlay,
         evidence,
         sessionPrefix,
-        // Playwright's own option rather than one of tappet's, so it is read off the project.
+        // Playwright's own option rather than one of tangere's, so it is read off the project.
         actionTimeout: workerInfo.project.use.actionTimeout,
       });
       const session = await openSession({

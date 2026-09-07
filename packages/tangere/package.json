@@ -1,7 +1,7 @@
 {
-  "name": "tappet",
+  "name": "tangere",
   "version": "0.0.1",
-  "description": "End-to-end testing for mobile apps with the Playwright test runner.",
+  "description": "End-to-end testing for mobile apps.",
   "homepage": "https://github.com/wobsoriano/tappet#readme",
   "bugs": {
     "url": "https://github.com/wobsoriano/tappet/issues"

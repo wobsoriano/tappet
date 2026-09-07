@@ -1,4 +1,4 @@
-import { expect, test } from 'tappet';
+import { expect, test } from 'tangere';
 
 test('the signed-out home screen offers a way in', async ({ device }) => {
   await expect(device.getByRole('text', { name: 'Welcome' })).toHaveText('Welcome', {

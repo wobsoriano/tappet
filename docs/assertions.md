@@ -1,6 +1,6 @@
 # Assertions
 
-Eight matchers, all on tappet's own `expect`, all retrying, all accepting `{ timeout }`, all working under `.not`.
+Eight matchers, all on tangere's own `expect`, all retrying, all accepting `{ timeout }`, all working under `.not`.
 
 | matcher                           | asserts                                    |
 | --------------------------------- | ------------------------------------------ |
@@ -13,10 +13,10 @@ Eight matchers, all on tappet's own `expect`, all retrying, all accepting `{ tim
 | `toHaveCount(n)`                  | the locator resolves to `n` distinct nodes |
 | `toHaveScreenshot(name, options)` | the pixels match a committed baseline      |
 
-They carry Playwright's own matcher names, but they are typed by their first parameter, so they surface on a tappet locator and on nothing else. Web locators are never mixed into the same `expect` here. `toHaveScreenshot` also takes the `device` itself, for a whole-screen comparison.
+They carry Playwright's own matcher names, but they are typed by their first parameter, so they surface on a tangere locator and on nothing else. Web locators are never mixed into the same `expect` here. `toHaveScreenshot` also takes the `device` itself, for a whole-screen comparison.
 
 ```ts
-import { expect, test } from 'tappet';
+import { expect, test } from 'tangere';
 
 test('the wrong password is rejected without leaving the login screen', async ({ device }) => {
   await device.getByTestId('sign-in-link').tap();
@@ -63,7 +63,7 @@ Received: no node matched. Closest names on screen:
 Timeout: 3000ms (5 snapshots)
 
 Screen:
-@e1 [application] "tappet-e2e"
+@e1 [application] "tangere-e2e"
   @e2 [other] #home
   @e3 [text] "Welcome"
     @e4 [text] "Welcome"
@@ -81,7 +81,7 @@ The `Screen:` listing uses `agent-device`'s own `[role] "label"` vocabulary, and
 Run that spec yourself from `apps/e2e`.
 
 ```sh
-TAPPET_INCLUDE_FAILING=1 npx playwright test --project=ios e2e/failing.spec.mts
+TANGERE_INCLUDE_FAILING=1 npx playwright test --project=ios e2e/failing.spec.mts
 ```
 
 ## Screenshots
@@ -105,7 +105,7 @@ e2e/screenshot.spec.mts-snapshots/home-ios-darwin.png
 
 Leave the name out and it is the test's title with a number, one per assertion in that test.
 
-A baseline that does not exist yet is written. Whether that also passes is Playwright's `updateSnapshots` setting, not tappet's: `missing`, which is the default, and `all` write it and pass, and anything else writes it and fails with Playwright's own wording so a first run cannot go green on a file it just invented. A mismatch is rewritten under `all` and `changed`.
+A baseline that does not exist yet is written. Whether that also passes is Playwright's `updateSnapshots` setting, not tangere's: `missing`, which is the default, and `all` write it and pass, and anything else writes it and fails with Playwright's own wording so a first run cannot go green on a file it just invented. A mismatch is rewritten under `all` and `changed`.
 
 ### Options
 
@@ -146,6 +146,6 @@ The three PNGs go into the HTML report, and the diff paints every pixel that dif
 Received: the screenshot is 440x956 and the baseline is 100x44
 ```
 
-## Assertions tappet does not model
+## Assertions tangere does not model
 
 Use `device.screen()` and assert on the tree with plain `expect`. See [Basics](basics.md).

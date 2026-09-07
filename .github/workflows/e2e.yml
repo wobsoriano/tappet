@@ -13,7 +13,7 @@ jobs:
     runs-on: macos-26
     timeout-minutes: 60
     env:
-      TAPPET_IOS_DEVICE: iPhone 17 Pro
+      TANGERE_IOS_DEVICE: iPhone 17 Pro
     steps:
       - uses: actions/checkout@v5
 
@@ -35,7 +35,7 @@ jobs:
         run: |
           echo "agent_device=$(./node_modules/.bin/agent-device --version)" >> "$GITHUB_OUTPUT"
           echo "xcode=$(xcodebuild -version | head -1 | tr ' ' '-')" >> "$GITHUB_OUTPUT"
-        working-directory: packages/tappet
+        working-directory: packages/tangere
 
       # The XCTest runner takes minutes to build the first time it drives a device.
       - uses: actions/cache@v4
@@ -43,7 +43,7 @@ jobs:
           path: ~/.agent-device/apple-runner/derived
           key: apple-runner-${{ steps.versions.outputs.agent_device }}-${{ steps.versions.outputs.xcode }}
 
-      # The library source is deliberately not in this hash. The app never imports tappet, which is a
+      # The library source is deliberately not in this hash. The app never imports tangere, which is a
       # devDependency the specs use on the host, so a library change cannot alter the native build.
       - name: Compute native build cache key
         id: native-build-key
@@ -69,9 +69,9 @@ jobs:
         id: native-build-cache
         uses: actions/cache/restore@v4
         with:
-          path: apps/e2e/ios/build/Build/Products/Release-iphonesimulator/tappete2e.app
+          path: apps/e2e/ios/build/Build/Products/Release-iphonesimulator/tangeree2e.app
           # Bump the version when the build commands below change.
-          key: tappet-native-v1-ios-${{ steps.native-build-key.outputs.hash }}
+          key: tangere-native-v1-ios-${{ steps.native-build-key.outputs.hash }}
 
       # Release bundles the JavaScript into the app, so no Metro server has to stay alive for the run.
       - name: Build the app in Release for the simulator
@@ -80,8 +80,8 @@ jobs:
         run: |
           npx expo prebuild --clean --platform ios
           xcodebuild \
-            -workspace ios/tappete2e.xcworkspace \
-            -scheme tappete2e \
+            -workspace ios/tangeree2e.xcworkspace \
+            -scheme tangeree2e \
             -configuration Release \
             -sdk iphonesimulator \
             -derivedDataPath ios/build \
@@ -92,17 +92,17 @@ jobs:
         if: steps.native-build-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
-          path: apps/e2e/ios/build/Build/Products/Release-iphonesimulator/tappete2e.app
+          path: apps/e2e/ios/build/Build/Products/Release-iphonesimulator/tangeree2e.app
           key: ${{ steps.native-build-cache.outputs.cache-primary-key }}
 
       - name: Install the app
         run: |
           xcrun simctl install "${{ steps.simulator.outputs.udid }}" \
-            apps/e2e/ios/build/Build/Products/Release-iphonesimulator/tappete2e.app
+            apps/e2e/ios/build/Build/Products/Release-iphonesimulator/tangeree2e.app
 
       # The test run reuses this daemon, because both sides are the workspace's pinned agent-device.
       - name: Prepare the iOS runner
-        working-directory: packages/tappet
+        working-directory: packages/tangere
         run: ./node_modules/.bin/agent-device prepare ios-runner --platform ios --timeout 240000
 
       # The workspace binary, not vp run. The agent-device daemon inherits vp run's task IPC
@@ -122,7 +122,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
-      TAPPET_ANDROID_DEVICE: ci-api34
+      TANGERE_ANDROID_DEVICE: ci-api34
       ANDROID_API_LEVEL: '34'
     steps:
       - uses: actions/checkout@v5
@@ -152,7 +152,7 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      # The library source is deliberately not in this hash. The app never imports tappet, which is a
+      # The library source is deliberately not in this hash. The app never imports tangere, which is a
       # devDependency the specs use on the host, so a library change cannot alter the native build.
       - name: Compute native build cache key
         id: native-build-key
@@ -178,7 +178,7 @@ jobs:
         with:
           path: apps/e2e/android/app/build/outputs/apk/release/app-release.apk
           # Bump the version when the build commands below change.
-          key: tappet-native-v1-android-${{ steps.native-build-key.outputs.hash }}
+          key: tangere-native-v1-android-${{ steps.native-build-key.outputs.hash }}
 
       - name: Build the app in Release
         if: steps.native-build-cache.outputs.cache-hit != 'true'

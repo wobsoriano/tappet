@@ -1,12 +1,12 @@
-# tappet
+# tangere
 
 > [!WARNING]
-> tappet is highly experimental. Use at your own risk.
+> tangere is highly experimental. Use at your own risk.
 
-tappet runs e2e tests for mobile apps on the Playwright test runner. It drives a booted simulator or emulator through Callstack [`agent-device`](https://agent-device.dev/).
+tangere runs e2e tests for mobile apps on the Playwright test runner. It drives a booted simulator or emulator through Callstack [`agent-device`](https://agent-device.dev/).
 
 ```ts
-import { expect, test } from 'tappet';
+import { expect, test } from 'tangere';
 
 test('the right credentials land on the profile', async ({ device }) => {
   await device.getByTestId('sign-in-link').tap();
@@ -24,7 +24,7 @@ test('the right credentials land on the profile', async ({ device }) => {
 ### Install
 
 ```sh
-pnpm add -D tappet @playwright/test
+pnpm add -D tangere @playwright/test
 ```
 
 ### Configure
@@ -32,9 +32,9 @@ pnpm add -D tappet @playwright/test
 ```ts
 // playwright.config.ts
 import { defineConfig } from '@playwright/test';
-import type { TappetOptions } from 'tappet';
+import type { TangereOptions } from 'tangere';
 
-export default defineConfig<TappetOptions>({
+export default defineConfig<TangereOptions>({
   testDir: 'e2e',
   workers: 1,
   expect: { timeout: 10_000 },
@@ -50,9 +50,9 @@ export default defineConfig<TappetOptions>({
 });
 ```
 
-Every option tappet adds is a key of its own in `use`. Playwright merges `use` one key at a time, so what the projects share is written once at the top level and a project sets only what differs.
+Every option tangere adds is a key of its own in `use`. Playwright merges `use` one key at a time, so what the projects share is written once at the top level and a project sets only what differs.
 
-`readyWhen` is required. The driver returns from a launch as soon as the native process starts, before the JavaScript bundle has loaded, so tappet waits for that locator before the first test runs.
+`readyWhen` is required. The driver returns from a launch as soon as the native process starts, before the JavaScript bundle has loaded, so tangere waits for that locator before the first test runs.
 
 `deviceName` is what `agent-device devices` prints, which for an Android emulator is the AVD name with its underscores shown as spaces. An AVD created as `Pixel_7_API_34` is `Pixel 7 API 34` here.
 
@@ -68,7 +68,7 @@ npx playwright test --project=ios
 
 ## Run the sample project
 
-`apps/e2e` is an Expo app with a home, login, and profile route and a fake sign-in. It is the app tappet is tested against. Build the library first with `vp run -r build` so the app can resolve `dist`, then run these from `apps/e2e`:
+`apps/e2e` is an Expo app with a home, login, and profile route and a fake sign-in. It is the app tangere is tested against. Build the library first with `vp run -r build` so the app can resolve `dist`, then run these from `apps/e2e`:
 
 ```sh
 npx expo run:ios --device 'iPhone 17 Pro Max' --no-bundler
@@ -99,8 +99,8 @@ Leave Metro running for the whole suite. The first build takes several minutes.
 ## The workspace
 
 ```
-packages/tappet/   the library, published to npm
-apps/e2e/          tappet-e2e, an Expo SDK 57 app, private
+packages/tangere/  the library, published to npm
+apps/e2e/          tangere-e2e, an Expo SDK 57 app, private
 docs/              the documentation linked above
 ```
 

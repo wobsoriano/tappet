@@ -8,7 +8,7 @@ import type {
   ScrollDirection,
   SettleOptions,
 } from '../src/core/driver.ts';
-import { TappetError } from '../src/core/errors.ts';
+import { TangereError } from '../src/core/errors.ts';
 import type { ActionSink } from '../src/core/report.ts';
 import type { PinnedRef, RawSnapshot } from '../src/core/screen.ts';
 import { loadRaw, type FixtureName } from './fixtures.ts';
@@ -86,9 +86,9 @@ export function createFakeDriver(options?: {
       calls.push(`open ${request.app} relaunch=${String(request.relaunch)}${url}`);
       const failure = openOutcomes.shift();
       if (failure !== undefined)
-        return Promise.reject(new TappetError({ kind: 'driver', command: 'open', failure }));
+        return Promise.reject(new TangereError({ kind: 'driver', command: 'open', failure }));
       return Promise.resolve({
-        session: 'tappet-ios-0',
+        session: 'tangere-ios-0',
         platform: 'ios',
         deviceLabel: 'iPhone 17 Pro Max',
         appId: request.app,
@@ -168,7 +168,7 @@ function mutate(driver: FakeDriver): Promise<{ settled: boolean; waitedMs: numbe
   if (driver.staleRefs > 0) {
     driver.staleRefs -= 1;
     return Promise.reject(
-      new TappetError({
+      new TangereError({
         kind: 'driver',
         command: 'tap',
         failure: {

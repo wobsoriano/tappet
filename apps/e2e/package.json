@@ -1,8 +1,8 @@
 {
-  "name": "tappet-e2e",
+  "name": "tangere-e2e",
   "version": "1.0.0",
   "private": true,
-  "description": "Reference app for tappet, end-to-end testing for mobile apps with the Playwright test runner.",
+  "description": "Reference app for tangere, end-to-end testing for mobile apps with the Playwright test runner.",
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
@@ -23,7 +23,7 @@
   "devDependencies": {
     "@playwright/test": "1.63.0",
     "@types/react": "~19.2.2",
-    "tappet": "workspace:*",
+    "tangere": "workspace:*",
     "typescript": "~6.0.3"
   }
 }

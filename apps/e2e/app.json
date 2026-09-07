@@ -1,15 +1,15 @@
 {
   "expo": {
-    "name": "tappet-e2e",
-    "slug": "tappet-e2e",
+    "name": "tangere-e2e",
+    "slug": "tangere-e2e",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "scheme": "tappete2e",
+    "scheme": "tangeree2e",
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "dev.tappet.e2e"
+      "bundleIdentifier": "dev.tangere.e2e"
     },
     "android": {
       "adaptiveIcon": {
@@ -19,7 +19,7 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "dev.tappet.e2e"
+      "package": "dev.tangere.e2e"
     },
     "web": {
       "favicon": "./assets/favicon.png"

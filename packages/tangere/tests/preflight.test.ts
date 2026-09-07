@@ -1,10 +1,10 @@
 import { expect, test } from 'vite-plus/test';
-import type { TappetOptions } from '../src/core/config.ts';
-import { TappetError } from '../src/core/errors.ts';
+import type { TangereOptions } from '../src/core/config.ts';
+import { TangereError } from '../src/core/errors.ts';
 import { preflight } from '../src/preflight.ts';
 import { createFakeDriver } from './fake-driver.ts';
 
-const options: Partial<TappetOptions> = {
+const options: Partial<TangereOptions> = {
   platform: 'ios',
   app: 'com.wobsoriano.awesometodo',
   readyWhen: { text: 'GET STARTED' },
@@ -77,7 +77,7 @@ test('a driver that cannot list reports the failure and points at the daemon', a
     ...createFakeDriver(),
     listDevices: () =>
       Promise.reject(
-        new TappetError({
+        new TangereError({
           kind: 'driver',
           command: 'listDevices',
           failure: { kind: 'device-missing', detail: 'daemon not running' },

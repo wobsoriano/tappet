@@ -1,13 +1,13 @@
 # Configuration
 
-Tappet adds its own keys to Playwright's `use`. They are parsed once at worker start and nothing downstream validates them again, so a mistake fails immediately and names the key to fix.
+Tangere adds its own keys to Playwright's `use`. They are parsed once at worker start and nothing downstream validates them again, so a mistake fails immediately and names the key to fix.
 
 ```ts
 // playwright.config.ts
 import { defineConfig } from '@playwright/test';
-import type { TappetOptions } from 'tappet';
+import type { TangereOptions } from 'tangere';
 
-export default defineConfig<TappetOptions>({
+export default defineConfig<TangereOptions>({
   testDir: 'e2e',
   workers: 1,
   timeout: 120_000,
@@ -44,7 +44,7 @@ export default defineConfig<TappetOptions>({
 
 ## Every key merges on its own
 
-Playwright merges `use` one key at a time, and each of tappet's options is a key of its own. What the projects share goes at the top level and a project sets only what differs. `app` and `readyWhen` above are written once.
+Playwright merges `use` one key at a time, and each of tangere's options is a key of its own. What the projects share goes at the top level and a project sets only what differs. `app` and `readyWhen` above are written once.
 
 A test reads those keys too, which is how a spec gates itself on the platform it is running against.
 
@@ -52,7 +52,7 @@ A test reads those keys too, which is how a spec gates itself on the platform it
 test.skip(({ platform }) => platform === 'android', 'iOS keychain prompt');
 ```
 
-A skipped test opens no session, because tappet's `device` fixture is never set up for it.
+A skipped test opens no session, because tangere's `device` fixture is never set up for it.
 
 ## Options
 
@@ -64,16 +64,16 @@ A skipped test opens no session, because tappet's `device` fixture is never set 
 | `deviceName`        | first booted   | device name. An array is a pool indexed by Playwright's `parallelIndex`                 |
 | `launchUrl`         | none           | a deep link to launch the app with, on the launch and on every relaunch                 |
 | `relaunch`          | `'per-test'`   | or `'per-worker'`                                                                       |
-| `onDeviceInUse`     | `'fail'`       | or `'reclaim'`. Leftovers carrying tappet's own prefix are always reclaimed             |
+| `onDeviceInUse`     | `'fail'`       | or `'reclaim'`. Leftovers carrying tangere's own prefix are always reclaimed            |
 | `settleQuietMs`     | `500`          | the quiet window that ends the post-action settle                                       |
 | `launchTimeout`     | `90_000`       | budget for the launch plus the ready gate                                               |
 | `dismissDevOverlay` | `false`        | send `react-native dismiss-overlay` after every launch                                  |
 | `evidence`          | `'on-failure'` | `'always'` or `'off'`                                                                   |
-| `sessionPrefix`     | `'tappet'`     | session names are `${prefix}-${project}-${parallelIndex}`                               |
+| `sessionPrefix`     | `'tangere'`    | session names are `${prefix}-${project}-${parallelIndex}`                               |
 
 ## How long one action waits
 
-Tappet adds no option for that. It reads `use.actionTimeout`, which Playwright already defines, and falls back to 10_000 milliseconds when it is unset or zero. Zero means "no timeout" to Playwright, and here it would mean giving up at once.
+Tangere adds no option for that. It reads `use.actionTimeout`, which Playwright already defines, and falls back to 10_000 milliseconds when it is unset or zero. Zero means "no timeout" to Playwright, and here it would mean giving up at once.
 
 ```ts
 use: { app: 'com.example.app', readyWhen: { testId: 'home' }, actionTimeout: 15_000 }
@@ -101,13 +101,13 @@ The scheme has to be one only the app under test registers. An Expo app register
 
 ## `readyWhen` is required
 
-The driver returns from a launch as soon as the native process starts. The JavaScript bundle is still loading at that point, so the first assertion of the first test would race it. `readyWhen` names something that only appears once the bundle has rendered, and tappet holds until it resolves.
+The driver returns from a launch as soon as the native process starts. The JavaScript bundle is still loading at that point, so the first assertion of the first test would race it. `readyWhen` names something that only appears once the bundle has rendered, and tangere holds until it resolves.
 
 Ambiguity is still ready. The gate asks whether the bundle loaded, not whether a locator is unique.
 
 ## One device per worker
 
-`deviceName` as a string, or `deviceName` omitted, serves worker slot 0 only. Two workers pointed at one device would both try to claim it, and because leftovers carrying tappet's own prefix are always reclaimed, the second worker would close the first worker's live session mid-test. That is a configuration error rather than a race, and it fails at worker start.
+`deviceName` as a string, or `deviceName` omitted, serves worker slot 0 only. Two workers pointed at one device would both try to claim it, and because leftovers carrying tangere's own prefix are always reclaimed, the second worker would close the first worker's live session mid-test. That is a configuration error rather than a race, and it fails at worker start.
 
 To run more than one worker, give `deviceName` an array with one entry per worker.
 
@@ -117,4 +117,4 @@ use: { platform: 'ios', deviceName: ['iPhone 17 Pro', 'iPhone 17 Pro Max'] }
 
 ## Timeouts
 
-`expect.timeout` is what every matcher uses unless the call passes its own `{ timeout }`. `timeout` is Playwright's per-test budget, and it needs room for a relaunch plus a ready gate on every test after the first. `launchTimeout` covers only the launch and the gate, and it is charged to tappet's own fixtures rather than to the test, so a slow launch reads as a launch failure rather than a test timeout.
+`expect.timeout` is what every matcher uses unless the call passes its own `{ timeout }`. `timeout` is Playwright's per-test budget, and it needs room for a relaunch plus a ready gate on every test after the first. `launchTimeout` covers only the launch and the gate, and it is charged to tangere's own fixtures rather than to the test, so a slow launch reads as a launch failure rather than a test timeout.

@@ -1,7 +1,7 @@
 import { expect, test } from 'vite-plus/test';
 import { createDevice } from '../src/core/device.ts';
-import { parseDeviceOptions, type TappetOptions } from '../src/core/config.ts';
-import { TappetError } from '../src/core/errors.ts';
+import { parseDeviceOptions, type TangereOptions } from '../src/core/config.ts';
+import { TangereError } from '../src/core/errors.ts';
 import { textMatch, type Query } from '../src/core/query.ts';
 import { silentSink } from '../src/core/report.ts';
 import { renderScreen } from '../src/core/screen.ts';
@@ -61,12 +61,12 @@ test('the screen listing says which way a container is holding content', () => {
   expect(renderScreen(loadScreen('home'))).not.toContain('[more ');
 });
 
-/** What the fixtures hand the parser: tappet's options plus Playwright's own `actionTimeout`. */
-type ParseInput = Partial<TappetOptions> & { actionTimeout?: number };
+/** What the fixtures hand the parser: tangere's options plus Playwright's own `actionTimeout`. */
+type ParseInput = Partial<TangereOptions> & { actionTimeout?: number };
 
 const options: ParseInput = {
   platform: 'ios',
-  app: 'dev.tappet.e2e',
+  app: 'dev.tangere.e2e',
   deviceName: 'iPhone 17 Pro Max',
   readyWhen: { testId: 'list' },
   launchTimeout: 1000,
@@ -164,8 +164,8 @@ test('a search never reverses, so a target that is not there fails at the end of
     .scrollIntoView()
     .catch((thrown: unknown) => thrown);
 
-  expect(error).toBeInstanceOf(TappetError);
-  if (!(error instanceof TappetError) || error.info.kind !== 'not-found') return;
+  expect(error).toBeInstanceOf(TangereError);
+  if (!(error instanceof TangereError) || error.info.kind !== 'not-found') return;
   expect(error.info.scrolled).toEqual({ steps: 1, direction: 'down' });
   expect(error.message).toContain('Scrolled: 1 step down');
   expect(driver.calls.filter((call) => call === 'scroll down').length).toBe(1);
@@ -183,8 +183,8 @@ test('a list that never runs out is stopped by the step cap rather than by the c
     .scrollIntoView()
     .catch((thrown: unknown) => thrown);
 
-  expect(error).toBeInstanceOf(TappetError);
-  if (!(error instanceof TappetError) || error.info.kind !== 'not-found') return;
+  expect(error).toBeInstanceOf(TangereError);
+  if (!(error instanceof TangereError) || error.info.kind !== 'not-found') return;
   expect(error.info.scrolled).toEqual({ steps: 20, direction: 'down' });
   expect(Date.now() - started).toBeLessThan(2000);
 });
@@ -199,8 +199,8 @@ test('scrollIntoView refuses an ambiguous locator instead of scrolling', async (
     .scrollIntoView()
     .catch((thrown: unknown) => thrown);
 
-  expect(error).toBeInstanceOf(TappetError);
-  if (!(error instanceof TappetError)) return;
+  expect(error).toBeInstanceOf(TangereError);
+  if (!(error instanceof TangereError)) return;
   expect(error.info.kind).toBe('strict-mode');
   expect(driver.calls).not.toContain('scroll down');
 });
@@ -215,8 +215,8 @@ test('an action that never scrolled says nothing about scrolling', async () => {
     .tap()
     .catch((thrown: unknown) => thrown);
 
-  expect(error).toBeInstanceOf(TappetError);
-  if (!(error instanceof TappetError) || error.info.kind !== 'not-found') return;
+  expect(error).toBeInstanceOf(TangereError);
+  if (!(error instanceof TangereError) || error.info.kind !== 'not-found') return;
   expect(error.info.scrolled).toBe(null);
   expect(error.message).not.toContain('Scrolled:');
 });

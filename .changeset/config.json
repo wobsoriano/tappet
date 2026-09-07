@@ -7,5 +7,5 @@
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": ["tappet-e2e"]
+  "ignore": ["tangere-e2e"]
 }

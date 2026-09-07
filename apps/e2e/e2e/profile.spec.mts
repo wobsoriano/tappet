@@ -1,4 +1,4 @@
-import { expect, test } from 'tappet';
+import { expect, test } from 'tangere';
 
 test('signing out from the profile returns to the signed-out home', async ({ device }) => {
   await device.getByTestId('sign-in-link').tap();

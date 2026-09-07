@@ -170,14 +170,14 @@ importers:
       '@types/react':
         specifier: ~19.2.2
         version: 19.2.18
-      tappet:
+      tangere:
         specifier: workspace:*
-        version: link:../../packages/tappet
+        version: link:../../packages/tangere
       typescript:
         specifier: ~6.0.3
         version: 6.0.3
 
-  packages/tappet:
+  packages/tangere:
     dependencies:
       agent-device:
         specifier: 0.20.10

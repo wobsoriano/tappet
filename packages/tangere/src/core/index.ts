@@ -19,8 +19,8 @@ export type {
 export { describeCheck, evaluate } from './checks.ts';
 export type { Check, CheckName, Verdict } from './checks.ts';
 
-export { deviceNameForSlot, parseDeviceOptions, TAPPET_DEFAULTS } from './config.ts';
-export type { DeviceChoice, ReadyQuery, ResolvedOptions, TappetOptions } from './config.ts';
+export { deviceNameForSlot, parseDeviceOptions, TANGERE_DEFAULTS } from './config.ts';
+export type { DeviceChoice, ReadyQuery, ResolvedOptions, TangereOptions } from './config.ts';
 
 export type {
   Binding,
@@ -35,7 +35,7 @@ export type {
   Tree,
 } from './driver.ts';
 
-export { TappetError } from './errors.ts';
+export { TangereError } from './errors.ts';
 export type { ErrorInfo, ExpectedValue } from './errors.ts';
 
 export { captureEvidence } from './evidence.ts';
