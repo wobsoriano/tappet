@@ -40,13 +40,21 @@
     "@playwright/test": "1.63.0",
     "@types/node": "^26.1.1",
     "@types/pngjs": "^6.0.5",
+    "ai": "^7.0.93",
     "bumpp": "^11.1.0",
     "typescript": "^7.0.2",
     "vite": "catalog:",
-    "vite-plus": "catalog:"
+    "vite-plus": "catalog:",
+    "zod": "^4.5.4"
   },
   "peerDependencies": {
-    "@playwright/test": ">=1.63"
+    "@playwright/test": ">=1.63",
+    "ai": "^6.0.0 || ^7.0.0"
+  },
+  "peerDependenciesMeta": {
+    "ai": {
+      "optional": true
+    }
   },
   "devEngines": {
     "packageManager": {

@@ -94,3 +94,9 @@ test('session names are deterministic so a replacement worker reuses one', () =>
   expect(sessionName(options, 'ios', 2)).toBe('touchpress-ios-2');
   expect(sessionName(options, '', 0)).toBe('touchpress-default-0');
 });
+
+test('aiModel rides along in `use` without reaching the resolved device options', () => {
+  const options = parseDeviceOptions({ ...minimal, aiModel: 'anthropic/claude-sonnet-4.5' });
+  expect(options.app).toBe('com.example.app');
+  expect(Object.keys(options)).not.toContain('aiModel');
+});

@@ -1,0 +1,220 @@
+import type { FlexibleSchema, LanguageModel, ToolSet } from 'ai';
+import { TouchpressError } from '../core/errors.ts';
+import { renderTitle, type ActionSink } from '../core/report.ts';
+import type { Platform } from '../core/screen.ts';
+import { loadAi, toolRecord, typedText } from './tools.ts';
+
+const TRANSCRIPT_RESULT_LIMIT = 2048;
+
+export type ActRun = {
+  readonly model: LanguageModel;
+  readonly tools: ToolSet;
+  readonly sink: ActionSink;
+  readonly instruction: string;
+  readonly platform: Platform;
+  readonly maxSteps: number;
+  readonly timeout: number;
+  /** Read only when the loop fails, for the screen an `ai-blocked` or `ai-incomplete` message prints. */
+  readonly screen: () => Promise<string>;
+  /** Numbers this run's transcript, the way `device.screenshot` numbers its files. */
+  readonly attempt: number;
+};
+
+export type ExtractRun<T> = {
+  readonly model: LanguageModel;
+  readonly screen: string;
+  readonly question: string;
+  readonly schema: FlexibleSchema<T>;
+  readonly sink: ActionSink;
+  readonly timeout: number;
+};
+
+/**
+ * How the loop ends. The model says so by calling `done`, rather than the
+ * outcome being read out of free text, so a run that could not finish fails the
+ * test instead of returning prose that reads like success.
+ */
+type Outcome =
+  | { readonly kind: 'completed'; readonly summary: string }
+  | { readonly kind: 'blocked'; readonly summary: string };
+
+function instructionsFor(platform: Platform): string {
+  return [
+    `You are driving a ${platform} mobile app that is already launched and in the foreground.`,
+    'Start with snapshot.',
+    'A ref from a snapshot is valid only for the very next command, so snapshot again after every action.',
+    "Use press to tap a node and fill to replace a field's text.",
+    'Never use coordinates when a ref exists.',
+    'When the instruction is satisfied, call done with outcome "completed" and a one-line summary.',
+    'If you cannot proceed, call done with outcome "blocked" and say what stopped you.',
+  ].join('\n');
+}
+
+const EXTRACT_INSTRUCTIONS = [
+  'You are reading one accessibility tree captured from a mobile app.',
+  "Each line is a node's ref, role, name, and test id. The tree never prints a field's value.",
+  'Answer from what the tree shows, not from what the app is expected to show.',
+].join('\n');
+
+/**
+ * Runs the model against the tools until it calls `done`. Nothing here knows
+ * about a session, so a test drives it with fake tools and a mock model.
+ *
+ * A tool error thrown inside `execute` is not caught: the AI SDK hands it back
+ * to the model as a tool result, which is what lets it recover from a ref that
+ * went stale by taking a fresh snapshot.
+ */
+export function runAct(run: ActRun): Promise<string> {
+  return run.sink.step(
+    renderTitle({ kind: 'act', instruction: run.instruction }),
+    async (): Promise<string> => {
+      const { generateText, hasToolCall, jsonSchema, stepCountIs, tool } = await loadAi();
+
+      const result = await generateText({
+        model: run.model,
+        tools: {
+          ...reporting(run.tools, run.sink),
+          done: tool({
+            description:
+              'Finish the instruction. Call this when it is satisfied, or when you cannot proceed.',
+            inputSchema: jsonSchema({
+              type: 'object',
+              properties: {
+                outcome: {
+                  type: 'string',
+                  enum: ['completed', 'blocked'],
+                  description:
+                    'completed when the instruction is satisfied, blocked when it is not',
+                },
+                summary: {
+                  type: 'string',
+                  description: 'One line saying what you did, or what stopped you.',
+                },
+              },
+              required: ['outcome', 'summary'],
+              additionalProperties: false,
+            }),
+          }),
+        },
+        instructions: instructionsFor(run.platform),
+        prompt: run.instruction,
+        stopWhen: [hasToolCall('done'), stepCountIs(run.maxSteps)],
+        abortSignal: AbortSignal.timeout(run.timeout),
+      });
+
+      await run.sink.attach({
+        name: `ai-act-${String(run.attempt)}.json`,
+        contentType: 'application/json',
+        body: JSON.stringify(
+          {
+            instruction: run.instruction,
+            usage: result.usage,
+            steps: result.steps.map((step) => ({
+              text: step.text,
+              toolCalls: step.toolCalls.map((call) => ({
+                name: call.toolName,
+                input: call.input,
+              })),
+              toolResults: step.toolResults.map((toolResult) => ({
+                name: toolResult.toolName,
+                output: clip(toolResult.output),
+              })),
+            })),
+          },
+          null,
+          2,
+        ),
+      });
+
+      const outcome = outcomeOf(result.steps.at(-1)?.toolCalls);
+      if (outcome === null) {
+        throw new TouchpressError({
+          kind: 'ai-incomplete',
+          instruction: run.instruction,
+          steps: result.steps.length,
+          screen: await run.screen(),
+        });
+      }
+      if (outcome.kind === 'blocked') {
+        throw new TouchpressError({
+          kind: 'ai-blocked',
+          instruction: run.instruction,
+          summary: outcome.summary,
+          screen: await run.screen(),
+        });
+      }
+      return outcome.summary;
+    },
+  );
+}
+
+/** One capture, one question, one answer. No tools, so the model cannot change the screen it is describing. */
+export function runExtract<T>(run: ExtractRun<T>): Promise<T> {
+  return run.sink.step(
+    renderTitle({ kind: 'extract', question: run.question }),
+    async (): Promise<T> => {
+      const { generateText, Output } = await loadAi();
+      const result = await generateText({
+        model: run.model,
+        instructions: EXTRACT_INSTRUCTIONS,
+        prompt: [`Question: ${run.question}`, ``, `Screen:`, run.screen].join('\n'),
+        output: Output.object({ schema: run.schema }),
+        abortSignal: AbortSignal.timeout(run.timeout),
+      });
+      return result.output;
+    },
+  );
+}
+
+/** Every model action becomes a step wrapping its own execution, so a report shows the loop as it ran. */
+function reporting(tools: ToolSet, sink: ActionSink): ToolSet {
+  const wrapped: ToolSet = {};
+  for (const [name, built] of Object.entries(tools)) {
+    const execute = (built as { execute?: (input: unknown, options: unknown) => unknown }).execute;
+    if (execute === undefined) {
+      wrapped[name] = built;
+      continue;
+    }
+    wrapped[name] = {
+      ...built,
+      execute: (input: unknown, options: unknown) =>
+        sink.step(renderTitle(toolRecord(name, input)), async () => {
+          const text = typedText(name, input);
+          if (text !== null) {
+            await sink.step(
+              renderTitle({ kind: 'typed', typed: { kind: 'text', value: text } }),
+              () => Promise.resolve(),
+              { box: true },
+            );
+          }
+          return execute(input, options);
+        }),
+    } as typeof built;
+  }
+  return wrapped;
+}
+
+/**
+ * The `done` call is validated here rather than trusted, because a JSON schema
+ * handed to `jsonSchema()` describes the tool to the model and validates
+ * nothing. A malformed call is a loop that never reached an outcome.
+ */
+function outcomeOf(
+  calls: readonly { toolName: string; input: unknown }[] | undefined,
+): Outcome | null {
+  const call = calls?.find((one) => one.toolName === 'done');
+  if (call === undefined || typeof call.input !== 'object' || call.input === null) return null;
+  const summary = Reflect.get(call.input, 'summary');
+  if (typeof summary !== 'string') return null;
+  const outcome = Reflect.get(call.input, 'outcome');
+  if (outcome === 'completed') return { kind: 'completed', summary };
+  if (outcome === 'blocked') return { kind: 'blocked', summary };
+  return null;
+}
+
+function clip(output: unknown): string {
+  const text = JSON.stringify(output) ?? 'undefined';
+  return text.length <= TRANSCRIPT_RESULT_LIMIT
+    ? text
+    : `${text.slice(0, TRANSCRIPT_RESULT_LIMIT)}...`;
+}

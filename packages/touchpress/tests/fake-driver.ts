@@ -9,7 +9,7 @@ import type {
   SettleOptions,
 } from '../src/core/driver.ts';
 import { TouchpressError } from '../src/core/errors.ts';
-import type { ActionSink } from '../src/core/report.ts';
+import type { ActionSink, EvidenceFile } from '../src/core/report.ts';
 import type { PinnedRef, RawSnapshot } from '../src/core/screen.ts';
 import { loadRaw, type FixtureName } from './fixtures.ts';
 
@@ -191,11 +191,16 @@ export type RecordedStep = {
  * The step titles a runner would print, in order, with the nesting a reporter
  * would indent by, so a test asserts on what a terminal and a report hold.
  */
-export function createRecordingSink(): ActionSink & { readonly steps: RecordedStep[] } {
+export function createRecordingSink(): ActionSink & {
+  readonly steps: RecordedStep[];
+  readonly attachments: EvidenceFile[];
+} {
   const steps: RecordedStep[] = [];
+  const attachments: EvidenceFile[] = [];
   let depth = 0;
   return {
     steps,
+    attachments,
     step: async <T>(
       title: string,
       body: () => Promise<T>,
@@ -209,7 +214,10 @@ export function createRecordingSink(): ActionSink & { readonly steps: RecordedSt
         depth -= 1;
       }
     },
-    attach: () => Promise.resolve(),
+    attach: (file: EvidenceFile) => {
+      attachments.push(file);
+      return Promise.resolve();
+    },
     note: () => {},
     outputPath: (fileName: string) => fileName,
   };
