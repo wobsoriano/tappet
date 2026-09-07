@@ -106,7 +106,6 @@ Leave Metro running for the whole suite. The first build takes several minutes.
 - [Assertions](https://github.com/wobsoriano/tappet/blob/main/docs/assertions.md)
 - [Lifecycle](https://github.com/wobsoriano/tappet/blob/main/docs/lifecycle.md)
 - [Continuous integration](https://github.com/wobsoriano/tappet/blob/main/docs/ci.md)
-- [Design](https://github.com/wobsoriano/tappet/blob/main/docs/DESIGN.md)
 
 ## The workspace
 
