@@ -59,7 +59,6 @@ export async function preflight(
     else found.push(match);
   }
   const picked = found[0];
-  // A wanted name with no booted device already pushed a problem, so the undefined arm is the compiler's, not a second condition.
   if (problems.length > 0 || picked === undefined) return { ok: false, problems };
   return { ok: true, device: { name: picked.name, id: picked.id } };
 }
@@ -96,7 +95,6 @@ function noneBooted(platform: Platform): string {
 }
 
 function notBooted(platform: Platform, name: string, booted: readonly DeviceInfo[]): string {
-  // The two shapes differ because "set the name to one of those" has nothing to point at when the list is empty.
   if (booted.length === 0) {
     return `No booted ${platform} device is named '${name}', because no ${platform} device is booted at all. Boot '${name}'.`;
   }

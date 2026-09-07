@@ -20,7 +20,8 @@ const android = {
 } as const;
 
 export default defineConfig<DeviceTestOptions>({
-  // The specs are .mts because agent-device is ESM only and this app is CommonJS.
+  // The specs are .mts because Playwright transpiles the workspace-linked library as source, and
+  // that CommonJS output cannot require agent-device. A published install keeps plain .ts specs.
   testDir: 'e2e',
   // The deliberate-failure spec stays out of the default run. Include it with TAPPET_INCLUDE_FAILING=1.
   testIgnore: process.env['TAPPET_INCLUDE_FAILING'] === '1' ? [] : ['**/failing.spec.mts'],
