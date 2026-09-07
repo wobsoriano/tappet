@@ -66,7 +66,7 @@ const summary = await device.act('Open the list and mark the second item done');
 
 `act` runs a tool loop. The model takes a snapshot, decides what to do, and runs one command against the same daemon session the deterministic steps use, so it acts on the app this test already launched. It stops when the model reports the instruction is satisfied, and it resolves with the model's one-line summary of what it did.
 
-It fails when the model reports it cannot proceed, and when it runs out of steps without reaching either. Both errors print the instruction and the screen the run ended on.
+It fails when the model reports it cannot proceed, and when it runs out of steps without reaching an outcome at all. Both errors print the instruction and the screen the run ended on.
 
 ```
 act stopped without finishing: The list screen has no second item
