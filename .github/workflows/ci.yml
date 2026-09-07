@@ -15,8 +15,10 @@ jobs:
         with:
           cache: true
 
+      # The sample app imports tappet through its exports map, which points at dist, so the
+      # workspace has to be built before the typecheck can resolve it.
+      - run: vp run -r build
+
       - run: vp check
 
       - run: vp test
-
-      - run: vp run -r build
