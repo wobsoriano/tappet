@@ -18,7 +18,7 @@ Nothing here touches a device, so it finishes in about a minute and it is what g
 
 Two jobs, one per platform, with a 60 minute cap and a concurrency group on the branch so a new push cancels the run it replaced.
 
-The iOS job runs on `macos-15`. In order, it builds the library, boots an iPhone simulator through `futureware-tech/simulator-action` with `erase_before_boot` so every run starts from a clean device, builds `apps/e2e` in Release for the simulator, installs the app with `xcrun simctl install`, prepares the `agent-device` iOS runner, and runs the suite with `--project=ios`.
+The iOS job runs on `macos-26`. In order, it builds the library, boots an iPhone simulator through `futureware-tech/simulator-action` with `erase_before_boot` so every run starts from a clean device, builds `apps/e2e` in Release for the simulator, installs the app with `xcrun simctl install`, prepares the `agent-device` iOS runner, and runs the suite with `--project=ios`.
 
 The Android job runs on `ubuntu-latest` and uses `reactivecircus/android-emulator-runner` for an API 34 `google_apis` x86_64 emulator with animations disabled. It builds and installs a Release APK and runs `--project=android`.
 
