@@ -2,15 +2,15 @@
   "name": "touchpress",
   "version": "0.0.1",
   "description": "End-to-end testing for mobile apps.",
-  "homepage": "https://github.com/wobsoriano/tangere#readme",
+  "homepage": "https://github.com/wobsoriano/touchpress#readme",
   "bugs": {
-    "url": "https://github.com/wobsoriano/tangere/issues"
+    "url": "https://github.com/wobsoriano/touchpress/issues"
   },
   "license": "MIT",
   "author": "Robert Soriano",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/wobsoriano/tangere.git"
+    "url": "git+https://github.com/wobsoriano/touchpress.git"
   },
   "files": [
     "dist"
