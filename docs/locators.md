@@ -62,6 +62,30 @@ await device.getByRole('cell').nth(-1).tap();
 
 `toHaveCount(n)` is the one matcher that is happy with many. It asks how many there are.
 
+## When the matched node cannot be tapped
+
+A React Native pressable splits what you read from what receives the touch. On Android the two are often siblings, an unnamed `[button]` whose rect encloses an `[other] "Back"` next to it, and on iOS the button usually sits inside the labelled container. A locator that matched the label pins a reference the driver refuses, because that node owns no touch point outside the interactive nodes drawn over it.
+
+`tap` and `longPress` recover from that on their own. They look on the same screen for the control that covers the matched node, preferring one inside it and taking the smallest when several qualify, then dispatch there instead. The report shows both, so a passing test still says what was really pressed.
+
+```
+tap getByText('Back')
+  retarget to @e45 [button]
+```
+
+One hop only. A second refusal, or a screen offering no such control, fails instead of guessing further.
+
+```
+The matched node has no touch point of its own, and no enclosing control was found.
+
+Locator: getByText('Back')
+
+Name the control that receives the touch, with getByRole, or with
+locator({ role: 'button', where: (node) => ... }).
+```
+
+`fill` is left alone. A refused text field is the target rather than a label for one, so retargeting would type somewhere else.
+
 ## Ancestor absorption
 
 One case is handled for you. When several matches sit on one ancestor chain and carry the same string that the query matched on, only the deepest survives.

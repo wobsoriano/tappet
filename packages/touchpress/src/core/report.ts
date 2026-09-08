@@ -27,6 +27,8 @@ export type ActionRecord =
   | { readonly kind: 'long-press'; readonly query: Query; readonly durationMs: number }
   | { readonly kind: 'fill'; readonly query: Query }
   | { readonly kind: 'typed'; readonly typed: Typed }
+  /** Where an action landed after the driver refused the node the locator matched. */
+  | { readonly kind: 'retarget'; readonly target: string }
   | { readonly kind: 'scroll'; readonly direction: ScrollDirection }
   | { readonly kind: 'scroll-into-view'; readonly query: Query }
   | { readonly kind: 'relaunch'; readonly app: string }
@@ -72,6 +74,8 @@ export function renderTitle(record: ActionRecord): string {
       return `fill ${describeQuery(record.query)}`;
     case 'typed':
       return renderTyped(record.typed);
+    case 'retarget':
+      return `retarget to ${record.target}`;
     case 'scroll':
       return `scroll ${record.direction}`;
     case 'scroll-into-view':

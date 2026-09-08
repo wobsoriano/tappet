@@ -354,6 +354,71 @@ function absorbAncestors(matched: readonly ScreenNode[], query: Query): readonly
   );
 }
 
+/**
+ * The roles that receive a touch. `tab-bar` is a container of buttons rather
+ * than a control, and every other role here is something a user presses,
+ * types into, or drags.
+ */
+const INTERACTIVE_ROLES: ReadonlySet<Role> = new Set<Role>([
+  'button',
+  'link',
+  'switch',
+  'slider',
+  'text-field',
+  'secure-text-field',
+  'cell',
+]);
+
+type Candidate = { readonly node: ScreenNode; readonly rect: Rect };
+
+/**
+ * The control a tap on `node` would really land on, or null when the screen
+ * offers none.
+ *
+ * A React Native pressable puts the accessible name on one node and the touch
+ * handler on another. On Android the two are siblings, so a locator that
+ * matched the label pins a ref that owns no touch point of its own. The button
+ * drawn under the label is the thing a finger hits, and its rect is what says
+ * so.
+ *
+ * A descendant wins over an enclosing node, because a control inside the
+ * matched node is what that node was labelling. Among several, the smallest
+ * wins, so a row of buttons inside one card does not hand back the card.
+ */
+export function touchTargetFor(screen: Screen, node: ScreenNode): ScreenNode | null {
+  const candidates: Candidate[] = [];
+  for (const other of screen.nodes) {
+    if (other === node || !other.enabled || !INTERACTIVE_ROLES.has(other.role)) continue;
+    if (other.rect !== null) candidates.push({ node: other, rect: other.rect });
+  }
+  const inside = smallest(candidates.filter((candidate) => isDescendant(candidate.node, node)));
+  if (inside !== null) return inside;
+  const own = node.rect;
+  if (own === null) return null;
+  return smallest(candidates.filter((candidate) => encloses(candidate.rect, own)));
+}
+
+function encloses(outer: Rect, inner: Rect): boolean {
+  return (
+    outer.x <= inner.x &&
+    outer.y <= inner.y &&
+    outer.x + outer.width >= inner.x + inner.width &&
+    outer.y + outer.height >= inner.y + inner.height
+  );
+}
+
+function smallest(candidates: readonly Candidate[]): ScreenNode | null {
+  let best: Candidate | null = null;
+  for (const candidate of candidates) {
+    if (best === null || areaOf(candidate.rect) < areaOf(best.rect)) best = candidate;
+  }
+  return best === null ? null : best.node;
+}
+
+function areaOf(rect: Rect): number {
+  return rect.width * rect.height;
+}
+
 export function isDescendant(node: ScreenNode, ancestor: ScreenNode): boolean {
   for (let walk = node.parent; walk !== null; walk = walk.parent) {
     if (walk === ancestor) return true;

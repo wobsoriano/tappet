@@ -13,21 +13,34 @@ import type { ActionSink, EvidenceFile } from '../src/core/report.ts';
 import type { PinnedRef, RawSnapshot } from '../src/core/screen.ts';
 import { loadRaw, type FixtureName } from './fixtures.ts';
 
+/**
+ * A captured fixture, or a snapshot written inline for a tree shape no capture
+ * on disk carries.
+ */
+export type ScreenSource = FixtureName | RawSnapshot;
+
 export type FakeDriver = DeviceDriver & {
   readonly calls: string[];
   devices: DeviceInfo[];
   /** Each entry is consumed by one `open`. A `DeviceFailure` is thrown, anything else succeeds. */
   readonly openOutcomes: DeviceFailure[];
-  screens: FixtureName[];
+  screens: ScreenSource[];
   /** What a `raw: true` capture returns. Consumed like `screens`, and empty means the driver has no raw tree to offer. */
-  rawScreens: FixtureName[];
+  rawScreens: ScreenSource[];
   /**
    * One entry per scroll. A scroll past the end of this queue changes nothing,
    * which is what a container already at its end does.
    */
-  onScroll: FixtureName[];
+  onScroll: ScreenSource[];
   /** Fails the next N mutations with a stale-ref rejection, the way a superseded generation does. */
   staleRefs: number;
+  /**
+   * Bare refs the driver refuses once each, the way it refuses a node whose
+   * only touch points belong to the interactive nodes over it. One entry is
+   * consumed per matching mutation, so two entries model a retarget that lands
+   * on a second refusing node.
+   */
+  readonly coveredRefs: string[];
   /**
    * What the next fills leave in the field, one entry each. Anything beyond the
    * queue lands whole, so a short queue models a device keyboard that drops
@@ -51,18 +64,20 @@ export type FakeDriver = DeviceDriver & {
 };
 
 export function createFakeDriver(options?: {
-  screens?: FixtureName[];
-  rawScreens?: FixtureName[];
-  onScroll?: FixtureName[];
+  screens?: ScreenSource[];
+  rawScreens?: ScreenSource[];
+  onScroll?: ScreenSource[];
 }): FakeDriver {
   const calls: string[] = [];
   const openOutcomes: DeviceFailure[] = [];
+  const coveredRefs: string[] = [];
   const fillOutcomes: string[] = [];
   const written = new Map<string, string>();
   let pendingRevert: { key: string; value: string; at: number } | null = null;
   const driver: FakeDriver = {
     calls,
     openOutcomes,
+    coveredRefs,
     fillOutcomes,
     revertingFills: 0,
     revertAfterMs: 0,
@@ -106,8 +121,8 @@ export function createFakeDriver(options?: {
       // An empty raw queue is a driver with no raw tree to offer, which is what a
       // platform whose raw capture stops at the window amounts to.
       if (queue.length === 0) return Promise.resolve({ nodes: [] });
-      const name = queue.length > 1 ? (queue.shift() ?? 'home') : (queue[0] ?? 'home');
-      const raw = loadRaw(name);
+      const source = queue.length > 1 ? (queue.shift() ?? 'home') : (queue[0] ?? 'home');
+      const raw = typeof source === 'string' ? loadRaw(source) : source;
       if (written.size === 0) return Promise.resolve(raw);
       return Promise.resolve({
         ...raw,
@@ -126,17 +141,17 @@ export function createFakeDriver(options?: {
 
     tap: (ref: PinnedRef, options: SettleOptions) => {
       calls.push(`tap ${ref} settle=${String(options.timeoutMs)}`);
-      return mutate(driver);
+      return mutate(driver, ref);
     },
     longPress: (ref: PinnedRef, durationMs: number) => {
       calls.push(`longPress ${ref} ${String(durationMs)}`);
-      return mutate(driver);
+      return mutate(driver, ref);
     },
     fill: async (ref: PinnedRef, text: string) => {
       calls.push(`fill ${ref} ${text}`);
       // A rejected fill leaves the field alone, so nothing is written until `mutate` resolves.
-      const settled = await mutate(driver);
-      const key = ref.replace(/^@/, '').replace(/~s\d+$/, '');
+      const settled = await mutate(driver, ref);
+      const key = bareRef(ref);
       const landed = fillOutcomes.shift() ?? text;
       written.set(key, landed);
       pendingRevert = null;
@@ -164,7 +179,28 @@ export function createFakeDriver(options?: {
   return driver;
 }
 
-function mutate(driver: FakeDriver): Promise<{ settled: boolean; waitedMs: number }> {
+function bareRef(ref: PinnedRef): string {
+  return ref.replace(/^@/, '').replace(/~s\d+$/, '');
+}
+
+function mutate(
+  driver: FakeDriver,
+  ref: PinnedRef,
+): Promise<{ settled: boolean; waitedMs: number }> {
+  const covered = driver.coveredRefs.indexOf(`@${bareRef(ref)}`);
+  if (covered !== -1) {
+    driver.coveredRefs.splice(covered, 1);
+    return Promise.reject(
+      new TouchpressError({
+        kind: 'driver',
+        command: 'tap',
+        failure: {
+          kind: 'covered',
+          detail: `Ref @${bareRef(ref)} has no parent-owned touch point outside its interactive descendants`,
+        },
+      }),
+    );
+  }
   if (driver.staleRefs > 0) {
     driver.staleRefs -= 1;
     return Promise.reject(
