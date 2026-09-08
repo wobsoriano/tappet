@@ -185,14 +185,16 @@ test('clearing state resets the keychain on an iOS simulator the driver named', 
   expect(runCommand.ran).toEqual(['xcrun simctl keychain A1B2C3 reset']);
 });
 
-test('the keychain is left alone on Android and before any open named a device', async () => {
+test('the keychain is left alone on Android', async () => {
   const android = recordingRunCommand();
   const androidDriver = driverFor({ platform: 'android', name: null }, android);
   await androidDriver.open({ app: 'com.example.app', relaunch: true, url: null });
   await androidDriver.clearAppState('com.example.app');
   expect(android.ran).toEqual([]);
+});
 
+test('an iOS session with no reported identifier resets the booted simulator', async () => {
   const unopened = recordingRunCommand();
   await driverFor({ platform: 'ios', name: null }, unopened).clearAppState('com.example.app');
-  expect(unopened.ran).toEqual([]);
+  expect(unopened.ran).toEqual(['xcrun simctl keychain booted reset']);
 });

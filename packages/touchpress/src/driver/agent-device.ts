@@ -167,8 +167,10 @@ export function createAgentDeviceDriver(
           state: 'clear',
           app,
         });
-        if (selection.platform === 'ios' && udid !== null) {
-          await runCommand('xcrun', ['simctl', 'keychain', udid, 'reset']);
+        // `booted` is simctl's own alias for the one running simulator, for a session opened
+        // by a daemon that did not report the identifier.
+        if (selection.platform === 'ios') {
+          await runCommand('xcrun', ['simctl', 'keychain', udid ?? 'booted', 'reset']);
         }
       }),
 
