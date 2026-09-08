@@ -310,7 +310,7 @@ function write(path: string, png: Buffer): void {
   writeFileSync(path, png);
 }
 
-function defaultName(info: TestInfo): string {
+export function defaultName(info: TestInfo): string {
   const next = (ordinals.get(info) ?? 0) + 1;
   ordinals.set(info, next);
   const slug = info.title

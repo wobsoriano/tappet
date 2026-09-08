@@ -8,6 +8,8 @@ import {
   toPixelBox,
   type PixelBox,
 } from '../src/core/screenshot.ts';
+import { defaultName } from '../src/playwright/screenshot.ts';
+import type { TestInfo } from '@playwright/test';
 
 type Colour = readonly [number, number, number];
 
@@ -157,4 +159,13 @@ test('a mask moves into the coordinates of the crop it is painted on', () => {
     width: 40,
     height: 20,
   });
+});
+
+test('an unnamed baseline carries its describe path, so two blocks sharing a title do not collide', () => {
+  const info = (titlePath: string[]): TestInfo =>
+    ({ title: titlePath.at(-1), titlePath }) as unknown as TestInfo;
+  const outer = defaultName(info(['file.spec.ts', 'outer', 'shot']));
+  const inner = defaultName(info(['file.spec.ts', 'inner', 'shot']));
+  expect(outer).toBe('outer-shot-1.png');
+  expect(inner).toBe('inner-shot-1.png');
 });
