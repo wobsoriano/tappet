@@ -212,6 +212,23 @@ test('a query with no text does not collapse nested nodes that say different thi
   expect(resolve(parseScreen(raw, 'ios'), { role: 'button' }).outcome).toBe('many');
 });
 
+test('a global regex matches every sibling rather than only the first it was tested on', () => {
+  const raw: RawSnapshot = {
+    nodes: [
+      { ref: 'e1', index: 0, type: 'Other' },
+      { ref: 'e2', index: 1, parentIndex: 0, type: 'Button', label: 'Save' },
+      { ref: 'e3', index: 2, parentIndex: 0, type: 'Button', label: 'Save' },
+    ],
+  };
+  const resolution = resolve(parseScreen(raw, 'ios'), {
+    role: 'button',
+    name: textMatch(/Save/g),
+  });
+  expect(resolution.outcome).toBe('many');
+  if (resolution.outcome !== 'many') return;
+  expect(resolution.nodes.map((node) => node.ref)).toEqual(['@e2', '@e3']);
+});
+
 test('pin falls back to a bare ref when the driver reported no generation', () => {
   const screen = parseScreen(
     { nodes: [{ ref: 'e1', index: 0, type: 'Button', label: 'Go' }] },
