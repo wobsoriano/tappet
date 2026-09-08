@@ -1,6 +1,6 @@
 {
   "name": "touchpress",
-  "version": "0.1.3",
+  "version": "0.2.0",
   "description": "End-to-end testing for mobile apps.",
   "homepage": "https://github.com/wobsoriano/touchpress#readme",
   "bugs": {
