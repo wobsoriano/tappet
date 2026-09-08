@@ -75,23 +75,23 @@ export function createAgentDeviceDriver(
 
     open: (request: OpenRequest): Promise<Binding> =>
       run('open', async () => {
-        const opened = await client.apps.open({
+        const result = await client.apps.open({
           ...where,
           app: request.app,
           relaunch: request.relaunch,
           ...(request.url === null ? {} : { url: request.url }),
         });
-        udid = opened.identifiers.udid ?? opened.identifiers.deviceId ?? null;
+        udid = result.identifiers.udid ?? result.identifiers.deviceId ?? null;
         return {
-          session: opened.session,
+          session: result.session,
           platform: selection.platform,
           deviceLabel:
-            opened.device?.name ??
-            opened.identifiers.deviceName ??
+            result.device?.name ??
+            result.identifiers.deviceName ??
             selection.name ??
             selection.platform,
-          appId: opened.appBundleId ?? opened.appId ?? request.app,
-          stateDir: opened.sessionStateDir ?? null,
+          appId: result.appBundleId ?? result.appId ?? request.app,
+          stateDir: result.sessionStateDir ?? null,
           udid,
         };
       }),
@@ -139,9 +139,7 @@ export function createAgentDeviceDriver(
       if (looksLikeRef(text)) throw new TouchpressError({ kind: 'type-rejected' });
       try {
         await client.interactions.type({ ...where, text });
-        // agent-device's `type` takes no settle and reports none, so nothing here
-        // may claim the screen went quiet. The budget stays on the port because
-        // the core owns it and a later command shape may take it.
+        // agent-device's `type` takes no settle and reports none, so nothing here may claim the screen went quiet.
         return { settled: false, waitedMs: 0 };
       } catch (error) {
         throw new TouchpressError({
@@ -222,10 +220,7 @@ function readNormalized(error: unknown): {
 
 /**
  * agent-device 0.20.10's own check, copied rather than approximated so the two
- * agree on what it will refuse. It reads the first whitespace-delimited word of
- * the trimmed text, and treats a leading `@` followed by a name carrying a
- * digit, or by `ref`, `node`, `element` or `el`, as a ref to resolve rather than
- * as characters to send. So `@e12` and `@ref-x` are refs, while `@word` and
+ * agree on what it will refuse. `@e12` and `@ref-x` are refs, while `@word` and
  * `@ home` are text.
  */
 export function looksLikeRef(text: string): boolean {
