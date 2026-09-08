@@ -122,17 +122,21 @@ export function runAct(run: ActRun): Promise<string> {
           {
             instruction: run.instruction,
             usage: result.usage,
-            steps: result.steps.map((step) => ({
-              text: step.text,
-              toolCalls: step.toolCalls.map((call) => ({
-                name: call.toolName,
-                input: call.input,
-              })),
-              toolResults: step.toolResults.map((toolResult) => ({
-                name: toolResult.toolName,
-                output: clip(toolResult.output),
-              })),
-            })),
+            steps: result.steps.map((step) => {
+              const errors = toolErrors(step.content);
+              return {
+                text: step.text,
+                toolCalls: step.toolCalls.map((call) => ({
+                  name: call.toolName,
+                  input: call.input,
+                })),
+                toolResults: step.toolResults.map((toolResult) => ({
+                  name: toolResult.toolName,
+                  output: clip(toolResult.output),
+                })),
+                ...(errors.length === 0 ? {} : { toolErrors: errors }),
+              };
+            }),
           },
           null,
           2,
@@ -230,6 +234,28 @@ function outcomeOf(
 /** `AbortSignal.timeout` rejects with a DOMException named TimeoutError, which a provider surfaces as is or as an AbortError. */
 function timedOut(error: unknown): boolean {
   return error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError');
+}
+
+/**
+ * The calls that failed. `step.toolResults` holds only the ones that returned,
+ * so a transcript built from it alone shows a loop doing nothing and never says
+ * why, which is what a nine-error run looked like from the attachment.
+ */
+function toolErrors(
+  content: readonly { readonly type: string }[],
+): { name: string; input: unknown; error: string }[] {
+  return content
+    .filter((part) => part.type === 'tool-error')
+    .map((part) => ({
+      name: String(Reflect.get(part, 'toolName')),
+      input: Reflect.get(part, 'input'),
+      error: messageOf(Reflect.get(part, 'error')),
+    }));
+}
+
+function messageOf(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  return typeof error === 'string' ? error : (JSON.stringify(error) ?? 'unknown error');
 }
 
 function clip(output: unknown): string {

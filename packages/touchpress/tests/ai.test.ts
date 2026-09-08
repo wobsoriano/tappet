@@ -207,6 +207,50 @@ test('act attaches one transcript carrying the calls, the results, and the usage
   });
 });
 
+test('the transcript records the calls that errored, so a failing loop is readable', async () => {
+  const model = new MockLanguageModelV4({
+    doGenerate: [
+      turn(toolCall('1', 'press', { target: 'e4' })),
+      turn(done('completed', 'Pressed it on the second try')),
+    ],
+  });
+  const sink = createRecordingSink();
+  const run = runAct({
+    model,
+    tools: {
+      press: tool({
+        description: 'press a node',
+        inputSchema: jsonSchema({ type: 'object', properties: { target: { type: 'string' } } }),
+        execute: (): Promise<{ ok: true }> =>
+          Promise.reject(new Error('ref "e4" is not a snapshot ref')),
+      }),
+    },
+    sink,
+    instruction: 'Press sign in',
+    platform: 'ios',
+    maxSteps: 10,
+    timeout: 30_000,
+    screen: () => Promise.resolve('@a1 [button] "Sign in"'),
+    attempt: 1,
+  });
+  await run;
+
+  const file = sink.attachments[0];
+  const transcript: unknown = JSON.parse(file !== undefined && 'body' in file ? file.body : '{}');
+  expect(transcript).toMatchObject({
+    steps: [
+      {
+        toolCalls: [{ name: 'press', input: { target: 'e4' } }],
+        toolResults: [],
+        toolErrors: [
+          { name: 'press', input: { target: 'e4' }, error: 'ref "e4" is not a snapshot ref' },
+        ],
+      },
+      { toolCalls: [{ name: 'done' }] },
+    ],
+  });
+});
+
 test('a model that reports it is blocked fails the test rather than resolving with prose', async () => {
   const model = new MockLanguageModelV4({
     doGenerate: [
