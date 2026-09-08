@@ -155,7 +155,7 @@ function formatError(info: ErrorInfo): string {
     case 'ai-not-configured':
       return [
         'device.act and device.extract need a model.',
-        "Set use.aiModel to a gateway model id, such as 'anthropic/claude-sonnet-4.5', or to a provider model instance.",
+        "Set use.aiModel to a gateway model id, such as 'anthropic/claude-sonnet-5', or to a provider model instance.",
       ].join('\n');
     case 'ai-missing-peer':
       return [
