@@ -2,7 +2,14 @@ import { describeNode, type Check } from './checks.ts';
 import type { ScrollDirection, Settled } from './driver.ts';
 import { TouchpressError, type ExpectedValue } from './errors.ts';
 import { probe, type ProbeOptions, type ProbeResult } from './probe.ts';
-import { describeQuery, textMatch, type Filter, type Query, type Role } from './query.ts';
+import {
+  describeQuery,
+  normalizeText,
+  textMatch,
+  type Filter,
+  type Query,
+  type Role,
+} from './query.ts';
 import { createScrollSearch, type ScrollDevice } from './scroll.ts';
 import { renderTitle, type ActionRecord, type ActionSink, type Typed } from './report.ts';
 import {
@@ -272,10 +279,10 @@ function perform(
           if (!settled.settled) {
             sink.note('settle', `${renderTitle(record)} finished before the screen went quiet`);
           }
-          if (confirmation === null) return;
+          if (confirmation === null || write === undefined) return;
           if (attempts === 1) {
             await sink.step(
-              renderTitle({ kind: 'typed', typed: typedOf(confirmation) }),
+              renderTitle({ kind: 'typed', typed: typedOf(resolution.node.role, write) }),
               () => Promise.resolve(),
               { box: true },
             );
@@ -394,6 +401,10 @@ type Write = { readonly text: string; readonly secret: boolean };
  * `secret` is a plain field holding a credential, confirmed character by
  * character with only the reporting cut to a length. Folding it into `mask`
  * would demand one repeated character, which a password verbatim is not.
+ *
+ * The text is normalized the way `parseScreen` normalizes what it reads back,
+ * so a run of spaces the field keeps and the tree collapses still confirms. A
+ * mask keeps the raw length, because the field reports one character per key.
  */
 type Confirmation =
   | { readonly kind: 'mask'; readonly length: number }
@@ -402,7 +413,8 @@ type Confirmation =
 
 function confirmationOf(role: Role, write: Write): Confirmation {
   if (role === 'secure-text-field') return { kind: 'mask', length: write.text.length };
-  return write.secret ? { kind: 'secret', value: write.text } : { kind: 'open', value: write.text };
+  const value = normalizeText(write.text);
+  return write.secret ? { kind: 'secret', value } : { kind: 'open', value };
 }
 
 function holds(confirmation: Confirmation, actual: string): boolean {
@@ -436,19 +448,12 @@ function expectedOf(confirmation: Confirmation): ExpectedValue {
   }
 }
 
-function typedOf(confirmation: Confirmation): Typed {
-  switch (confirmation.kind) {
-    case 'mask':
-      return { kind: 'hidden', length: confirmation.length };
-    case 'secret':
-      return { kind: 'hidden', length: confirmation.value.length };
-    case 'open':
-      return { kind: 'text', value: confirmation.value };
-    default: {
-      const never: never = confirmation;
-      throw new Error(`unhandled confirmation ${JSON.stringify(never)}`);
-    }
+/** What the report says was typed, verbatim, which the normalized confirmation no longer holds. */
+function typedOf(role: Role, write: Write): Typed {
+  if (role === 'secure-text-field' || write.secret) {
+    return { kind: 'hidden', length: write.text.length };
   }
+  return { kind: 'text', value: write.text };
 }
 
 /** An actual value may be repeated back only as far as the expected one could be. */

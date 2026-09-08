@@ -120,10 +120,16 @@ export async function createDeviceTools(session: string, platform: Platform): Pr
     if (built === undefined) {
       throw new Error(`agent-device no longer exposes the "${name}" tool`);
     }
+    const schema = prune(built.inputSchema.jsonSchema);
     kept[name] = tool({
       description: built.description,
-      inputSchema: jsonSchema(prune(built.inputSchema.jsonSchema)),
-      execute: wrapDeviceTool(name, platform, built.execute),
+      inputSchema: jsonSchema(schema),
+      execute: wrapDeviceTool(
+        name,
+        platform,
+        built.execute,
+        new Set(Object.keys(schema.properties ?? {})),
+      ),
     });
   }
   return kept;
@@ -132,11 +138,23 @@ export async function createDeviceTools(session: string, platform: Platform): Pr
 /**
  * The one place a command's input and output are reshaped for the model, so the
  * table above stays the only thing that says which command gets which shape.
+ *
+ * `accepted` is the key set of the pruned schema. A schema handed to
+ * `jsonSchema()` describes the tool and validates nothing, so a model that
+ * sends a key the schema no longer lists would otherwise have it forwarded.
  */
-export function wrapDeviceTool(name: string, platform: Platform, execute: Execute): Execute {
+export function wrapDeviceTool(
+  name: string,
+  platform: Platform,
+  execute: Execute,
+  accepted: ReadonlySet<string>,
+): Execute {
   const shape = DEVICE_TOOLS.get(name)?.output ?? 'raw';
   return async (input, options) => {
-    const sent = shape === 'screen' ? { ...asObject(input), forceFull: true } : withRefSigil(input);
+    const declared = Object.fromEntries(
+      Object.entries(asObject(input)).filter(([key]) => accepted.has(key)),
+    );
+    const sent = shape === 'screen' ? { ...declared, forceFull: true } : withRefSigil(declared);
     const output = await execute(sent, options);
     return shape === 'screen'
       ? compactSnapshot(asSnapshot(output), platform)

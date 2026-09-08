@@ -28,8 +28,8 @@ export type { PreflightDevice, PreflightReport } from './preflight.ts';
 export type TouchpressOptions = CoreOptions & AiOptions;
 export type Device = CoreDevice & AiDevice;
 
-export type { AiOptions } from './ai/options.ts';
-export type { ActOptions, AiDevice, ExtractOptions } from './ai/device.ts';
+export type { AiModel, AiOptions } from './ai/options.ts';
+export type { ActOptions, AiDevice, ExtractOptions, ExtractSchema } from './ai/device.ts';
 
 export type { ReadyQuery } from './core/config.ts';
 export type { FilterOptions, Locator } from './core/device.ts';

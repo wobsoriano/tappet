@@ -21,7 +21,7 @@ Both are opt-in. A project that never calls one needs no model and no extra depe
 
 ## Install
 
-`ai` is an optional peer dependency, imported the first time `act` or `extract` runs. Importing `touchpress` without it works.
+`ai` is an optional peer dependency, imported the first time `act` or `extract` runs. Importing `touchpress` without it works, and so does type-checking against it, because the types on the main entry name no AI SDK type.
 
 ```sh
 pnpm add -D ai

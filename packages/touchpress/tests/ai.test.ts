@@ -128,6 +128,41 @@ test('act reports the instruction, nests every model command under it, and retur
   ]);
 });
 
+test('two tool calls in one model turn reach the device one after the other', async () => {
+  const order: string[] = [];
+  const recording = (name: string, holdMs: number) =>
+    tool({
+      description: name,
+      inputSchema: jsonSchema({ type: 'object', properties: {} }),
+      execute: async () => {
+        order.push(`${name} start`);
+        await new Promise((resolve) => setTimeout(resolve, holdMs));
+        order.push(`${name} end`);
+        return { ok: true };
+      },
+    });
+  const model = new MockLanguageModelV4({
+    doGenerate: [
+      turn(toolCall('1', 'snapshot', {}), toolCall('2', 'press', {})),
+      turn(done('completed', 'Pressed it')),
+    ],
+  });
+
+  await runAct({
+    model,
+    tools: { snapshot: recording('snapshot', 30), press: recording('press', 0) },
+    sink: silentSink,
+    instruction: 'Press sign in',
+    platform: 'ios',
+    maxSteps: 10,
+    timeout: 30_000,
+    screen: () => Promise.resolve(''),
+    attempt: 1,
+  });
+
+  expect(order).toEqual(['snapshot start', 'snapshot end', 'press start', 'press end']);
+});
+
 test('act tells the model how to drive the app rather than dropping its instructions', async () => {
   const model = new MockLanguageModelV4({
     doGenerate: [turn(done('completed', 'Already signed in'))],
@@ -474,10 +509,15 @@ test('a read command answers with what upstream returned, untrimmed', () => {
 
 test('a press naming a bare ref reaches the device with the @ the driver demands', async () => {
   const sent: unknown[] = [];
-  const press = wrapDeviceTool('press', 'ios', (input) => {
-    sent.push(input);
-    return Promise.resolve({ targetKind: 'ref', message: 'ok' });
-  });
+  const press = wrapDeviceTool(
+    'press',
+    'ios',
+    (input) => {
+      sent.push(input);
+      return Promise.resolve({ targetKind: 'ref', message: 'ok' });
+    },
+    new Set(['target']),
+  );
 
   await press({ target: { kind: 'ref', ref: 'e4' } }, {});
   await press({ target: { kind: 'ref', ref: '@e7' } }, {});
@@ -490,12 +530,34 @@ test('a press naming a bare ref reaches the device with the @ the driver demands
   ]);
 });
 
+test('a key the pruned schema does not declare never reaches the device', async () => {
+  const sent: unknown[] = [];
+  const press = wrapDeviceTool(
+    'press',
+    'ios',
+    (input) => {
+      sent.push(input);
+      return Promise.resolve({ targetKind: 'ref', message: 'ok' });
+    },
+    new Set(['target']),
+  );
+
+  await press({ target: { kind: 'ref', ref: '@e4' }, daemonBaseUrl: 'http://x', cwd: '/' }, {});
+
+  expect(sent).toEqual([{ target: { kind: 'ref', ref: '@e4' } }]);
+});
+
 test('the snapshot the model asks for is the full tree, rendered', async () => {
   const sent: unknown[] = [];
-  const snapshot = wrapDeviceTool('snapshot', 'ios', (input) => {
-    sent.push(input);
-    return Promise.resolve({ nodes: [{ ref: 'e1', index: 0, type: 'Button', label: 'List' }] });
-  });
+  const snapshot = wrapDeviceTool(
+    'snapshot',
+    'ios',
+    (input) => {
+      sent.push(input);
+      return Promise.resolve({ nodes: [{ ref: 'e1', index: 0, type: 'Button', label: 'List' }] });
+    },
+    new Set(['depth']),
+  );
 
   expect(await snapshot({ depth: 3 }, {})).toBe('@e1 [button] "List"');
   expect(sent).toEqual([{ depth: 3, forceFull: true }]);

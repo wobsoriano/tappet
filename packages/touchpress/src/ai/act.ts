@@ -2,12 +2,15 @@ import type { FlexibleSchema, LanguageModel, ToolSet } from 'ai';
 import { TouchpressError } from '../core/errors.ts';
 import { renderTitle, type ActionSink } from '../core/report.ts';
 import type { Platform } from '../core/screen.ts';
+import { createQueue } from '../core/session.ts';
+import type { ExtractSchema } from './device.ts';
+import type { AiModel } from './options.ts';
 import { loadAi, toolRecord, typedText } from './tools.ts';
 
 const TRANSCRIPT_RESULT_LIMIT = 2048;
 
 export type ActRun = {
-  readonly model: LanguageModel;
+  readonly model: AiModel;
   readonly tools: ToolSet;
   readonly sink: ActionSink;
   readonly instruction: string;
@@ -21,10 +24,10 @@ export type ActRun = {
 };
 
 export type ExtractRun<T> = {
-  readonly model: LanguageModel;
+  readonly model: AiModel;
   readonly screen: string;
   readonly question: string;
-  readonly schema: FlexibleSchema<T>;
+  readonly schema: ExtractSchema<T>;
   readonly sink: ActionSink;
   readonly timeout: number;
 };
@@ -74,7 +77,7 @@ export function runAct(run: ActRun): Promise<string> {
       const { ToolLoopAgent, hasToolCall, jsonSchema, stepCountIs, tool } = await loadAi();
 
       const agent = new ToolLoopAgent({
-        model: run.model,
+        model: languageModel(run.model),
         instructions: instructionsFor(run.platform),
         tools: {
           ...reporting(run.tools, run.sink),
@@ -168,6 +171,20 @@ export function runAct(run: ActRun): Promise<string> {
   );
 }
 
+/**
+ * The public types are structural so the main entry's declarations never
+ * import from `ai`, and these two casts are where they meet the SDK's own.
+ * Every `LanguageModel` and every `FlexibleSchema` satisfies the structural
+ * type it is cast from, so nothing the SDK accepts is turned away.
+ */
+function languageModel(model: AiModel): LanguageModel {
+  return model as LanguageModel;
+}
+
+function flexibleSchema<T>(schema: ExtractSchema<T>): FlexibleSchema<T> {
+  return schema as FlexibleSchema<T>;
+}
+
 /** One capture, one question, one answer. No tools, so the model cannot change the screen it is describing. */
 export function runExtract<T>(run: ExtractRun<T>): Promise<T> {
   return run.sink.step(
@@ -175,9 +192,9 @@ export function runExtract<T>(run: ExtractRun<T>): Promise<T> {
     async (): Promise<T> => {
       const { ToolLoopAgent, Output } = await loadAi();
       const agent = new ToolLoopAgent({
-        model: run.model,
+        model: languageModel(run.model),
         instructions: EXTRACT_INSTRUCTIONS,
-        output: Output.object({ schema: run.schema }),
+        output: Output.object({ schema: flexibleSchema(run.schema) }),
       });
       const result = await agent.generate({
         prompt: [`Question: ${run.question}`, ``, `Screen:`, run.screen].join('\n'),
@@ -188,8 +205,14 @@ export function runExtract<T>(run: ExtractRun<T>): Promise<T> {
   );
 }
 
-/** Every model action becomes a step wrapping its own execution, so a report shows the loop as it ran. */
+/**
+ * Every model action becomes a step wrapping its own execution, so a report
+ * shows the loop as it ran. The executions share one queue, because the AI SDK
+ * runs the tool calls of one step concurrently and a snapshot overlapping a
+ * press on the device reads a screen the press is changing.
+ */
 function reporting(tools: ToolSet, sink: ActionSink): ToolSet {
+  const queue = createQueue();
   const wrapped: ToolSet = {};
   for (const [name, built] of Object.entries(tools)) {
     const { execute } = built;
@@ -200,17 +223,19 @@ function reporting(tools: ToolSet, sink: ActionSink): ToolSet {
     wrapped[name] = {
       ...built,
       execute: (input, options) =>
-        sink.step(renderTitle(toolRecord(name, input)), async () => {
-          const text = typedText(name, input);
-          if (text !== null) {
-            await sink.step(
-              renderTitle({ kind: 'typed', typed: { kind: 'text', value: text } }),
-              () => Promise.resolve(),
-              { box: true },
-            );
-          }
-          return execute(input, options);
-        }),
+        queue.enqueue(() =>
+          sink.step(renderTitle(toolRecord(name, input)), async () => {
+            const text = typedText(name, input);
+            if (text !== null) {
+              await sink.step(
+                renderTitle({ kind: 'typed', typed: { kind: 'text', value: text } }),
+                () => Promise.resolve(),
+                { box: true },
+              );
+            }
+            return execute(input, options);
+          }),
+        ),
     };
   }
   return wrapped;
