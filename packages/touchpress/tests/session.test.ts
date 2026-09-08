@@ -495,6 +495,18 @@ test('a fill titles its step with the locator alone and the typed text with a ne
   ]);
 });
 
+test('a fill whose text carries runs of whitespace confirms against the normalized read-back', async () => {
+  const driver = createFakeDriver({ screens: ['ios-login'] });
+  const session = await openLogin(driver, { actionTimeout: 4000, settleQuietMs: 20 });
+  const sink = createRecordingSink();
+  const app = createDevice(session, sink);
+
+  await app.getByRole('text-field', { name: 'Email' }).fill('two  words ');
+
+  expect(driver.calls.filter((call) => call.startsWith('fill')).length).toBe(1);
+  expect(sink.steps[1]?.title).toBe('type "two  words "');
+});
+
 test('a fill of a secure field reports how much it typed and never the text', async () => {
   const driver = createFakeDriver({ screens: ['ios-login'] });
   driver.fillOutcomes.push(...Array<string>(50).fill(mask(SECRET.length)));
