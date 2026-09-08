@@ -1,5 +1,11 @@
 # touchpress
 
+## 0.1.3
+
+### Patch Changes
+
+- de6417d: Retarget a tap or a long press the driver refuses onto the control that covers the matched node, and report where it landed.
+
 ## 0.1.2
 
 ### Patch Changes
