@@ -310,10 +310,18 @@ function write(path: string, png: Buffer): void {
   writeFileSync(path, png);
 }
 
+/**
+ * The describe path is part of the name, the way Playwright's own screenshot
+ * assertion names its baselines, so two blocks each holding a test called
+ * "shot" do not write over one baseline. The first element is the file, which
+ * `snapshotPath` already places the baseline under.
+ */
 export function defaultName(info: TestInfo): string {
   const next = (ordinals.get(info) ?? 0) + 1;
   ordinals.set(info, next);
-  const slug = info.title
+  const slug = info.titlePath
+    .slice(1)
+    .join(' ')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '');
