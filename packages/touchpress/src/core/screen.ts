@@ -354,11 +354,7 @@ function absorbAncestors(matched: readonly ScreenNode[], query: Query): readonly
   );
 }
 
-/**
- * The roles that receive a touch. `tab-bar` is a container of buttons rather
- * than a control, and every other role here is something a user presses,
- * types into, or drags.
- */
+/** `tab-bar` is left out because it is a container of buttons rather than a control that takes the touch. */
 const INTERACTIVE_ROLES: ReadonlySet<Role> = new Set<Role>([
   'button',
   'link',
