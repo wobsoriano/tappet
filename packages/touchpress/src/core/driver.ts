@@ -3,6 +3,12 @@ import type { PinnedRef, Platform, RawSnapshot } from './screen.ts';
 export type ScrollDirection = 'up' | 'down' | 'left' | 'right';
 
 /**
+ * `in-app` is the navigation control the app draws. `system` is the platform
+ * gesture or key, which iOS does not have.
+ */
+export type BackMode = 'in-app' | 'system';
+
+/**
  * A session binds on its first command, so this rides on `open` and on every
  * command after it. A call sent without selection lands on whichever device the
  * daemon picks, which is not necessarily the one under test.
@@ -34,6 +40,8 @@ export type Binding = {
   readonly deviceLabel: string;
   readonly appId: string;
   readonly stateDir: string | null;
+  /** What lets a driver reach the device with a tool of its own. Null when the open response named none. */
+  readonly udid: string | null;
 };
 
 export type Settled = {
@@ -102,6 +110,24 @@ export type DeviceDriver = {
   tap(ref: PinnedRef, options: SettleOptions): Promise<Settled>;
   longPress(ref: PinnedRef, durationMs: number, options: SettleOptions): Promise<Settled>;
   fill(ref: PinnedRef, text: string, options: SettleOptions): Promise<Settled>;
+  /** Takes no target, because the platform decides what goes back. */
+  back(mode: BackMode, options: SettleOptions): Promise<Settled>;
+  /**
+   * Types into whatever holds focus. The one mutation with no `PinnedRef`,
+   * because a field the app focused for itself may carry nothing to select on.
+   */
+  type(text: string, options: SettleOptions): Promise<Settled>;
+  /**
+   * Discards the app's stored state. Whether that reaches every store the app
+   * writes to is the driver's problem, not the core's.
+   */
+  clearAppState(app: string): Promise<void>;
+  /**
+   * Resets the device's keychain, which on an iOS simulator is shared by every
+   * app on it. Kept apart from `clearAppState` for that reason. A no-op on a
+   * platform whose app data clear already covers the app's secure store.
+   */
+  resetKeychain(): Promise<void>;
   /** Returns nothing because the driver's scroll response carries no settle observation. */
   scroll(direction: ScrollDirection, options: SettleOptions): Promise<void>;
   dismissDevOverlay(): Promise<void>;

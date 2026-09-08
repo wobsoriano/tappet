@@ -1,5 +1,8 @@
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import { createAgentDeviceClient, normalizeAgentDeviceError } from 'agent-device';
 import type {
+  BackMode,
   Binding,
   DeviceDriver,
   DeviceFailure,
@@ -21,6 +24,15 @@ export function createClient(): Client {
   return createAgentDeviceClient({ responseLevel: 'full' });
 }
 
+/** The seam a test observes instead of spawning a process. */
+export type RunCommand = (file: string, args: readonly string[]) => Promise<void>;
+
+const execFileAsync = promisify(execFile);
+
+const spawnCommand: RunCommand = async (file, args) => {
+  await execFileAsync(file, [...args]);
+};
+
 /**
  * The only file that imports `agent-device`. Two jobs: translate domain requests
  * into client calls carrying the session and device selection, and translate the
@@ -31,12 +43,15 @@ export function createAgentDeviceDriver(
   client: Client,
   session: string,
   selection: DeviceSelection,
+  runCommand: RunCommand = spawnCommand,
 ): DeviceDriver {
   const where = {
     session,
     platform: selection.platform,
     ...(selection.name === null ? {} : { device: selection.name }),
   };
+  // Only `open` learns the simulator identifier, and `resetKeychain` is the one call that needs it.
+  let udid: string | null = null;
 
   async function run<T>(command: string, body: () => Promise<T>): Promise<T> {
     try {
@@ -66,6 +81,7 @@ export function createAgentDeviceDriver(
           relaunch: request.relaunch,
           ...(request.url === null ? {} : { url: request.url }),
         });
+        udid = result.identifiers.udid ?? result.identifiers.deviceId ?? null;
         return {
           session: result.session,
           platform: selection.platform,
@@ -76,6 +92,7 @@ export function createAgentDeviceDriver(
             selection.platform,
           appId: result.appBundleId ?? result.appId ?? request.app,
           stateDir: result.sessionStateDir ?? null,
+          udid,
         };
       }),
 
@@ -108,6 +125,54 @@ export function createAgentDeviceDriver(
       run('fill', async () =>
         toSettled(await client.interactions.fill({ ...where, ref, text, ...settle(options) })),
       ),
+
+    back: (mode: BackMode, options: SettleOptions): Promise<Settled> =>
+      run('back', async () =>
+        toSettled(await client.command.back({ ...where, mode, ...settle(options) })),
+      ),
+
+    /**
+     * Scrubbed rather than run through `run`, because agent-device echoes the
+     * text it rejected and a password has no business in a report.
+     */
+    type: async (text: string, _options: SettleOptions): Promise<Settled> => {
+      if (looksLikeRef(text)) throw new TouchpressError({ kind: 'type-rejected' });
+      try {
+        await client.interactions.type({ ...where, text });
+        // agent-device's `type` takes no settle and reports none, so nothing here may claim the screen went quiet.
+        return { settled: false, waitedMs: 0 };
+      } catch (error) {
+        throw new TouchpressError({
+          kind: 'driver',
+          command: 'type',
+          failure: withoutText(classifyError(error), text),
+        });
+      }
+    },
+
+    clearAppState: (app: string): Promise<void> =>
+      run('clearAppState', async () => {
+        await client.settings.update({
+          ...where,
+          setting: 'clear-app-state',
+          state: 'clear',
+          app,
+        });
+      }),
+
+    /**
+     * agent-device has no keychain command, and the simulator keychain is where
+     * clerk-ios and expo-secure-store keep a session. Lives in the driver
+     * because it needs the udid and a process, neither of which the core has.
+     */
+    resetKeychain: (): Promise<void> =>
+      run('resetKeychain', async () => {
+        // Android keeps an app's keystore entries with its data, so clearing the app already removed them.
+        if (selection.platform !== 'ios') return;
+        // `booted` is simctl's own alias for the one running simulator, for a session opened
+        // by a daemon that did not report the identifier.
+        await runCommand('xcrun', ['simctl', 'keychain', udid ?? 'booted', 'reset']);
+      }),
 
     scroll: (direction: ScrollDirection, options: SettleOptions): Promise<void> =>
       run('scroll', async () => {
@@ -151,6 +216,24 @@ function readNormalized(error: unknown): {
   details?: Record<string, unknown>;
 } {
   return normalizeAgentDeviceError(error);
+}
+
+/**
+ * agent-device 0.20.10's own check, copied rather than approximated so the two
+ * agree on what it will refuse. `@e12` and `@ref-x` are refs, while `@word` and
+ * `@ home` are text.
+ */
+export function looksLikeRef(text: string): boolean {
+  const word = text.trim().split(/\s+/, 1)[0];
+  if (word === undefined || !word.startsWith('@') || word.length < 3) return false;
+  const rest = word.slice(1);
+  return /^[A-Za-z_-]*\d[\w-]*$/i.test(rest) || /^(?:ref|node|element|el)[\w-]*$/i.test(rest);
+}
+
+/** Every failure kind carries a `detail`, and the driver puts what it was given into it. */
+function withoutText(failure: DeviceFailure, text: string): DeviceFailure {
+  if (text === '') return failure;
+  return { ...failure, detail: failure.detail.split(text).join('<typed text>') };
 }
 
 /**
