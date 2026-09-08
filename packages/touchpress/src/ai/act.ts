@@ -42,17 +42,20 @@ function instructionsFor(platform: Platform): string {
   return [
     `You are driving a ${platform} mobile app that is already launched and in the foreground.`,
     'Start with snapshot.',
-    'A ref from a snapshot is valid only for the very next command, so snapshot again after every action.',
+    'A snapshot prints one node per line, indented by depth, as in: @e4 [button] "Sign in" #signIn',
     "Use press to tap a node and fill to replace a field's text.",
-    'Never use coordinates when a ref exists.',
-    'When the instruction is satisfied, call done with outcome "completed" and a one-line summary.',
+    'Both take the ref as { "kind": "ref", "ref": "@e4" }, copied exactly as the line printed it.',
+    'Every ref stops working when the next command runs, so snapshot again after each action before you use one.',
+    'Use coordinates only when no line on the snapshot is the thing you need.',
+    'The moment the instruction is satisfied, call done with outcome "completed" and a one-line summary. Do not snapshot again to check your work.',
     'If you cannot proceed, call done with outcome "blocked" and say what stopped you.',
   ].join('\n');
 }
 
 const EXTRACT_INSTRUCTIONS = [
   'You are reading one accessibility tree captured from a mobile app.',
-  "Each line is a node's ref, role, name, and test id. The tree never prints a field's value.",
+  'Each line is one node, indented by depth, carrying its ref, role, name, and test id, as in: @e4 [button] "Sign in" #signIn',
+  "The tree never prints a field's value.",
   'Answer from what the tree shows, not from what the app is expected to show.',
 ].join('\n');
 

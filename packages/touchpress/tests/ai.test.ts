@@ -135,6 +135,7 @@ test('act tells the model how to drive the app rather than dropping its instruct
   await run;
 
   expect(systemText(model)).toContain('snapshot');
+  expect(systemText(model)).toContain('{ "kind": "ref", "ref": "@e4" }');
 });
 
 test('a fill the model ran reports the text it typed as a nested boxed step', async () => {
