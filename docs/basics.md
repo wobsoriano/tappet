@@ -76,7 +76,7 @@ The driver refuses text whose first word looks like a node reference, a leading 
 
 `clearState()` discards the app's stored state and then relaunches, because an app still holding a cleared session in memory has not been cleared. It is Maestro's `clearState` and Detox's `launchApp({ delete: true })`.
 
-`clearKeychain()` resets the simulator's keychain, which is where `clerk-ios` and `expo-secure-store` keep a session. On iOS the keychain belongs to the simulator, not the app, so the reset clears what every app on it stored there. That is why it is a separate call rather than part of `clearState()`. On Android it does nothing, because clearing state already removes the app's keystore entries, and the step says so in a note. It is Maestro's `clearKeychain` and Detox's `device.clearKeychain()`. [Lifecycle](lifecycle.md) covers what each reaches on each platform.
+`clearKeychain()` resets the simulator's keychain, which is where secure-storage libraries such as `expo-secure-store` keep a session. On iOS the keychain belongs to the simulator, not the app, so the reset clears what every app on it stored there. That is why it is a separate call rather than part of `clearState()`. On Android it does nothing, because clearing state already removes the app's keystore entries, and the step says so in a note. It is Maestro's `clearKeychain` and Detox's `device.clearKeychain()`. [Lifecycle](lifecycle.md) covers what each reaches on each platform.
 
 `relaunch()` relaunches the app and waits for the ready gate again. `dismissDevOverlay()` clears the React Native development warning overlay. It is never automatic, because the overlay is a real node and hiding it by default would suppress a warning a test might want to assert on.
 
