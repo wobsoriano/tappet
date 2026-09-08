@@ -481,11 +481,7 @@ test('a readable field next to a secure one still fails on a short mask and name
   expect(error.message).toContain(`Expected value: "rob@example.com"`);
 });
 
-/**
- * Android has no secure role. A password field is an `EditText`, so it resolves
- * as a `text-field`, and a Compose password field reads back its mask.
- */
-function openAndroidLogin(driver: FakeDriver, overrides?: ParseInput) {
+function openAndroidLogin(driver: FakeDriver) {
   driver.contentsBecomeLabel = true;
   return open(driver, {
     platform: 'android',
@@ -493,7 +489,6 @@ function openAndroidLogin(driver: FakeDriver, overrides?: ParseInput) {
     readyWhen: { text: 'Sign in' },
     actionTimeout: 4000,
     settleQuietMs: 20,
-    ...overrides,
   });
 }
 
@@ -539,8 +534,7 @@ test('an Android password field masking fewer characters than were typed keeps r
 
 test('an Android text field still holding its placeholder is not a landed write', async () => {
   const driver = createFakeDriver({ screens: ['android-login'] });
-  // The fixture's untouched password field reports "Password", which is the length
-  // of the text below, so only its distinct characters separate it from a mask.
+  // "Password" is as long as the text typed, so only its distinct characters separate it from a mask.
   driver.fillOutcomes.push(...Array<string>(50).fill('Password'));
   const session = await openAndroidLogin(driver);
   const app = createDevice(session, silentSink);

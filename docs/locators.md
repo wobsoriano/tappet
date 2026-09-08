@@ -145,7 +145,7 @@ Roles are normalized to one vocabulary across iOS and Android, spelled the way `
 | `alert`             | `Alert`, `Sheet`                                      |                                                                       |
 | `other`             | `Other`, and anything unrecognized                    | `ViewGroup`, `FrameLayout`, `LinearLayout`, and anything unrecognized |
 
-`secure-text-field` is iOS only. Android has no secure class, so a password field there is an `EditText` and resolves as `text-field`, and its fill confirms on the masked read-back the way [`fill`](./basics.md) describes.
+`secure-text-field` is iOS only. An Android password field is an `EditText`, resolves as `text-field`, and its fill confirms on the masked read-back, as [`fill`](./basics.md) describes.
 
 `other` is a real role, not a failure signal. React Native emits many labelled container views with no semantic type. The platform spelling is kept on each node as `rawType` if you need it through `device.screen()`.
 
