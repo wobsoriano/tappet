@@ -128,6 +128,41 @@ test('act reports the instruction, nests every model command under it, and retur
   ]);
 });
 
+test('two tool calls in one model turn reach the device one after the other', async () => {
+  const order: string[] = [];
+  const recording = (name: string, holdMs: number) =>
+    tool({
+      description: name,
+      inputSchema: jsonSchema({ type: 'object', properties: {} }),
+      execute: async () => {
+        order.push(`${name} start`);
+        await new Promise((resolve) => setTimeout(resolve, holdMs));
+        order.push(`${name} end`);
+        return { ok: true };
+      },
+    });
+  const model = new MockLanguageModelV4({
+    doGenerate: [
+      turn(toolCall('1', 'snapshot', {}), toolCall('2', 'press', {})),
+      turn(done('completed', 'Pressed it')),
+    ],
+  });
+
+  await runAct({
+    model,
+    tools: { snapshot: recording('snapshot', 30), press: recording('press', 0) },
+    sink: silentSink,
+    instruction: 'Press sign in',
+    platform: 'ios',
+    maxSteps: 10,
+    timeout: 30_000,
+    screen: () => Promise.resolve(''),
+    attempt: 1,
+  });
+
+  expect(order).toEqual(['snapshot start', 'snapshot end', 'press start', 'press end']);
+});
+
 test('act tells the model how to drive the app rather than dropping its instructions', async () => {
   const model = new MockLanguageModelV4({
     doGenerate: [turn(done('completed', 'Already signed in'))],
