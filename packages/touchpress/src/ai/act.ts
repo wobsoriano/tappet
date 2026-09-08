@@ -47,7 +47,7 @@ function instructionsFor(platform: Platform): string {
     'Both take the ref as { "kind": "ref", "ref": "@e4" }, copied exactly as the line printed it.',
     'Every ref stops working when the next command runs, so snapshot again after each action before you use one.',
     'Use coordinates only when no line on the snapshot is the thing you need.',
-    'The moment the instruction is satisfied, call done with outcome "completed" and a one-line summary. Do not snapshot again to check your work.',
+    'Once a snapshot shows the instruction is satisfied, call done with outcome "completed" and a one-line summary. Do not take a second snapshot to double-check.',
     'If you cannot proceed, call done with outcome "blocked" and say what stopped you.',
   ].join('\n');
 }
