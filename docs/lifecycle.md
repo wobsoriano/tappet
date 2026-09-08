@@ -30,6 +30,36 @@ Each action is therefore one unit. Capture a screen, resolve the locator, pin th
 
 Every one of those launches carries `launchUrl` when it is set, the worker's first launch included, so a development client returns to your app rather than to its server picker between tests. See [Configuration](configuration.md) for the URL shape.
 
+## Clearing state
+
+`device.clearState()` puts the app back to a fresh install as far as a test can, and it is reported as one step with its relaunch nested under it.
+
+```
+clear state of com.example.app
+  relaunch com.example.app
+```
+
+It clears the app's stored state through the driver, then relaunches and runs the ready gate again. The relaunch is part of the operation, because an app still holding a cleared session in memory has not been cleared.
+
+It reaches the app's own storage and nothing else. On iOS that leaves the keychain alone, which is where secure-storage libraries such as `expo-secure-store` keep a session, so a signed-in user stays signed in until the keychain is cleared too.
+
+## Clearing the keychain
+
+`device.clearKeychain()` runs `xcrun simctl keychain <udid> reset` on an iOS simulator, using the identifier `open` reported or simctl's `booted` alias when it reported none. It is reported as one step.
+
+```
+clear keychain
+```
+
+The keychain is the simulator's, not the app's. Resetting it clears what every app on that simulator stored there, which is why it is its own call rather than part of `clearState()`. Maestro splits the two the same way, `clearState` and `clearKeychain`, and so does Detox with `launchApp({ delete: true })` and `device.clearKeychain()`. To put a signed-in app back to a fresh install, call both.
+
+```ts
+await device.clearKeychain();
+await device.clearState();
+```
+
+On Android it does nothing. Clearing state already removes the app's keystore entries, and the step records a note saying there was nothing to reset.
+
 ## DEVICE_IN_USE
 
 A device claim is a file in the `agent-device` state directory, and it outlives the process that made it. A claim made in another workspace does not show up in a session listing run from yours, but it still blocks a launch.

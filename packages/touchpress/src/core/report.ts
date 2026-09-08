@@ -1,5 +1,5 @@
 import { describeQuery, type Query } from './query.ts';
-import type { ScrollDirection } from './driver.ts';
+import type { BackMode, ScrollDirection } from './driver.ts';
 
 /** A file the runner should surface with the test result. */
 export type EvidenceFile =
@@ -32,6 +32,9 @@ export type ActionRecord =
   | { readonly kind: 'scroll'; readonly direction: ScrollDirection }
   | { readonly kind: 'scroll-into-view'; readonly query: Query }
   | { readonly kind: 'relaunch'; readonly app: string }
+  | { readonly kind: 'back'; readonly mode: BackMode }
+  | { readonly kind: 'clear-state'; readonly app: string }
+  | { readonly kind: 'clear-keychain' }
   | { readonly kind: 'dismiss-overlay' }
   | { readonly kind: 'screenshot'; readonly path: string }
   | { readonly kind: 'act'; readonly instruction: string }
@@ -82,6 +85,12 @@ export function renderTitle(record: ActionRecord): string {
       return `scrollIntoView ${describeQuery(record.query)}`;
     case 'relaunch':
       return `relaunch ${record.app}`;
+    case 'back':
+      return `back (${record.mode})`;
+    case 'clear-state':
+      return `clear state of ${record.app}`;
+    case 'clear-keychain':
+      return 'clear keychain';
     case 'dismiss-overlay':
       return 'dismiss the React Native dev overlay';
     case 'screenshot':
