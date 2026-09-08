@@ -16,6 +16,7 @@ import {
   pin,
   renderScreen,
   resolve,
+  touchTargetFor,
   type PinnedRef,
   type Screen,
   type ScreenNode,
@@ -270,10 +271,23 @@ function perform(
           try {
             settled = await dispatch(device, pin(screen, resolution.node), deadline - Date.now());
           } catch (error) {
-            if (failureOf(error)?.kind !== 'stale-ref' || retriedStaleRef) throw error;
-            retriedStaleRef = true;
-            screen = await device.capture();
-            continue;
+            const failure = failureOf(error);
+            if (failure?.kind === 'stale-ref' && !retriedStaleRef) {
+              retriedStaleRef = true;
+              screen = await device.capture();
+              continue;
+            }
+            // A covered text field is a different problem, because the field is the target rather than a label for one.
+            if (failure?.kind !== 'covered' || record.kind === 'fill') throw error;
+            settled = await retarget(
+              device,
+              sink,
+              dispatch,
+              locator,
+              screen,
+              resolution.node,
+              deadline - Date.now(),
+            );
           }
           attempts += 1;
           if (!settled.settled) {
@@ -378,6 +392,45 @@ function reportingScrolls(device: SessionDevice, sink: ActionSink): ScrollDevice
         device.scroll(direction, budgetMs),
       ),
   };
+}
+
+/**
+ * A React Native pressable splits the accessible name off the touch handler, so
+ * a locator naming what a user reads can pin a node the driver refuses. The
+ * control covering that node is what the finger would have hit, so the action
+ * goes there and the report names it, rather than asking the author to describe
+ * a node they cannot see.
+ *
+ * One hop only. A second refusal means the retarget was the wrong reading of
+ * the screen, and repeating it would only walk further from what was asked for.
+ */
+async function retarget(
+  device: SessionDevice,
+  sink: ActionSink,
+  dispatch: (device: SessionDevice, ref: PinnedRef, budgetMs: number) => Promise<Settled>,
+  locator: string,
+  screen: Screen,
+  matched: ScreenNode,
+  budgetMs: number,
+): Promise<Settled> {
+  const target = touchTargetFor(screen, matched);
+  if (target === null) throw untappable(locator, screen);
+  return await sink.step(
+    renderTitle({ kind: 'retarget', target: describeNode(target) }),
+    async () => {
+      try {
+        return await dispatch(device, pin(screen, target), budgetMs);
+      } catch (error) {
+        if (failureOf(error)?.kind !== 'covered') throw error;
+        throw untappable(locator, screen);
+      }
+    },
+    { box: true },
+  );
+}
+
+function untappable(locator: string, screen: Screen): TouchpressError {
+  return new TouchpressError({ kind: 'untappable', locator, screen: renderScreen(screen) });
 }
 
 function ambiguous(locator: string, nodes: readonly ScreenNode[], screen: Screen): TouchpressError {

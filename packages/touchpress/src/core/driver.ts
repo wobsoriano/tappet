@@ -52,6 +52,11 @@ export type DeviceFailure =
   | { readonly kind: 'session-rebound'; readonly boundTo: string; readonly detail: string }
   | { readonly kind: 'stale-ref'; readonly detail: string }
   | { readonly kind: 'ambiguous'; readonly detail: string }
+  /**
+   * The pinned node owns no touch point outside the interactive nodes drawn
+   * over it, so the driver refused rather than guess which one was meant.
+   */
+  | { readonly kind: 'covered'; readonly detail: string }
   | { readonly kind: 'timeout'; readonly detail: string }
   | {
       readonly kind: 'unknown';

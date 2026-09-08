@@ -182,6 +182,8 @@ export function classifyError(error: unknown): DeviceFailure {
     case 'COMMAND_FAILED':
       if (details['reason'] === 'ref_generation_mismatch')
         return { kind: 'stale-ref', detail: message };
+      if (details['reason'] === 'covered_by_interactive_descendants')
+        return { kind: 'covered', detail: message };
       if (/timed out|timeout/i.test(message)) return { kind: 'timeout', detail: message };
       return { kind: 'unknown', code, detail: message, logPath };
     default:

@@ -61,6 +61,11 @@ export type ErrorInfo =
       readonly timeoutMs: number;
       readonly screen: string;
     }
+  | {
+      readonly kind: 'untappable';
+      readonly locator: string;
+      readonly screen: string;
+    }
   | { readonly kind: 'driver'; readonly command: string; readonly failure: DeviceFailure }
   | { readonly kind: 'ai-not-configured' }
   | { readonly kind: 'ai-missing-peer' }
@@ -150,6 +155,18 @@ function formatError(info: ErrorInfo): string {
         `Screen:`,
         info.screen,
       ].join('\n');
+    case 'untappable':
+      return [
+        `The matched node has no touch point of its own, and no enclosing control was found.`,
+        ``,
+        `Locator: ${info.locator}`,
+        ``,
+        `Name the control that receives the touch, with getByRole, or with`,
+        `locator({ role: 'button', where: (node) => ... }).`,
+        ``,
+        `Screen:`,
+        info.screen,
+      ].join('\n');
     case 'driver':
       return `${info.command} failed: ${describeFailure(info.failure)}`;
     case 'ai-not-configured':
@@ -232,6 +249,8 @@ export function describeFailure(failure: DeviceFailure): string {
       return `the screen changed before the action reached it (${failure.detail})`;
     case 'ambiguous':
       return `the driver matched more than one element (${failure.detail})`;
+    case 'covered':
+      return `the node owns no touch point of its own (${failure.detail})`;
     case 'timeout':
       return `the driver timed out (${failure.detail})`;
     case 'unknown':

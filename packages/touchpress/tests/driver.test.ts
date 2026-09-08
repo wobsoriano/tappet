@@ -33,6 +33,20 @@ test('a superseded ref generation is a stale ref, not an unknown command failure
   expect(failure.kind).toBe('stale-ref');
 });
 
+test('a node the driver will not tap is a covered failure, not an unknown one', () => {
+  const failure = classifyError(
+    new AppError(
+      'COMMAND_FAILED',
+      '@e44 has no parent-owned touch point outside its interactive descendants',
+      { reason: 'covered_by_interactive_descendants', competitorRefs: ['@e45'] },
+    ),
+  );
+  expect(failure).toEqual({
+    kind: 'covered',
+    detail: '@e44 has no parent-owned touch point outside its interactive descendants',
+  });
+});
+
 test('a command timeout is separated from a transport fault under the same code', () => {
   expect(classifyError(new AppError('COMMAND_FAILED', 'wait timed out for text: Home')).kind).toBe(
     'timeout',
