@@ -45,10 +45,12 @@ const DEVICE_TOOLS = new Map<string, ToolReport>([
 /**
  * Everything an input schema says about which device, daemon, or workspace a
  * command reaches. The session already pins all of it, and a model that could
- * name a daemon could leave the device this test opened. `target`, the snapshot
- * ref or selector, is the only addressing key that survives.
+ * name a daemon could leave the device this test opened.
+ *
+ * `recordAs` rides along for a different reason: a `fill` carrying it fails
+ * unless script recording is armed, which under touchpress it never is.
  */
-const DAEMON_KEYS = new Set([
+const CUT_KEYS = new Set([
   'udid',
   'serial',
   'device',
@@ -69,6 +71,7 @@ const DAEMON_KEYS = new Set([
   'record',
   'saveScript',
   'stateDir',
+  'recordAs',
 ]);
 
 /** What this module reads off an upstream tool. `jsonSchema()` stores the raw schema under `jsonSchema`. */
@@ -115,15 +118,27 @@ function prune(schema: JsonSchema): JsonSchema {
   if (schema.properties === undefined) return schema;
   const properties: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(schema.properties)) {
-    if (!DAEMON_KEYS.has(key)) properties[key] = value;
+    if (!CUT_KEYS.has(key) && !(key === 'target' && isDeviceAlias(value))) properties[key] = value;
   }
   return {
     ...schema,
     properties,
     ...(schema.required === undefined
       ? {}
-      : { required: schema.required.filter((key) => !DAEMON_KEYS.has(key)) }),
+      : { required: schema.required.filter((key) => key in properties) }),
   };
+}
+
+/**
+ * Upstream spends `target` twice. On `press`, `fill`, and `get` it is the UI
+ * element, a `oneOf` over ref, selector, and point. On the rest it is an alias
+ * for `deviceTarget`, an enum of device forms, and a model reading both in one
+ * tool set answers "mobile" to the wrong one. The session pins the device, so
+ * the alias goes and only the UI target survives.
+ */
+function isDeviceAlias(schema: unknown): boolean {
+  if (typeof schema !== 'object' || schema === null) return false;
+  return Array.isArray(Reflect.get(schema, 'enum'));
 }
 
 /** A tool the table does not name still reports, by its name alone. */

@@ -347,6 +347,23 @@ test('the device tools are the ten that perceive and act, with no way to reach a
   }
 });
 
+test('the device-form target alias is cut while the UI target on press, fill, and get survives', async () => {
+  const tools = await createDeviceTools('touchpress-ai-0', 'ios');
+
+  const withUiTarget = ['press', 'fill', 'get'];
+  for (const [name, built] of Object.entries(tools)) {
+    const schema = (built.inputSchema as { jsonSchema: { properties?: Record<string, unknown> } })
+      .jsonSchema;
+    const properties = schema.properties ?? {};
+    expect(Object.keys(properties), `${name}.recordAs`).not.toContain('recordAs');
+    if (withUiTarget.includes(name)) {
+      expect(properties['target'], name).toMatchObject({ oneOf: expect.any(Array) });
+    } else {
+      expect(properties, name).not.toHaveProperty('target');
+    }
+  }
+});
+
 test("a missing 'ai' package names the install command rather than failing to resolve a module", async () => {
   vi.doMock('ai', () => {
     throw new Error("Cannot find package 'ai'");
