@@ -140,7 +140,9 @@ const IOS_ROLES: Readonly<Record<string, Role>> = {
  * Native 0.86 sample app, except the trailing widget block, which this app never
  * renders and stays a plausible guess. `android.view.ViewGroup` is what every
  * React Native `View` reports, testID containers included, so it is stated here
- * rather than left to the `other` fall-through in `roleOf`.
+ * rather than left to the `other` fall-through in `roleOf`. A password field is
+ * an `EditText` too. agent-device 0.20.10 parses the tree's `password` flag but
+ * does not emit it, so once it does, map it to `secure-text-field` here.
  */
 const ANDROID_ROLES: Readonly<Record<string, Role>> = {
   'android.widget.Button': 'button',
