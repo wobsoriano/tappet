@@ -64,7 +64,7 @@ await device.getByRole('cell').nth(-1).tap();
 
 ## When the matched node cannot be tapped
 
-A React Native pressable splits what you read from what receives the touch. On Android the two are often siblings, an unnamed `[button]` whose rect encloses an `[other] "Back"` next to it, and on iOS the button usually sits inside the labelled container. A locator that matched the label pins a reference the driver refuses, because that node owns no touch point outside the interactive nodes drawn over it.
+Compose, SwiftUI, and some React Native components put the text you read and the control that receives the touch on different nodes. On Android the two are often siblings, an unnamed `[button]` whose rect encloses an `[other] "Back"` next to it, and on iOS the button usually sits inside the labelled container. A locator that matched the label pins a reference the driver refuses, because that node owns no touch point outside the interactive nodes drawn over it.
 
 `tap` and `longPress` recover from that on their own. They look on the same screen for the control that covers the matched node, preferring one inside it and taking the smallest when several qualify, then dispatch there instead. The report shows both, so a passing test still says what was really pressed.
 
