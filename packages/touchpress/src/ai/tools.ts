@@ -1,7 +1,7 @@
 import type { ToolSet } from 'ai';
 import { TouchpressError } from '../core/errors.ts';
 import type { ActionRecord } from '../core/report.ts';
-import type { Platform } from '../core/screen.ts';
+import { parseScreen, renderScreen, type Platform, type RawSnapshot } from '../core/screen.ts';
 
 /**
  * The AI SDK is an optional peer, so it is imported here and never at module
@@ -22,24 +22,36 @@ export async function loadAi(): Promise<typeof import('ai')> {
  * drops everything else the upstream registry offers, so `open`, `close`, and
  * `screenshot` stay out of the model's reach and the session stays ours.
  *
- * `detail` is the input key whose value follows the name in a step title, and
- * `echoesText` marks the two commands that write into a field.
+ * `detail` is the input key whose value follows the name in a step title,
+ * `echoesText` marks the two commands that write into a field, and `output`
+ * picks which transform trims what upstream hands back before the model reads
+ * it. Upstream is generous: a raw snapshot runs about 19k tokens a step and an
+ * action result carries a settle diff, evidence paths, and a cost breakdown the
+ * model never acts on. `screen` renders the compact listing failure messages
+ * print, `outcome` keeps only whether the action landed and settled, and `raw`
+ * passes a small answer through untouched.
  */
-type ToolReport = { readonly detail: string | null; readonly echoesText: boolean };
+type OutputShape = 'screen' | 'outcome' | 'raw';
 
-const PLAIN: ToolReport = { detail: null, echoesText: false };
+type ToolReport = {
+  readonly detail: string | null;
+  readonly echoesText: boolean;
+  readonly output: OutputShape;
+};
+
+const READ: ToolReport = { detail: null, echoesText: false, output: 'raw' };
 
 const DEVICE_TOOLS = new Map<string, ToolReport>([
-  ['snapshot', PLAIN],
-  ['press', { detail: 'target', echoesText: false }],
-  ['fill', { detail: 'target', echoesText: true }],
-  ['type', { detail: null, echoesText: true }],
-  ['scroll', { detail: 'direction', echoesText: false }],
-  ['back', PLAIN],
-  ['wait', PLAIN],
-  ['get', PLAIN],
-  ['is', PLAIN],
-  ['alert', PLAIN],
+  ['snapshot', { detail: null, echoesText: false, output: 'screen' }],
+  ['press', { detail: 'target', echoesText: false, output: 'outcome' }],
+  ['fill', { detail: 'target', echoesText: true, output: 'outcome' }],
+  ['type', { detail: null, echoesText: true, output: 'outcome' }],
+  ['scroll', { detail: 'direction', echoesText: false, output: 'outcome' }],
+  ['back', { detail: null, echoesText: false, output: 'outcome' }],
+  ['wait', READ],
+  ['get', READ],
+  ['is', READ],
+  ['alert', READ],
 ]);
 
 /**
@@ -89,10 +101,11 @@ type JsonSchema = {
 
 /**
  * The tools a model drives the app with, built from agent-device's own command
- * registry so the descriptions and the executors stay upstream's. Two things
- * change: the set is narrowed to the ten commands that perceive and act, and
- * every key that could point a command at another device is cut from the input
- * schema. Building them contacts no device.
+ * registry so the descriptions and the executors stay upstream's. Three things
+ * change: the set is narrowed to the ten commands that perceive and act, every
+ * key that could point a command at another device is cut from the input
+ * schema, and each executor is wrapped so what crosses to the model is the
+ * shape the model can act on. Building them contacts no device.
  */
 export async function createDeviceTools(session: string, platform: Platform): Promise<ToolSet> {
   const { createAgentDeviceTools } = await import('agent-device/ai-sdk');
@@ -105,13 +118,95 @@ export async function createDeviceTools(session: string, platform: Platform): Pr
     if (built === undefined) {
       throw new Error(`agent-device no longer exposes the "${name}" tool`);
     }
+    const execute: unknown = wrapDeviceTool(name, platform, built.execute as Execute);
     kept[name] = tool({
       description: built.description,
       inputSchema: jsonSchema(prune(built.inputSchema.jsonSchema)),
-      execute: built.execute as Parameters<typeof tool>[0]['execute'],
+      execute: execute as Parameters<typeof tool>[0]['execute'],
     });
   }
   return kept;
+}
+
+export type Execute = (input: unknown, options: unknown) => unknown;
+
+/**
+ * The one place a command's input and output are reshaped for the model, so the
+ * table above stays the only thing that says which command gets which shape.
+ */
+export function wrapDeviceTool(name: string, platform: Platform, execute: Execute): Execute {
+  const shape = DEVICE_TOOLS.get(name)?.output ?? 'raw';
+  return async (input, options) => {
+    const sent = shape === 'screen' ? { ...asObject(input), forceFull: true } : withRefSigil(input);
+    const output = await execute(sent, options);
+    return shape === 'screen'
+      ? compactSnapshot(asSnapshot(output), platform)
+      : compactResult(name, output);
+  };
+}
+
+/**
+ * The tree the model reads, in the same listing a failure message prints, one
+ * node per line indented by depth. The JSON upstream returns says the same thing
+ * with rects, indexes, and flags the model never uses, at roughly ten times the
+ * tokens, and its refs arrive without the `@` the action schemas demand.
+ */
+export function compactSnapshot(raw: RawSnapshot, platform: Platform): string {
+  const screen = parseScreen(raw, platform);
+  const listing = renderScreen(screen);
+  return screen.truncated
+    ? `${listing}\n  ... the tree is truncated, so some nodes are missing`
+    : listing;
+}
+
+/**
+ * What the model needs off an action it just ran: whether it landed, on what,
+ * and whether the screen went quiet. Upstream also returns the settle diff, the
+ * evidence paths, the resolution, and the cost, which are most of the step's
+ * tokens and none of its meaning.
+ */
+export function compactResult(name: string, output: unknown): unknown {
+  if (DEVICE_TOOLS.get(name)?.output !== 'outcome') return output;
+  if (typeof output !== 'object' || output === null) return output;
+  const settle = Reflect.get(output, 'settle');
+  return {
+    ...pick(output, 'message'),
+    ...pick(output, 'targetKind'),
+    ...(typeof settle === 'object' && settle !== null
+      ? { settle: { ...pick(settle, 'settled'), ...pick(settle, 'waitedMs') } }
+      : {}),
+  };
+}
+
+/**
+ * Upstream's own snapshot nodes carry a bare `e4` while the action schemas
+ * demand `@e4`, and a model that sends the bare form gets an error it tends to
+ * read as "refs do not work here" before falling back to coordinates for the
+ * rest of the run. The listing above now prints the `@`, and this catches the
+ * model that typed it from memory anyway.
+ */
+function withRefSigil(input: unknown): unknown {
+  const target = asObject(input)['target'];
+  if (typeof target !== 'object' || target === null || Reflect.get(target, 'kind') !== 'ref') {
+    return input;
+  }
+  const ref = Reflect.get(target, 'ref');
+  if (typeof ref !== 'string' || ref.startsWith('@')) return input;
+  return { ...asObject(input), target: { ...target, ref: `@${ref}` } };
+}
+
+function asObject(input: unknown): Record<string, unknown> {
+  return typeof input === 'object' && input !== null ? (input as Record<string, unknown>) : {};
+}
+
+function asSnapshot(output: unknown): RawSnapshot {
+  if (Array.isArray(asObject(output)['nodes'])) return output as RawSnapshot;
+  throw new Error('agent-device returned a snapshot without nodes');
+}
+
+function pick(source: object, key: string): Record<string, unknown> {
+  const value = Reflect.get(source, key);
+  return value === undefined ? {} : { [key]: value };
 }
 
 function prune(schema: JsonSchema): JsonSchema {

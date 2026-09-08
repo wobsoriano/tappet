@@ -4,7 +4,12 @@ import { MockLanguageModelV4 } from 'ai/test';
 import { z } from 'zod';
 import { withAi } from '../src/ai/device.ts';
 import { runAct, runExtract } from '../src/ai/act.ts';
-import { createDeviceTools } from '../src/ai/tools.ts';
+import {
+  compactResult,
+  compactSnapshot,
+  createDeviceTools,
+  wrapDeviceTool,
+} from '../src/ai/tools.ts';
 import type { Device } from '../src/core/device.ts';
 import { TouchpressError } from '../src/core/errors.ts';
 import { silentSink } from '../src/core/report.ts';
@@ -362,6 +367,84 @@ test('the device-form target alias is cut while the UI target on press, fill, an
       expect(properties, name).not.toHaveProperty('target');
     }
   }
+});
+
+test('the snapshot the model reads is the compact listing, not the raw node JSON', () => {
+  const raw = {
+    nodes: [
+      { ref: 'e1', index: 0, type: 'Window', rect: { x: 0, y: 0, width: 390, height: 844 } },
+      {
+        ref: 'e2',
+        index: 1,
+        parentIndex: 0,
+        depth: 1,
+        type: 'Button',
+        label: 'Sign in',
+        identifier: 'signIn',
+        rect: { x: 20, y: 400, width: 350, height: 48 },
+      },
+    ],
+  };
+
+  expect(compactSnapshot(raw, 'ios')).toBe(
+    ['@e1 [window]', '  @e2 [button] "Sign in" #signIn'].join('\n'),
+  );
+  expect(compactSnapshot({ ...raw, truncated: true }, 'ios')).toContain(
+    'the tree is truncated, so some nodes are missing',
+  );
+});
+
+test('an action result keeps whether it landed and settled, and drops the settle diff', () => {
+  const output = compactResult('press', {
+    targetKind: 'ref',
+    message: 'Pressed @e4',
+    x: 195,
+    y: 424,
+    evidence: { screenshot: '/tmp/press.png' },
+    resolution: { candidates: 7 },
+    cost: { totalMs: 812 },
+    settle: { settled: true, waitedMs: 240, captures: 3, diff: { added: ['@e9 [text] "Hi"'] } },
+  });
+
+  expect(output).toEqual({
+    targetKind: 'ref',
+    message: 'Pressed @e4',
+    settle: { settled: true, waitedMs: 240 },
+  });
+});
+
+test('a read command answers with what upstream returned, untrimmed', () => {
+  const answer = { value: 'Hi, Rob' };
+  expect(compactResult('get', answer)).toBe(answer);
+});
+
+test('a press naming a bare ref reaches the device with the @ the driver demands', async () => {
+  const sent: unknown[] = [];
+  const press = wrapDeviceTool('press', 'ios', (input) => {
+    sent.push(input);
+    return Promise.resolve({ targetKind: 'ref', message: 'ok' });
+  });
+
+  await press({ target: { kind: 'ref', ref: 'e4' } }, {});
+  await press({ target: { kind: 'ref', ref: '@e7' } }, {});
+  await press({ target: { kind: 'point', x: 10, y: 20 } }, {});
+
+  expect(sent).toEqual([
+    { target: { kind: 'ref', ref: '@e4' } },
+    { target: { kind: 'ref', ref: '@e7' } },
+    { target: { kind: 'point', x: 10, y: 20 } },
+  ]);
+});
+
+test('the snapshot the model asks for is the full tree, rendered', async () => {
+  const sent: unknown[] = [];
+  const snapshot = wrapDeviceTool('snapshot', 'ios', (input) => {
+    sent.push(input);
+    return Promise.resolve({ nodes: [{ ref: 'e1', index: 0, type: 'Button', label: 'List' }] });
+  });
+
+  expect(await snapshot({ depth: 3 }, {})).toBe('@e1 [button] "List"');
+  expect(sent).toEqual([{ depth: 3, forceFull: true }]);
 });
 
 test("a missing 'ai' package names the install command rather than failing to resolve a module", async () => {
