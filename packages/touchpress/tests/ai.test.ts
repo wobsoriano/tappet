@@ -15,6 +15,7 @@ import { TouchpressError } from '../src/core/errors.ts';
 import { silentSink } from '../src/core/report.ts';
 import type { DeviceSession } from '../src/core/session.ts';
 import { createRecordingSink } from './fake-driver.ts';
+import { loadRaw } from './fixtures.ts';
 
 const USAGE = {
   inputTokens: { total: 8, noCache: 8, cacheRead: 0, cacheWrite: 0 },
@@ -437,6 +438,14 @@ test('the snapshot the model reads is the compact listing, not the raw node JSON
   expect(compactSnapshot({ ...raw, truncated: true }, 'ios')).toContain(
     'the tree is truncated, so some nodes are missing',
   );
+});
+
+test('a verbatim driver snapshot renders with the @ refs the action schemas demand', () => {
+  const listing = compactSnapshot(loadRaw('ios-login'), 'ios');
+
+  for (const line of listing.split('\n')) expect(line.trimStart()).toMatch(/^@e\d+ \[/);
+  expect(listing).toContain('@e8 [button] "Continue" #continue');
+  expect(JSON.stringify(loadRaw('ios-login')).length).toBeGreaterThan(listing.length * 3);
 });
 
 test('an action result keeps whether it landed and settled, and drops the settle diff', () => {

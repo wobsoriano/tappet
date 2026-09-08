@@ -148,8 +148,9 @@ export function wrapDeviceTool(name: string, platform: Platform, execute: Execut
 /**
  * The tree the model reads, in the same listing a failure message prints, one
  * node per line indented by depth. The JSON upstream returns says the same thing
- * with rects, indexes, and flags the model never uses, at roughly ten times the
- * tokens, and its refs arrive without the `@` the action schemas demand.
+ * with rects, indexes, and flags the model never uses, at three to seven times
+ * the size across this repo's fixtures, and its refs arrive without the `@` the
+ * action schemas demand.
  */
 export function compactSnapshot(raw: RawSnapshot, platform: Platform): string {
   const screen = parseScreen(raw, platform);
