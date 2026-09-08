@@ -126,6 +126,8 @@ await expect(device).toHaveScreenshot('home.png', {
 
 A mask may match several nodes. It hides a region rather than picking one out, so ambiguity is not an error there the way it is everywhere else.
 
+A mask is painted only where it overlaps the image. On a locator screenshot, a masked node outside the crop hides nothing, and one straddling the crop's edge hides only the part inside it.
+
 ### What a failure says
 
 ```

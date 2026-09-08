@@ -65,15 +65,22 @@ export function compareScreenshot(
 }
 
 /**
- * The box is clamped to the image, because a rect comes from a snapshot and a
+ * The box is clipped to the image, because a rect comes from a snapshot and a
  * screenshot is a separate capture. A control flush against the bottom edge can
- * round a pixel past it, and that is not a reason to fail an assertion.
+ * round a pixel past it, and that is not a reason to fail an assertion. A box
+ * with no pixel inside the image is a different thing, a rect the screenshot
+ * does not show, and cutting a placeholder out of the corner would hide that.
  */
 export function cropScreenshot(source: Buffer, box: PixelBox): Buffer {
   const image = PNG.sync.read(source);
-  const clamped = clamp(box, { width: image.width, height: image.height });
-  const cut = new PNG({ width: clamped.width, height: clamped.height });
-  PNG.bitblt(image, cut, clamped.x, clamped.y, clamped.width, clamped.height, 0, 0);
+  const clipped = intersect(box, { width: image.width, height: image.height });
+  if (clipped === null) {
+    throw new Error(
+      `the crop at ${String(box.x)},${String(box.y)} ${String(box.width)}x${String(box.height)} lies outside the ${String(image.width)}x${String(image.height)} screenshot`,
+    );
+  }
+  const cut = new PNG({ width: clipped.width, height: clipped.height });
+  PNG.bitblt(image, cut, clipped.x, clipped.y, clipped.width, clipped.height, 0, 0);
   return PNG.sync.write(cut);
 }
 
@@ -102,19 +109,23 @@ export function relativeTo(box: PixelBox, origin: PixelBox): PixelBox {
   return { ...box, x: box.x - origin.x, y: box.y - origin.y };
 }
 
-function clamp(box: PixelBox, size: Size): PixelBox {
-  const x = Math.min(Math.max(box.x, 0), Math.max(size.width - 1, 0));
-  const y = Math.min(Math.max(box.y, 0), Math.max(size.height - 1, 0));
-  return {
-    x,
-    y,
-    width: Math.max(Math.min(box.width, size.width - x), 1),
-    height: Math.max(Math.min(box.height, size.height - y), 1),
-  };
+/**
+ * The part of the box inside the image, or null when none of it is. A mask
+ * resolved off a node outside a crop must paint nothing, because moving it
+ * inside would black out real pixels at the crop's edge.
+ */
+function intersect(box: PixelBox, size: Size): PixelBox | null {
+  const left = Math.max(box.x, 0);
+  const top = Math.max(box.y, 0);
+  const right = Math.min(box.x + box.width, size.width);
+  const bottom = Math.min(box.y + box.height, size.height);
+  if (right <= left || bottom <= top) return null;
+  return { x: left, y: top, width: right - left, height: bottom - top };
 }
 
 function paintBlack(image: PNG, box: PixelBox): void {
-  const region = clamp(box, { width: image.width, height: image.height });
+  const region = intersect(box, { width: image.width, height: image.height });
+  if (region === null) return;
   for (let row = region.y; row < region.y + region.height; row += 1) {
     for (let column = region.x; column < region.x + region.width; column += 1) {
       const at = (image.width * row + column) << 2;
