@@ -88,6 +88,9 @@ export function matchesText(match: TextMatch, candidate: string | null): boolean
     case 'substring':
       return candidate.toLowerCase().includes(match.value.toLowerCase());
     case 'regex':
+      // `test` advances `lastIndex` on a global or sticky regex, so the second
+      // candidate would be searched from where the first match ended.
+      match.value.lastIndex = 0;
       return match.value.test(candidate);
     default: {
       const never: never = match;
