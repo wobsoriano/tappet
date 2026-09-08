@@ -228,8 +228,8 @@ function prune(schema: JsonSchema): JsonSchema {
  * Upstream spends `target` twice. On `press`, `fill`, and `get` it is the UI
  * element, a `oneOf` over ref, selector, and point. On the rest it is an alias
  * for `deviceTarget`, an enum of device forms, and a model reading both in one
- * tool set answers "mobile" to the wrong one. The session pins the device, so
- * the alias goes and only the UI target survives.
+ * tool set answers the second where the first was meant. The session pins the
+ * device, so the alias goes and only the UI target survives.
  */
 function isDeviceAlias(schema: unknown): boolean {
   if (typeof schema !== 'object' || schema === null) return false;

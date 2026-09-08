@@ -112,6 +112,8 @@ Ten commands, all of them agent-device's own, with their upstream descriptions.
 
 `open`, `close`, and `screenshot` are not among them, because the session is the test's rather than the model's. Every key that names a device, a daemon, or a workspace is cut from each tool's input schema before the model sees it, so a command can only reach the device this worker opened. The one addressing key that survives is `target`, the snapshot ref the model took a moment earlier.
 
+What comes back is trimmed too. The snapshot the model reads is the same compact listing a failure message prints, one node per line, rather than the driver's node JSON. Every other command answers with its outcome, so a `press` reports what it pressed and whether the screen settled and drops the settle diff, the evidence paths, and the cost breakdown. Both keep the loop's context small enough that a long instruction fits in its steps.
+
 ## Credentials
 
 The examples on this page use the sample app's fake account. Do not hand a real credential to `act`. The instruction goes to the model, and the value the model types back is printed in the step it ran, in the transcript attached to the test, and in the model provider's own logs.
@@ -160,7 +162,7 @@ act "Sign in with the email rob@example.com"
 extract "Is a user signed in?"
 ```
 
-Each `act` also attaches `ai-act-1.json` to the test. It holds the tool calls and their inputs, the results truncated to 2 KB each, the model's text, and the token usage for the run. Read it when a loop did something surprising.
+Each `act` also attaches `ai-act-1.json` to the test. It holds the tool calls and their inputs, the results truncated to 2 KB each, the calls that errored with the message each came back with, the model's text, and the token usage for the run. Read it when a loop did something surprising.
 
 ## Test timeouts
 
