@@ -2,6 +2,7 @@ import type { FlexibleSchema, LanguageModel, ToolSet } from 'ai';
 import { TouchpressError } from '../core/errors.ts';
 import { renderTitle, type ActionSink } from '../core/report.ts';
 import type { Platform } from '../core/screen.ts';
+import { createQueue } from '../core/session.ts';
 import { loadAi, toolRecord, typedText } from './tools.ts';
 
 const TRANSCRIPT_RESULT_LIMIT = 2048;
@@ -188,8 +189,14 @@ export function runExtract<T>(run: ExtractRun<T>): Promise<T> {
   );
 }
 
-/** Every model action becomes a step wrapping its own execution, so a report shows the loop as it ran. */
+/**
+ * Every model action becomes a step wrapping its own execution, so a report
+ * shows the loop as it ran. The executions share one queue, because the AI SDK
+ * runs the tool calls of one step concurrently and a snapshot overlapping a
+ * press on the device reads a screen the press is changing.
+ */
 function reporting(tools: ToolSet, sink: ActionSink): ToolSet {
+  const queue = createQueue();
   const wrapped: ToolSet = {};
   for (const [name, built] of Object.entries(tools)) {
     const { execute } = built;
@@ -200,17 +207,19 @@ function reporting(tools: ToolSet, sink: ActionSink): ToolSet {
     wrapped[name] = {
       ...built,
       execute: (input, options) =>
-        sink.step(renderTitle(toolRecord(name, input)), async () => {
-          const text = typedText(name, input);
-          if (text !== null) {
-            await sink.step(
-              renderTitle({ kind: 'typed', typed: { kind: 'text', value: text } }),
-              () => Promise.resolve(),
-              { box: true },
-            );
-          }
-          return execute(input, options);
-        }),
+        queue.enqueue(() =>
+          sink.step(renderTitle(toolRecord(name, input)), async () => {
+            const text = typedText(name, input);
+            if (text !== null) {
+              await sink.step(
+                renderTitle({ kind: 'typed', typed: { kind: 'text', value: text } }),
+                () => Promise.resolve(),
+                { box: true },
+              );
+            }
+            return execute(input, options);
+          }),
+        ),
     };
   }
   return wrapped;
