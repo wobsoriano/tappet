@@ -39,9 +39,9 @@ clear state of com.example.app
   relaunch com.example.app
 ```
 
-It clears the app's stored state through the driver, then relaunches and runs the ready gate again. The relaunch is part of the operation rather than something to remember. An app holding a cleared session in memory has not been cleared, which is why every workaround for this ended in a manual `device.relaunch()`.
+It clears the app's stored state through the driver, then relaunches and runs the ready gate again. The relaunch is part of the operation, because an app still holding a cleared session in memory has not been cleared.
 
-It reaches the app's own storage and nothing else. On iOS that leaves the keychain alone, which is where `clerk-ios` and `expo-secure-store` keep a session, so a signed-in user stays signed in until the keychain is cleared too.
+It reaches the app's own storage and nothing else. On iOS that leaves the keychain alone, which is where secure-storage libraries such as `expo-secure-store` keep a session, so a signed-in user stays signed in until the keychain is cleared too.
 
 ## Clearing the keychain
 
@@ -58,7 +58,7 @@ await device.clearKeychain();
 await device.clearState();
 ```
 
-On Android it does nothing. Clearing state already removes the app's keystore entries, and the step records a note saying there was nothing to reset. The reset is the driver's job rather than the core's, because it needs the device identifier and a child process, and the core has neither.
+On Android it does nothing. Clearing state already removes the app's keystore entries, and the step records a note saying there was nothing to reset.
 
 ## DEVICE_IN_USE
 
