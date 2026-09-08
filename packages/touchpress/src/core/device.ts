@@ -399,8 +399,13 @@ type Write = { readonly text: string; readonly secret: boolean };
  * length is all it can attest to and all it can disclose. That still catches a
  * keyboard dropping keystrokes, because a dropped keystroke is a shorter mask.
  * `secret` is a plain field holding a credential, confirmed character by
- * character with only the reporting cut to a length. Folding it into `mask`
- * would demand one repeated character, which a password verbatim is not.
+ * character with only the reporting cut to a length.
+ *
+ * Android has no secure role. A password field is an `EditText` like any other,
+ * and a Compose one reads back its mask, so a plain field confirms on either its
+ * exact contents or a mask the length of what was typed, the same rule
+ * agent-device applies when it verifies its own fill. The message still names
+ * the exact value, because that is what the author asked the field to hold.
  *
  * The text is normalized the way `parseScreen` normalizes what it reads back,
  * so a run of spaces the field keeps and the tree collapses still confirms. A
@@ -408,29 +413,36 @@ type Write = { readonly text: string; readonly secret: boolean };
  */
 type Confirmation =
   | { readonly kind: 'mask'; readonly length: number }
-  | { readonly kind: 'secret'; readonly value: string }
-  | { readonly kind: 'open'; readonly value: string };
+  | { readonly kind: 'secret'; readonly value: string; readonly length: number }
+  | { readonly kind: 'open'; readonly value: string; readonly length: number };
 
 function confirmationOf(role: Role, write: Write): Confirmation {
-  if (role === 'secure-text-field') return { kind: 'mask', length: write.text.length };
+  const length = write.text.length;
+  if (role === 'secure-text-field') return { kind: 'mask', length };
   const value = normalizeText(write.text);
-  return write.secret ? { kind: 'secret', value } : { kind: 'open', value };
+  return write.secret ? { kind: 'secret', value, length } : { kind: 'open', value, length };
 }
 
 function holds(confirmation: Confirmation, actual: string): boolean {
   switch (confirmation.kind) {
-    // Requiring one repeated character stops a placeholder of the right length, which is
-    // what an untouched secure field reports, from passing as a landed write.
     case 'mask':
-      return actual.length === confirmation.length && new Set(actual).size <= 1;
+      return isMask(actual, confirmation.length);
     case 'secret':
     case 'open':
-      return actual === confirmation.value;
+      return actual === confirmation.value || isMask(actual, confirmation.length);
     default: {
       const never: never = confirmation;
       throw new Error(`unhandled confirmation ${JSON.stringify(never)}`);
     }
   }
+}
+
+/**
+ * Requiring one repeated character stops a placeholder of the right length, which
+ * is what an untouched password field reports, from passing as a landed write.
+ */
+function isMask(actual: string, length: number): boolean {
+  return actual.length === length && new Set(actual).size <= 1;
 }
 
 function expectedOf(confirmation: Confirmation): ExpectedValue {

@@ -464,9 +464,9 @@ test('a mask of the right length made of different characters is not a landed wr
   expect(error.info.kind).toBe('fill-unconfirmed');
 });
 
-test('a readable field next to a secure one is still confirmed on its exact contents', async () => {
+test('a readable field next to a secure one still fails on a short mask and names its exact value', async () => {
   const driver = createFakeDriver({ screens: ['ios-login'] });
-  driver.fillOutcomes.push(...Array<string>(50).fill(mask('rob@example.com'.length)));
+  driver.fillOutcomes.push(...Array<string>(50).fill(mask('rob@example.com'.length - 3)));
   const session = await openLogin(driver, { actionTimeout: 4000, settleQuietMs: 20 });
   const app = createDevice(session, silentSink);
 
@@ -479,6 +479,74 @@ test('a readable field next to a secure one is still confirmed on its exact cont
   if (!(error instanceof TouchpressError)) return;
   expect(error.info.kind).toBe('fill-unconfirmed');
   expect(error.message).toContain(`Expected value: "rob@example.com"`);
+});
+
+function openAndroidLogin(driver: FakeDriver) {
+  driver.contentsBecomeLabel = true;
+  return open(driver, {
+    platform: 'android',
+    deviceName: 'Pixel 9',
+    readyWhen: { text: 'Sign in' },
+    actionTimeout: 4000,
+    settleQuietMs: 20,
+  });
+}
+
+test('an Android password field confirms on the mask it reads back', async () => {
+  const driver = createFakeDriver({ screens: ['android-login'] });
+  driver.fillOutcomes.push(...Array<string>(50).fill(mask(SECRET.length)));
+  const session = await openAndroidLogin(driver);
+  const app = createDevice(session, silentSink);
+
+  await app.getByRole('text-field', { name: 'Password' }).fill(SECRET);
+
+  expect(driver.calls.filter((call) => call.startsWith('fill')).length).toBe(1);
+});
+
+test('an Android password field masking with any one repeated character confirms, secret or not', async () => {
+  const driver = createFakeDriver({ screens: ['android-login'] });
+  driver.fillOutcomes.push(...Array<string>(50).fill('*'.repeat(SECRET.length)));
+  const session = await openAndroidLogin(driver);
+  const app = createDevice(session, silentSink);
+
+  await app.getByRole('text-field', { name: 'Password' }).fill(SECRET, { secret: true });
+
+  expect(driver.calls.filter((call) => call.startsWith('fill')).length).toBe(1);
+});
+
+test('an Android password field masking fewer characters than were typed keeps retrying and then fails', async () => {
+  const driver = createFakeDriver({ screens: ['android-login'] });
+  driver.fillOutcomes.push(...Array<string>(50).fill(mask(SECRET.length - 3)));
+  const session = await openAndroidLogin(driver);
+  const app = createDevice(session, silentSink);
+
+  const error = await app
+    .getByRole('text-field', { name: 'Password' })
+    .fill(SECRET)
+    .catch((thrown: unknown) => thrown);
+
+  expect(driver.calls.filter((call) => call.startsWith('fill')).length).toBeGreaterThan(1);
+  expect(error).toBeInstanceOf(TouchpressError);
+  if (!(error instanceof TouchpressError)) return;
+  expect(error.info.kind).toBe('fill-unconfirmed');
+  expect(error.message).toContain(`Expected value: "${SECRET}"`);
+});
+
+test('an Android text field still holding its placeholder is not a landed write', async () => {
+  const driver = createFakeDriver({ screens: ['android-login'] });
+  // "Password" is as long as the text typed, so only its distinct characters separate it from a mask.
+  driver.fillOutcomes.push(...Array<string>(50).fill('Password'));
+  const session = await openAndroidLogin(driver);
+  const app = createDevice(session, silentSink);
+
+  const error = await app
+    .getByRole('text-field', { name: 'Password' })
+    .fill('hunter22')
+    .catch((thrown: unknown) => thrown);
+
+  expect(error).toBeInstanceOf(TouchpressError);
+  if (!(error instanceof TouchpressError)) return;
+  expect(error.info.kind).toBe('fill-unconfirmed');
 });
 
 test('a fill titles its step with the locator alone and the typed text with a nested step', async () => {
