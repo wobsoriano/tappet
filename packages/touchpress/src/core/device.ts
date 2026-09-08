@@ -83,6 +83,12 @@ export type Device = {
   readonly keyboard: Keyboard;
   /** Discards the app's stored state, then relaunches and waits for the ready gate again. */
   clearState(): Promise<void>;
+  /**
+   * Resets the simulator's keychain, which is shared by every app on it, so
+   * it is not part of `clearState`. A no-op on Android, where clearing state
+   * already removes the app's keystore entries.
+   */
+  clearKeychain(): Promise<void>;
   /** Relaunches the app and waits for the ready gate again. */
   relaunch(): Promise<void>;
   /** Never automatic, because hiding the overlay would suppress a warning a test might want to see. */
@@ -146,6 +152,7 @@ export function createDevice(session: DeviceSession, sink: ActionSink): Device {
         }),
     },
     clearState: () => session.clearState(sink),
+    clearKeychain: () => session.clearKeychain(sink),
     relaunch: () => session.relaunch(sink),
     dismissDevOverlay: () =>
       sink.step(renderTitle({ kind: 'dismiss-overlay' }), () => session.dismissDevOverlay()),

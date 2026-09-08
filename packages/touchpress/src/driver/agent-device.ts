@@ -50,7 +50,7 @@ export function createAgentDeviceDriver(
     platform: selection.platform,
     ...(selection.name === null ? {} : { device: selection.name }),
   };
-  // Only `open` learns the simulator identifier, and `clearAppState` is the one call that needs it.
+  // Only `open` learns the simulator identifier, and `resetKeychain` is the one call that needs it.
   let udid: string | null = null;
 
   async function run<T>(command: string, body: () => Promise<T>): Promise<T> {
@@ -152,13 +152,6 @@ export function createAgentDeviceDriver(
       }
     },
 
-    /**
-     * agent-device clears the app's own storage and leaves the iOS keychain
-     * alone, which is where clerk-ios and expo-secure-store keep a session, so
-     * a simulator's keychain is reset alongside it. That decision is the
-     * driver's because it needs the udid and a process, neither of which the
-     * core has.
-     */
     clearAppState: (app: string): Promise<void> =>
       run('clearAppState', async () => {
         await client.settings.update({
@@ -167,11 +160,20 @@ export function createAgentDeviceDriver(
           state: 'clear',
           app,
         });
+      }),
+
+    /**
+     * agent-device has no keychain command, and the simulator keychain is where
+     * clerk-ios and expo-secure-store keep a session. Lives in the driver
+     * because it needs the udid and a process, neither of which the core has.
+     */
+    resetKeychain: (): Promise<void> =>
+      run('resetKeychain', async () => {
+        // Android keeps an app's keystore entries with its data, so clearing the app already removed them.
+        if (selection.platform !== 'ios') return;
         // `booted` is simctl's own alias for the one running simulator, for a session opened
         // by a daemon that did not report the identifier.
-        if (selection.platform === 'ios') {
-          await runCommand('xcrun', ['simctl', 'keychain', udid ?? 'booted', 'reset']);
-        }
+        await runCommand('xcrun', ['simctl', 'keychain', udid ?? 'booted', 'reset']);
       }),
 
     scroll: (direction: ScrollDirection, options: SettleOptions): Promise<void> =>

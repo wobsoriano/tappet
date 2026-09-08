@@ -177,24 +177,43 @@ test('a failure raised from type carries no trace of what was typed', async () =
   expect(error.message).toContain('<typed text>');
 });
 
-test('clearing state resets the keychain on an iOS simulator the driver named', async () => {
+test('clearing state clears the app and touches nothing else', async () => {
+  const runCommand = recordingRunCommand();
+  const updates: Record<string, unknown>[] = [];
+  const driver = driverFor({ platform: 'ios', name: null }, runCommand, {
+    settings: {
+      update: (options: Record<string, unknown>) => {
+        updates.push(options);
+        return Promise.resolve({});
+      },
+    },
+  });
+  await driver.open({ app: 'com.example.app', relaunch: true, url: null });
+  await driver.clearAppState('com.example.app');
+  expect(updates).toEqual([
+    expect.objectContaining({ setting: 'clear-app-state', state: 'clear', app: 'com.example.app' }),
+  ]);
+  expect(runCommand.ran).toEqual([]);
+});
+
+test('resetting the keychain names the iOS simulator the driver reported', async () => {
   const runCommand = recordingRunCommand();
   const driver = driverFor({ platform: 'ios', name: null }, runCommand);
   await driver.open({ app: 'com.example.app', relaunch: true, url: null });
-  await driver.clearAppState('com.example.app');
+  await driver.resetKeychain();
   expect(runCommand.ran).toEqual(['xcrun simctl keychain A1B2C3 reset']);
-});
-
-test('the keychain is left alone on Android', async () => {
-  const android = recordingRunCommand();
-  const androidDriver = driverFor({ platform: 'android', name: null }, android);
-  await androidDriver.open({ app: 'com.example.app', relaunch: true, url: null });
-  await androidDriver.clearAppState('com.example.app');
-  expect(android.ran).toEqual([]);
 });
 
 test('an iOS session with no reported identifier resets the booted simulator', async () => {
   const unopened = recordingRunCommand();
-  await driverFor({ platform: 'ios', name: null }, unopened).clearAppState('com.example.app');
+  await driverFor({ platform: 'ios', name: null }, unopened).resetKeychain();
   expect(unopened.ran).toEqual(['xcrun simctl keychain booted reset']);
+});
+
+test('resetting the keychain runs nothing on Android', async () => {
+  const android = recordingRunCommand();
+  const androidDriver = driverFor({ platform: 'android', name: null }, android);
+  await androidDriver.open({ app: 'com.example.app', relaunch: true, url: null });
+  await androidDriver.resetKeychain();
+  expect(android.ran).toEqual([]);
 });
