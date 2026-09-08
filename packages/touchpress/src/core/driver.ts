@@ -40,11 +40,7 @@ export type Binding = {
   readonly deviceLabel: string;
   readonly appId: string;
   readonly stateDir: string | null;
-  /**
-   * The simulator identifier, when the driver named one. Null on a platform or
-   * a response that carries none, and the only thing that lets a driver reach
-   * the device with a tool of its own.
-   */
+  /** What lets a driver reach the device with a tool of its own. Null when the open response named none. */
   readonly udid: string | null;
 };
 
