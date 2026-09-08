@@ -1,0 +1,25 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "enabledManagers": ["npm"],
+  "lockFileMaintenance": { "enabled": false },
+  "packageRules": [
+    {
+      "description": "Only agent-device is tracked. Everything else moves by hand.",
+      "matchPackageNames": ["*"],
+      "enabled": false
+    },
+    {
+      "description": "agent-device is pinned exact in the root and the library, so both move together and the pin stays exact.",
+      "matchPackageNames": ["agent-device"],
+      "enabled": true,
+      "rangeStrategy": "pin",
+      "groupName": "agent-device",
+      "commitMessageTopic": "agent-device",
+      "labels": ["agent-device"],
+      "prBodyNotes": [
+        "The published package pins this exact version, so add a changeset before merging: `pnpm changeset` with a patch bump."
+      ]
+    }
+  ]
+}
