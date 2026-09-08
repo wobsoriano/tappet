@@ -30,6 +30,21 @@ Each action is therefore one unit. Capture a screen, resolve the locator, pin th
 
 Every one of those launches carries `launchUrl` when it is set, the worker's first launch included, so a development client returns to your app rather than to its server picker between tests. See [Configuration](configuration.md) for the URL shape.
 
+## Clearing state
+
+`device.clearState()` puts the app back to a fresh install as far as a test can, and it is reported as one step with its relaunch nested under it.
+
+```
+clear state of com.example.app
+  relaunch com.example.app
+```
+
+It clears the app's stored state through the driver, then relaunches and runs the ready gate again. The relaunch is part of the operation rather than something to remember. An app holding a cleared session in memory has not been cleared, which is why every workaround for this ended in a manual `device.relaunch()`.
+
+On an iOS simulator it also runs `xcrun simctl keychain <udid> reset`. The driver's own clear leaves the keychain alone, and that is where `clerk-ios` and `expo-secure-store` keep a session, so a clear without it leaves a signed-in user signed in. The reset is the driver's job rather than the core's, because it needs the device identifier and a child process, and the core has neither. It runs only on iOS and only once an `open` has named a device.
+
+The keychain is the simulator's, not the app's. Resetting it clears what every app on that simulator stored there.
+
 ## DEVICE_IN_USE
 
 A device claim is a file in the `agent-device` state directory, and it outlives the process that made it. A claim made in another workspace does not show up in a session listing run from yours, but it still blocks a launch.

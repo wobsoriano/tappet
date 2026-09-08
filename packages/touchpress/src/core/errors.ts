@@ -66,6 +66,8 @@ export type ErrorInfo =
       readonly locator: string;
       readonly screen: string;
     }
+  /** Carries no field, because the rejected text is the one thing this error may not hold. */
+  | { readonly kind: 'type-rejected' }
   | { readonly kind: 'driver'; readonly command: string; readonly failure: DeviceFailure }
   | { readonly kind: 'ai-not-configured' }
   | { readonly kind: 'ai-missing-peer' }
@@ -166,6 +168,14 @@ function formatError(info: ErrorInfo): string {
         ``,
         `Screen:`,
         info.screen,
+      ].join('\n');
+    case 'type-rejected':
+      return [
+        'The driver cannot type text whose first word looks like a node reference.',
+        'It reads a leading @ followed by a name with a digit in it, or by ref, node,',
+        'element or el, as a ref to resolve rather than as characters to send.',
+        '',
+        'Type it through the field instead, with fill on a locator for that field.',
       ].join('\n');
     case 'driver':
       return `${info.command} failed: ${describeFailure(info.failure)}`;

@@ -8,12 +8,15 @@
 export { createDevice } from './device.ts';
 export type {
   ActionOptions,
+  BackOptions,
   Device,
   FillOptions,
   FilterOptions,
+  Keyboard,
   Locator,
   RoleOptions,
   TextOptions,
+  TypeOptions,
 } from './device.ts';
 
 export { describeCheck, evaluate } from './checks.ts';
@@ -23,6 +26,7 @@ export { deviceNameForSlot, parseDeviceOptions, TOUCHPRESS_DEFAULTS } from './co
 export type { DeviceChoice, ReadyQuery, ResolvedOptions, TouchpressOptions } from './config.ts';
 
 export type {
+  BackMode,
   Binding,
   CaptureOptions,
   DeviceDriver,

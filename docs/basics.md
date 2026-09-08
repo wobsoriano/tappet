@@ -40,6 +40,9 @@ await device.getByTestId('password').fill('hunter2', { secret: true });
 await device.getByTestId('menu').longPress(1500);
 await device.getByTestId('row-30').scrollIntoView();
 await device.scroll('down');
+await device.goBack();
+await device.keyboard.type('123456');
+await device.clearState();
 await device.relaunch();
 await device.dismissDevOverlay();
 ```
@@ -58,6 +61,19 @@ fill getByTestId('password')
 `fill` reads back what it wrote. Device keyboards drop early keystrokes, and a controlled React Native input can put a stale value back over what the driver typed, so `fill` reads the field once, waits `settleQuietMs`, reads it again, and retries the whole fill until both reads hold the text or the action budget runs out. A secure field reports one mask character per character typed, so there the check is on length. Android has no secure role, so a password field there is a `text-field`, and a plain field's fill also confirms on a masked read-back of the right length. Retrying replaces rather than appends. Pacing keystrokes with the driver's per-character delay was tried and removed, because that path appends. When the budget runs out the error names the value found and the attempts made, by length for a secret.
 
 `secret` is fill's only extra option. It hides the value from the step and from the `fill-unconfirmed` error. It does not hide what the device reports afterwards. An assertion on that field's value still prints it, and on Android a plain text field reports its contents as its accessibility name, which puts them in the screen listing. Assert on what the credential got you rather than on the credential.
+
+`goBack()` goes back without naming a control. It presses the platform gesture on Android and the app's own navigation control on iOS, which has no system back, and `{ mode: 'in-app' }` or `{ mode: 'system' }` overrides that. The step reads `back (system)` or `back (in-app)`.
+
+`keyboard.type(text)` types into whatever holds focus, for a field with nothing to select on. A one-time-code input the app focused for itself is the case it exists for. Nothing is read back, because there is no target to read, so a field you can name is better served by `fill`. It takes the same `{ secret: true }` as `fill` and reports a character count under it.
+
+```ts
+await device.keyboard.type('123456');
+await device.keyboard.type('hunter2', { secret: true });
+```
+
+The driver refuses text whose first word looks like a node reference, a leading `@` followed by a name carrying a digit or by `ref`, `node`, `element` or `el`. touchpress refuses it first, and neither the check nor any failure raised from a type repeats the text back, so a password cannot reach a terminal or a report through this path.
+
+`clearState()` discards the app's stored state and then relaunches, because an app still holding a cleared session in memory has not been cleared. [Lifecycle](lifecycle.md) covers what it reaches on each platform.
 
 `relaunch()` relaunches the app and waits for the ready gate again. `dismissDevOverlay()` clears the React Native development warning overlay. It is never automatic, because the overlay is a real node and hiding it by default would suppress a warning a test might want to assert on.
 
