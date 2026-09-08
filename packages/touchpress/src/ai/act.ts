@@ -192,14 +192,14 @@ export function runExtract<T>(run: ExtractRun<T>): Promise<T> {
 function reporting(tools: ToolSet, sink: ActionSink): ToolSet {
   const wrapped: ToolSet = {};
   for (const [name, built] of Object.entries(tools)) {
-    const execute = (built as { execute?: (input: unknown, options: unknown) => unknown }).execute;
+    const { execute } = built;
     if (execute === undefined) {
       wrapped[name] = built;
       continue;
     }
     wrapped[name] = {
       ...built,
-      execute: (input: unknown, options: unknown) =>
+      execute: (input, options) =>
         sink.step(renderTitle(toolRecord(name, input)), async () => {
           const text = typedText(name, input);
           if (text !== null) {
@@ -211,7 +211,7 @@ function reporting(tools: ToolSet, sink: ActionSink): ToolSet {
           }
           return execute(input, options);
         }),
-    } as typeof built;
+    };
   }
   return wrapped;
 }
@@ -248,13 +248,16 @@ function toolErrors(
   content: readonly { readonly type: string }[],
 ): { name: string; input: unknown; error: string }[] {
   return content
-    .filter((part) => part.type === 'tool-error')
-    .map((part) => ({
-      name: String(Reflect.get(part, 'toolName')),
-      input: Reflect.get(part, 'input'),
-      error: messageOf(Reflect.get(part, 'error')),
-    }));
+    .filter((part): part is ToolErrorPart => part.type === 'tool-error')
+    .map((part) => ({ name: part.toolName, input: part.input, error: messageOf(part.error) }));
 }
+
+type ToolErrorPart = {
+  readonly type: 'tool-error';
+  readonly toolName: string;
+  readonly input: unknown;
+  readonly error: unknown;
+};
 
 function messageOf(error: unknown): string {
   if (error instanceof Error) return error.message;

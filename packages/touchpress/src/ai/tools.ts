@@ -86,11 +86,13 @@ const CUT_KEYS = new Set([
   'recordAs',
 ]);
 
+export type Execute = (input: unknown, options: unknown) => unknown;
+
 /** What this module reads off an upstream tool. `jsonSchema()` stores the raw schema under `jsonSchema`. */
 type BuiltTool = {
   readonly description?: string;
   readonly inputSchema: { readonly jsonSchema: JsonSchema };
-  readonly execute?: unknown;
+  readonly execute: Execute;
 };
 
 type JsonSchema = {
@@ -118,17 +120,14 @@ export async function createDeviceTools(session: string, platform: Platform): Pr
     if (built === undefined) {
       throw new Error(`agent-device no longer exposes the "${name}" tool`);
     }
-    const execute: unknown = wrapDeviceTool(name, platform, built.execute as Execute);
     kept[name] = tool({
       description: built.description,
       inputSchema: jsonSchema(prune(built.inputSchema.jsonSchema)),
-      execute: execute as Parameters<typeof tool>[0]['execute'],
+      execute: wrapDeviceTool(name, platform, built.execute),
     });
   }
   return kept;
 }
-
-export type Execute = (input: unknown, options: unknown) => unknown;
 
 /**
  * The one place a command's input and output are reshaped for the model, so the
@@ -169,7 +168,7 @@ export function compactSnapshot(raw: RawSnapshot, platform: Platform): string {
 export function compactResult(name: string, output: unknown): unknown {
   if (DEVICE_TOOLS.get(name)?.output !== 'outcome') return output;
   if (typeof output !== 'object' || output === null) return output;
-  const settle = Reflect.get(output, 'settle');
+  const settle = asObject(output)['settle'];
   return {
     ...pick(output, 'message'),
     ...pick(output, 'targetKind'),
@@ -187,11 +186,9 @@ export function compactResult(name: string, output: unknown): unknown {
  * model that typed it from memory anyway.
  */
 function withRefSigil(input: unknown): unknown {
-  const target = asObject(input)['target'];
-  if (typeof target !== 'object' || target === null || Reflect.get(target, 'kind') !== 'ref') {
-    return input;
-  }
-  const ref = Reflect.get(target, 'ref');
+  const target = asObject(asObject(input)['target']);
+  if (target['kind'] !== 'ref') return input;
+  const ref = target['ref'];
   if (typeof ref !== 'string' || ref.startsWith('@')) return input;
   return { ...asObject(input), target: { ...target, ref: `@${ref}` } };
 }
@@ -206,7 +203,7 @@ function asSnapshot(output: unknown): RawSnapshot {
 }
 
 function pick(source: object, key: string): Record<string, unknown> {
-  const value = Reflect.get(source, key);
+  const value = asObject(source)[key];
   return value === undefined ? {} : { [key]: value };
 }
 
@@ -233,8 +230,7 @@ function prune(schema: JsonSchema): JsonSchema {
  * device, so the alias goes and only the UI target survives.
  */
 function isDeviceAlias(schema: unknown): boolean {
-  if (typeof schema !== 'object' || schema === null) return false;
-  return Array.isArray(Reflect.get(schema, 'enum'));
+  return Array.isArray(asObject(schema)['enum']);
 }
 
 /** A tool the table does not name still reports, by its name alone. */
@@ -255,7 +251,6 @@ export function typedText(name: string, input: unknown): string | null {
 }
 
 function readText(input: unknown, key: string): string | null {
-  if (typeof input !== 'object' || input === null) return null;
-  const value = Reflect.get(input, key);
+  const value = asObject(input)[key];
   return typeof value === 'string' && value.length > 0 ? value : null;
 }

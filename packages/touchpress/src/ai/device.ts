@@ -66,7 +66,7 @@ export function withAi(
     },
     extract: async (question, schema, options) => {
       const configured = configuredModel(model);
-      return await session.run(async (one) =>
+      return session.run(async (one) =>
         runExtract({
           model: configured,
           screen: renderScreen(await one.capture()),

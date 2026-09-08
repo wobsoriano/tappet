@@ -36,7 +36,6 @@ export const setupTest = base.extend<object, TouchpressOptions & AiOptions>({
   evidence: [TOUCHPRESS_DEFAULTS.evidence, { option: true, scope: 'worker' }],
   sessionPrefix: [TOUCHPRESS_DEFAULTS.sessionPrefix, { option: true, scope: 'worker' }],
   // Unset rather than a plausible default, because there is no model this library could pick.
-  // `act` and `extract` are the only things that read it, and they name the key when it is missing.
   aiModel: [undefined, { option: true, scope: 'worker' }],
 });
 
