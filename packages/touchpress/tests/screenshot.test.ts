@@ -90,6 +90,22 @@ test('a mask painted past the edge of the image is clamped rather than throwing'
   expect(compareScreenshot(before, after, masked).kind).toBe('match');
 });
 
+test('a mask lying outside the image paints nothing, so a change at the corner still counts', () => {
+  const before = solid(20, 20, WHITE);
+  const after = withPatch(20, 20, { x: 0, y: 0, width: 5, height: 5 }, RED);
+  const outside = { ...defaults, mask: [{ x: -100, y: -100, width: 5, height: 5 }] };
+  expect(compareScreenshot(before, after, outside).kind).toBe('mismatch');
+});
+
+test('a mask straddling the edge paints only the part that overlaps the image', () => {
+  const before = solid(20, 20, WHITE);
+  const straddling = { ...defaults, mask: [{ x: -3, y: -3, width: 6, height: 6 }] };
+  const inside = withPatch(20, 20, { x: 0, y: 0, width: 3, height: 3 }, RED);
+  const past = withPatch(20, 20, { x: 0, y: 0, width: 5, height: 5 }, RED);
+  expect(compareScreenshot(before, inside, straddling).kind).toBe('match');
+  expect(compareScreenshot(before, past, straddling).kind).toBe('mismatch');
+});
+
 test('images of different sizes report both sizes rather than a ratio', () => {
   const result = compareScreenshot(solid(100, 100, WHITE), solid(100, 90, WHITE), defaults);
   expect(result.kind).toBe('size-mismatch');
