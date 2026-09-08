@@ -1,6 +1,49 @@
 import { AppError } from 'agent-device';
 import { expect, test } from 'vite-plus/test';
-import { classifyError } from '../src/driver/agent-device.ts';
+import type { DeviceSelection } from '../src/core/driver.ts';
+import { TouchpressError } from '../src/core/errors.ts';
+import {
+  classifyError,
+  createAgentDeviceDriver,
+  looksLikeRef,
+  type RunCommand,
+} from '../src/driver/agent-device.ts';
+
+type Client = Parameters<typeof createAgentDeviceDriver>[0];
+
+/** Only the calls the driver under test makes, stood up as a literal so no daemon is involved. */
+function stubClient(overrides: Record<string, unknown>): Client {
+  const noop = () => Promise.resolve({});
+  return {
+    apps: {
+      open: () =>
+        Promise.resolve({
+          session: 'touchpress-ios-0',
+          identifiers: { udid: 'A1B2C3', deviceName: 'iPhone 17 Pro Max' },
+        }),
+    },
+    interactions: { type: noop },
+    settings: { update: noop },
+    ...overrides,
+  } as unknown as Client;
+}
+
+function driverFor(
+  selection: DeviceSelection,
+  runCommand: RunCommand,
+  overrides: Record<string, unknown> = {},
+) {
+  return createAgentDeviceDriver(stubClient(overrides), 'touchpress-ios-0', selection, runCommand);
+}
+
+function recordingRunCommand(): RunCommand & { readonly ran: string[] } {
+  const ran: string[] = [];
+  const run = (file: string, args: readonly string[]) => {
+    ran.push([file, ...args].join(' '));
+    return Promise.resolve();
+  };
+  return Object.assign(run, { ran });
+}
 
 test('a claimed device reads its owner from the details bag', () => {
   const failure = classifyError(
@@ -82,4 +125,74 @@ test('the remaining codes map onto their own kinds', () => {
   expect(classifyError(new AppError('AMBIGUOUS_MATCH', 'matched multiple')).kind).toBe('ambiguous');
   expect(classifyError(new AppError('INVALID_ARGS', 'bad flag')).kind).toBe('unknown');
   expect(classifyError(new Error('something else')).kind).toBe('unknown');
+});
+
+test('looksLikeRef copies what agent-device refuses and leaves ordinary text alone', () => {
+  expect(looksLikeRef('@e12')).toBe(true);
+  expect(looksLikeRef('@Word12')).toBe(true);
+  expect(looksLikeRef('@ref-x')).toBe(true);
+  expect(looksLikeRef('@')).toBe(false);
+  expect(looksLikeRef('@x')).toBe(false);
+  expect(looksLikeRef('@word')).toBe(false);
+  expect(looksLikeRef('@ home')).toBe(false);
+});
+
+test('type refuses ref-shaped text before sending it, and the error never holds the text', async () => {
+  const sent: string[] = [];
+  const driver = driverFor({ platform: 'ios', name: null }, recordingRunCommand(), {
+    interactions: {
+      type: (options: { text: string }) => {
+        sent.push(options.text);
+        return Promise.resolve({});
+      },
+    },
+  });
+
+  const error = await driver
+    .type('@e12', { settleQuietMs: 100, timeoutMs: 600 })
+    .catch((thrown: unknown) => thrown);
+
+  expect(error).toBeInstanceOf(TouchpressError);
+  if (!(error instanceof TouchpressError)) return;
+  expect(error.info.kind).toBe('type-rejected');
+  expect(error.message).not.toContain('@e12');
+  expect(sent).toEqual([]);
+});
+
+test('a failure raised from type carries no trace of what was typed', async () => {
+  const driver = driverFor({ platform: 'ios', name: null }, recordingRunCommand(), {
+    interactions: {
+      type: () =>
+        Promise.reject(new AppError('COMMAND_FAILED', 'could not type "hunter2" into the field')),
+    },
+  });
+
+  const error = await driver
+    .type('hunter2', { settleQuietMs: 100, timeoutMs: 600 })
+    .catch((thrown: unknown) => thrown);
+
+  expect(error).toBeInstanceOf(TouchpressError);
+  if (!(error instanceof TouchpressError)) return;
+  expect(error.message).not.toContain('hunter2');
+  expect(error.message).toContain('<typed text>');
+});
+
+test('clearing state resets the keychain on an iOS simulator the driver named', async () => {
+  const runCommand = recordingRunCommand();
+  const driver = driverFor({ platform: 'ios', name: null }, runCommand);
+  await driver.open({ app: 'com.example.app', relaunch: true, url: null });
+  await driver.clearAppState('com.example.app');
+  expect(runCommand.ran).toEqual(['xcrun simctl keychain A1B2C3 reset']);
+});
+
+test('the keychain is left alone on Android and before any open named a device', async () => {
+  const android = recordingRunCommand();
+  const androidDriver = driverFor({ platform: 'android', name: null }, android);
+  await androidDriver.open({ app: 'com.example.app', relaunch: true, url: null });
+  await androidDriver.clearAppState('com.example.app');
+  expect(android.ran).toEqual([]);
+
+  const unopened = recordingRunCommand();
+  await driverFor({ platform: 'ios', name: null }, unopened).clearAppState('com.example.app');
+  expect(unopened.ran).toEqual([]);
 });

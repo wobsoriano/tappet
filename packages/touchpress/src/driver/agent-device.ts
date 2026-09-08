@@ -1,5 +1,8 @@
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import { createAgentDeviceClient, normalizeAgentDeviceError } from 'agent-device';
 import type {
+  BackMode,
   Binding,
   DeviceDriver,
   DeviceFailure,
@@ -21,6 +24,15 @@ export function createClient(): Client {
   return createAgentDeviceClient({ responseLevel: 'full' });
 }
 
+/** The seam a test observes instead of spawning a process. */
+export type RunCommand = (file: string, args: readonly string[]) => Promise<void>;
+
+const execFileAsync = promisify(execFile);
+
+const spawnCommand: RunCommand = async (file, args) => {
+  await execFileAsync(file, [...args]);
+};
+
 /**
  * The only file that imports `agent-device`. Two jobs: translate domain requests
  * into client calls carrying the session and device selection, and translate the
@@ -31,12 +43,15 @@ export function createAgentDeviceDriver(
   client: Client,
   session: string,
   selection: DeviceSelection,
+  runCommand: RunCommand = spawnCommand,
 ): DeviceDriver {
   const where = {
     session,
     platform: selection.platform,
     ...(selection.name === null ? {} : { device: selection.name }),
   };
+  // Only `open` learns the simulator identifier, and `clearAppState` is the one call that needs it.
+  let udid: string | null = null;
 
   async function run<T>(command: string, body: () => Promise<T>): Promise<T> {
     try {
@@ -60,22 +75,24 @@ export function createAgentDeviceDriver(
 
     open: (request: OpenRequest): Promise<Binding> =>
       run('open', async () => {
-        const result = await client.apps.open({
+        const opened = await client.apps.open({
           ...where,
           app: request.app,
           relaunch: request.relaunch,
           ...(request.url === null ? {} : { url: request.url }),
         });
+        udid = opened.identifiers.udid ?? opened.identifiers.deviceId ?? null;
         return {
-          session: result.session,
+          session: opened.session,
           platform: selection.platform,
           deviceLabel:
-            result.device?.name ??
-            result.identifiers.deviceName ??
+            opened.device?.name ??
+            opened.identifiers.deviceName ??
             selection.name ??
             selection.platform,
-          appId: result.appBundleId ?? result.appId ?? request.app,
-          stateDir: result.sessionStateDir ?? null,
+          appId: opened.appBundleId ?? opened.appId ?? request.app,
+          stateDir: opened.sessionStateDir ?? null,
+          udid,
         };
       }),
 
@@ -108,6 +125,52 @@ export function createAgentDeviceDriver(
       run('fill', async () =>
         toSettled(await client.interactions.fill({ ...where, ref, text, ...settle(options) })),
       ),
+
+    back: (mode: BackMode, options: SettleOptions): Promise<Settled> =>
+      run('back', async () =>
+        toSettled(await client.command.back({ ...where, mode, ...settle(options) })),
+      ),
+
+    /**
+     * Scrubbed rather than run through `run`, because agent-device echoes the
+     * text it rejected and a password has no business in a report.
+     */
+    type: async (text: string, _options: SettleOptions): Promise<Settled> => {
+      if (looksLikeRef(text)) throw new TouchpressError({ kind: 'type-rejected' });
+      try {
+        await client.interactions.type({ ...where, text });
+        // agent-device's `type` takes no settle and reports none, so nothing here
+        // may claim the screen went quiet. The budget stays on the port because
+        // the core owns it and a later command shape may take it.
+        return { settled: false, waitedMs: 0 };
+      } catch (error) {
+        throw new TouchpressError({
+          kind: 'driver',
+          command: 'type',
+          failure: withoutText(classifyError(error), text),
+        });
+      }
+    },
+
+    /**
+     * agent-device clears the app's own storage and leaves the iOS keychain
+     * alone, which is where clerk-ios and expo-secure-store keep a session, so
+     * a simulator's keychain is reset alongside it. That decision is the
+     * driver's because it needs the udid and a process, neither of which the
+     * core has.
+     */
+    clearAppState: (app: string): Promise<void> =>
+      run('clearAppState', async () => {
+        await client.settings.update({
+          ...where,
+          setting: 'clear-app-state',
+          state: 'clear',
+          app,
+        });
+        if (selection.platform === 'ios' && udid !== null) {
+          await runCommand('xcrun', ['simctl', 'keychain', udid, 'reset']);
+        }
+      }),
 
     scroll: (direction: ScrollDirection, options: SettleOptions): Promise<void> =>
       run('scroll', async () => {
@@ -151,6 +214,27 @@ function readNormalized(error: unknown): {
   details?: Record<string, unknown>;
 } {
   return normalizeAgentDeviceError(error);
+}
+
+/**
+ * agent-device 0.20.10's own check, copied rather than approximated so the two
+ * agree on what it will refuse. It reads the first whitespace-delimited word of
+ * the trimmed text, and treats a leading `@` followed by a name carrying a
+ * digit, or by `ref`, `node`, `element` or `el`, as a ref to resolve rather than
+ * as characters to send. So `@e12` and `@ref-x` are refs, while `@word` and
+ * `@ home` are text.
+ */
+export function looksLikeRef(text: string): boolean {
+  const word = text.trim().split(/\s+/, 1)[0];
+  if (word === undefined || !word.startsWith('@') || word.length < 3) return false;
+  const rest = word.slice(1);
+  return /^[A-Za-z_-]*\d[\w-]*$/i.test(rest) || /^(?:ref|node|element|el)[\w-]*$/i.test(rest);
+}
+
+/** Every failure kind carries a `detail`, and the driver puts what it was given into it. */
+function withoutText(failure: DeviceFailure, text: string): DeviceFailure {
+  if (text === '') return failure;
+  return { ...failure, detail: failure.detail.split(text).join('<typed text>') };
 }
 
 /**

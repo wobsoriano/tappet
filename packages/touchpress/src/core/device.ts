@@ -1,5 +1,5 @@
 import { describeNode, type Check } from './checks.ts';
-import type { ScrollDirection, Settled } from './driver.ts';
+import type { BackMode, ScrollDirection, Settled } from './driver.ts';
 import { TouchpressError, type ExpectedValue } from './errors.ts';
 import { probe, type ProbeOptions, type ProbeResult } from './probe.ts';
 import {
@@ -48,6 +48,24 @@ export type FilterOptions = {
  */
 export type FillOptions = ActionOptions & { secret?: boolean };
 
+export type BackOptions = ActionOptions & { mode?: BackMode };
+
+/** `secret` reports a character count instead of the text, the way `fill`'s does. */
+export type TypeOptions = ActionOptions & { secret?: boolean };
+
+/**
+ * Playwright's `page.keyboard`, cut down to what a device keyboard can do with
+ * no target. Everything else touchpress offers needs a locator.
+ */
+export type Keyboard = {
+  /**
+   * Types into whatever holds focus, for a field with nothing to select on,
+   * such as a one-time-code input the app focused for itself. Nothing is read
+   * back, because there is no target to read.
+   */
+  type(text: string, options?: TypeOptions): Promise<void>;
+};
+
 export type Device = {
   /** Matches a node's accessibility name or its value. */
   getByText(text: string | RegExp, options?: TextOptions): Locator;
@@ -57,6 +75,14 @@ export type Device = {
   locator(query: Query): Locator;
 
   scroll(direction: ScrollDirection): Promise<void>;
+  /**
+   * Goes back. Defaults to the platform gesture on Android and to the app's own
+   * navigation control on iOS, which has no system back to press.
+   */
+  goBack(options?: BackOptions): Promise<void>;
+  readonly keyboard: Keyboard;
+  /** Discards the app's stored state, then relaunches and waits for the ready gate again. */
+  clearState(): Promise<void>;
   /** Relaunches the app and waits for the ready gate again. */
   relaunch(): Promise<void>;
   /** Never automatic, because hiding the overlay would suppress a warning a test might want to see. */
@@ -105,6 +131,21 @@ export function createDevice(session: DeviceSession, sink: ActionSink): Device {
       sink.step(renderTitle({ kind: 'scroll', direction }), async () => {
         await session.run((device) => device.scroll(direction, session.options.actionTimeout));
       }),
+    goBack: (options) => {
+      const mode = options?.mode ?? (session.options.platform === 'android' ? 'system' : 'in-app');
+      return sink.step(renderTitle({ kind: 'back', mode }), async () => {
+        const budget = options?.timeout ?? session.options.actionTimeout;
+        await session.run((device) => device.back(mode, budget));
+      });
+    },
+    keyboard: {
+      type: (text, options) =>
+        sink.step(renderTitle({ kind: 'typed', typed: typedText(text, options) }), async () => {
+          const budget = options?.timeout ?? session.options.actionTimeout;
+          await session.run((device) => device.type(text, budget));
+        }),
+    },
+    clearState: () => session.clearState(sink),
     relaunch: () => session.relaunch(sink),
     dismissDevOverlay: () =>
       sink.step(renderTitle({ kind: 'dismiss-overlay' }), () => session.dismissDevOverlay()),
@@ -511,6 +552,13 @@ function expectedOf(confirmation: Confirmation): ExpectedValue {
       throw new Error(`unhandled confirmation ${JSON.stringify(never)}`);
     }
   }
+}
+
+/** A blind type has no node to ask about secrecy, so only the caller can say. */
+function typedText(text: string, options: TypeOptions | undefined): Typed {
+  return options?.secret === true
+    ? { kind: 'hidden', length: text.length }
+    : { kind: 'text', value: text };
 }
 
 /** What the report says was typed, verbatim, which the normalized confirmation no longer holds. */

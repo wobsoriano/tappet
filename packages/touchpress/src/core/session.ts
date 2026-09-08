@@ -1,5 +1,6 @@
 import { deviceNameForSlot, type ResolvedOptions } from './config.ts';
 import type {
+  BackMode,
   Binding,
   DeviceDriver,
   DeviceFailure,
@@ -65,6 +66,9 @@ export type SessionDevice = {
   tap(ref: PinnedRef, budgetMs: number): Promise<Settled>;
   longPress(ref: PinnedRef, durationMs: number, budgetMs: number): Promise<Settled>;
   fill(ref: PinnedRef, text: string, budgetMs: number): Promise<Settled>;
+  back(mode: BackMode, budgetMs: number): Promise<Settled>;
+  type(text: string, budgetMs: number): Promise<Settled>;
+  clearAppState(app: string): Promise<void>;
   scroll(direction: ScrollDirection, budgetMs: number): Promise<void>;
 };
 
@@ -80,6 +84,12 @@ export type DeviceSession = {
   screenshot(path: string): Promise<string>;
   /** Relaunches the app and re-runs the ready gate. Reported as one step. */
   relaunch(sink: ActionSink): Promise<void>;
+  /**
+   * Discards the app's stored state, then relaunches and re-runs the ready
+   * gate, because an app holding a cleared session in memory has not been
+   * cleared. Reported as one step with the relaunch nested under it.
+   */
+  clearState(sink: ActionSink): Promise<void>;
   dismissDevOverlay(): Promise<void>;
   awaitReady(deadline: number): Promise<void>;
   /** Idempotent. Never shuts the simulator down, and reaches `closed` even when the driver call fails. */
@@ -197,6 +207,9 @@ function createSession(
     tap: (ref, budgetMs) => driver.tap(ref, settle(budgetMs)),
     longPress: (ref, durationMs, budgetMs) => driver.longPress(ref, durationMs, settle(budgetMs)),
     fill: (ref, text, budgetMs) => driver.fill(ref, text, settle(budgetMs)),
+    back: (mode, budgetMs) => driver.back(mode, settle(budgetMs)),
+    type: (text, budgetMs) => driver.type(text, settle(budgetMs)),
+    clearAppState: (app) => driver.clearAppState(app),
     scroll: (direction, budgetMs) => driver.scroll(direction, settle(budgetMs)),
   };
 
@@ -232,6 +245,15 @@ function createSession(
     });
   }
 
+  function relaunch(sink: ActionSink): Promise<void> {
+    return sink.step(renderTitle({ kind: 'relaunch', app: options.app }), async () => {
+      // Relaunching with the session's own selection is what keeps `open` legal on an already-bound session.
+      await run(() => driver.open({ app: options.app, relaunch: true, url: options.launchUrl }));
+      if (options.dismissDevOverlay) await run(() => driver.dismissDevOverlay());
+      await awaitReady(Date.now() + options.launchTimeout);
+    });
+  }
+
   return {
     name,
     options,
@@ -240,12 +262,11 @@ function createSession(
     run,
     screen: () => run((one) => one.capture()),
     screenshot: (path) => queue.enqueue(() => driver.screenshot(path)),
-    relaunch: (sink) =>
-      sink.step(renderTitle({ kind: 'relaunch', app: options.app }), async () => {
-        // Relaunching with the session's own selection is what keeps `open` legal on an already-bound session.
-        await run(() => driver.open({ app: options.app, relaunch: true, url: options.launchUrl }));
-        if (options.dismissDevOverlay) await run(() => driver.dismissDevOverlay());
-        await awaitReady(Date.now() + options.launchTimeout);
+    relaunch,
+    clearState: (sink) =>
+      sink.step(renderTitle({ kind: 'clear-state', app: options.app }), async () => {
+        await run((one) => one.clearAppState(options.app));
+        await relaunch(sink);
       }),
     dismissDevOverlay: () => run(() => driver.dismissDevOverlay()),
     awaitReady,

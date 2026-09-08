@@ -1,4 +1,5 @@
 import type {
+  BackMode,
   Binding,
   CaptureOptions,
   DeviceDriver,
@@ -41,6 +42,8 @@ export type FakeDriver = DeviceDriver & {
    * on a second refusing node.
    */
   readonly coveredRefs: string[];
+  /** What `open` reports as the device identifier, which is what decides a driver's keychain reset. */
+  udid: string | null;
   /**
    * What the next fills leave in the field, one entry each. Anything beyond the
    * queue lands whole, so a short queue models a device keyboard that drops
@@ -79,6 +82,7 @@ export function createFakeDriver(options?: {
     openOutcomes,
     coveredRefs,
     fillOutcomes,
+    udid: null,
     revertingFills: 0,
     revertAfterMs: 0,
     revertTo: '',
@@ -108,6 +112,7 @@ export function createFakeDriver(options?: {
         deviceLabel: 'iPhone 17 Pro Max',
         appId: request.app,
         stateDir: null,
+        udid: driver.udid,
       });
     },
 
@@ -160,6 +165,18 @@ export function createFakeDriver(options?: {
         pendingRevert = { key, value: driver.revertTo, at: Date.now() + driver.revertAfterMs };
       }
       return settled;
+    },
+    back: (mode: BackMode) => {
+      calls.push(`back ${mode}`);
+      return Promise.resolve({ settled: true, waitedMs: 20 });
+    },
+    type: (text: string) => {
+      calls.push(`type ${text}`);
+      return Promise.resolve({ settled: false, waitedMs: 0 });
+    },
+    clearAppState: (app: string) => {
+      calls.push(`clearAppState ${app}`);
+      return Promise.resolve();
     },
     scroll: (direction: ScrollDirection) => {
       calls.push(`scroll ${direction}`);
