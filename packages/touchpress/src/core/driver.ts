@@ -126,6 +126,12 @@ export type DeviceDriver = {
    * writes to is the driver's problem, not the core's.
    */
   clearAppState(app: string): Promise<void>;
+  /**
+   * Resets the device's keychain, which on an iOS simulator is shared by every
+   * app on it. Kept apart from `clearAppState` for that reason. A no-op on a
+   * platform whose app data clear already covers the app's secure store.
+   */
+  resetKeychain(): Promise<void>;
   /** Returns nothing because the driver's scroll response carries no settle observation. */
   scroll(direction: ScrollDirection, options: SettleOptions): Promise<void>;
   dismissDevOverlay(): Promise<void>;

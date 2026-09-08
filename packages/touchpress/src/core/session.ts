@@ -69,6 +69,7 @@ export type SessionDevice = {
   back(mode: BackMode, budgetMs: number): Promise<Settled>;
   type(text: string, budgetMs: number): Promise<Settled>;
   clearAppState(app: string): Promise<void>;
+  resetKeychain(): Promise<void>;
   scroll(direction: ScrollDirection, budgetMs: number): Promise<void>;
 };
 
@@ -90,6 +91,12 @@ export type DeviceSession = {
    * cleared. Reported as one step with the relaunch nested under it.
    */
   clearState(sink: ActionSink): Promise<void>;
+  /**
+   * Resets the simulator's keychain, which every app on it shares. Separate
+   * from `clearState` so an app-scoped clear never wipes another app's store.
+   * Reported as one step, with a note on Android where there is nothing to reset.
+   */
+  clearKeychain(sink: ActionSink): Promise<void>;
   dismissDevOverlay(): Promise<void>;
   awaitReady(deadline: number): Promise<void>;
   /** Idempotent. Never shuts the simulator down, and reaches `closed` even when the driver call fails. */
@@ -210,6 +217,7 @@ function createSession(
     back: (mode, budgetMs) => driver.back(mode, settle(budgetMs)),
     type: (text, budgetMs) => driver.type(text, settle(budgetMs)),
     clearAppState: (app) => driver.clearAppState(app),
+    resetKeychain: () => driver.resetKeychain(),
     scroll: (direction, budgetMs) => driver.scroll(direction, settle(budgetMs)),
   };
 
@@ -267,6 +275,12 @@ function createSession(
       sink.step(renderTitle({ kind: 'clear-state', app: options.app }), async () => {
         await run((one) => one.clearAppState(options.app));
         await relaunch(sink);
+      }),
+    clearKeychain: (sink) =>
+      sink.step(renderTitle({ kind: 'clear-keychain' }), async () => {
+        if (options.platform === 'android')
+          sink.note('keychain', 'nothing to reset on Android, clearing state covers the keystore');
+        await run((one) => one.resetKeychain());
       }),
     dismissDevOverlay: () => run(() => driver.dismissDevOverlay()),
     awaitReady,

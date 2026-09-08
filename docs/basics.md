@@ -43,6 +43,7 @@ await device.scroll('down');
 await device.goBack();
 await device.keyboard.type('123456');
 await device.clearState();
+await device.clearKeychain();
 await device.relaunch();
 await device.dismissDevOverlay();
 ```
@@ -73,7 +74,9 @@ await device.keyboard.type('hunter2', { secret: true });
 
 The driver refuses text whose first word looks like a node reference, a leading `@` followed by a name carrying a digit or by `ref`, `node`, `element` or `el`. touchpress refuses it first, and neither the check nor any failure raised from a type repeats the text back, so a password cannot reach a terminal or a report through this path.
 
-`clearState()` discards the app's stored state and then relaunches, because an app still holding a cleared session in memory has not been cleared. [Lifecycle](lifecycle.md) covers what it reaches on each platform.
+`clearState()` discards the app's stored state and then relaunches, because an app still holding a cleared session in memory has not been cleared. It is Maestro's `clearState` and Detox's `launchApp({ delete: true })`.
+
+`clearKeychain()` resets the simulator's keychain, which is where `clerk-ios` and `expo-secure-store` keep a session. On iOS the keychain belongs to the simulator, not the app, so the reset clears what every app on it stored there. That is why it is a separate call rather than part of `clearState()`. On Android it does nothing, because clearing state already removes the app's keystore entries, and the step says so in a note. It is Maestro's `clearKeychain` and Detox's `device.clearKeychain()`. [Lifecycle](lifecycle.md) covers what each reaches on each platform.
 
 `relaunch()` relaunches the app and waits for the ready gate again. `dismissDevOverlay()` clears the React Native development warning overlay. It is never automatic, because the overlay is a real node and hiding it by default would suppress a warning a test might want to assert on.
 

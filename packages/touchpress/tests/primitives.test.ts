@@ -73,7 +73,7 @@ test('a secret keyboard.type reports a character count and never the text', asyn
   expect(sink.steps).toEqual([{ title: 'type 7 characters', depth: 0, boxed: false }]);
 });
 
-test('clearState clears the app, relaunches, and waits for the ready gate again', async () => {
+test('clearState clears the app and relaunches without touching the keychain', async () => {
   const driver = createFakeDriver();
   const app = createDevice(await open(driver), silentSink);
   const sink = createRecordingSink();
@@ -90,8 +90,41 @@ test('clearState clears the app, relaunches, and waits for the ready gate again'
     'open com.wobsoriano.awesometodo relaunch=true',
     'capture',
   ]);
+  expect(driver.calls).not.toContain('resetKeychain');
   expect(sink.steps).toEqual([
     { title: 'clear state of com.wobsoriano.awesometodo', depth: 0, boxed: false },
     { title: 'relaunch com.wobsoriano.awesometodo', depth: 1, boxed: false },
+  ]);
+});
+
+test('clearKeychain resets the keychain as one step and relaunches nothing', async () => {
+  const driver = createFakeDriver();
+  const sink = createRecordingSink();
+  const app = createDevice(await open(driver), sink);
+  const before = driver.calls.length;
+
+  await app.clearKeychain();
+
+  expect(driver.calls.slice(before)).toEqual(['resetKeychain']);
+  expect(sink.steps).toEqual([{ title: 'clear keychain', depth: 0, boxed: false }]);
+});
+
+test('clearKeychain on Android notes that there was nothing to reset', async () => {
+  const driver = createFakeDriver({ screens: ['android-home'] });
+  const notes: string[] = [];
+  const sink = {
+    ...createRecordingSink(),
+    note: (key: string, value: string) => notes.push(`${key}: ${value}`),
+  };
+  const app = createDevice(
+    await open(driver, { platform: 'android', readyWhen: { text: 'Welcome' } }),
+    sink,
+  );
+
+  await app.clearKeychain();
+
+  expect(driver.calls).toContain('resetKeychain');
+  expect(notes).toEqual([
+    'keychain: nothing to reset on Android, clearing state covers the keystore',
   ]);
 });

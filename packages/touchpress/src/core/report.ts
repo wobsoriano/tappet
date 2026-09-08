@@ -34,6 +34,7 @@ export type ActionRecord =
   | { readonly kind: 'relaunch'; readonly app: string }
   | { readonly kind: 'back'; readonly mode: BackMode }
   | { readonly kind: 'clear-state'; readonly app: string }
+  | { readonly kind: 'clear-keychain' }
   | { readonly kind: 'dismiss-overlay' }
   | { readonly kind: 'screenshot'; readonly path: string }
   | { readonly kind: 'act'; readonly instruction: string }
@@ -88,6 +89,8 @@ export function renderTitle(record: ActionRecord): string {
       return `back (${record.mode})`;
     case 'clear-state':
       return `clear state of ${record.app}`;
+    case 'clear-keychain':
+      return 'clear keychain';
     case 'dismiss-overlay':
       return 'dismiss the React Native dev overlay';
     case 'screenshot':

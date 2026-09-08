@@ -178,6 +178,10 @@ export function createFakeDriver(options?: {
       calls.push(`clearAppState ${app}`);
       return Promise.resolve();
     },
+    resetKeychain: () => {
+      calls.push('resetKeychain');
+      return Promise.resolve();
+    },
     scroll: (direction: ScrollDirection) => {
       calls.push(`scroll ${direction}`);
       const next = driver.onScroll.shift();
