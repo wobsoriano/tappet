@@ -509,10 +509,15 @@ test('a read command answers with what upstream returned, untrimmed', () => {
 
 test('a press naming a bare ref reaches the device with the @ the driver demands', async () => {
   const sent: unknown[] = [];
-  const press = wrapDeviceTool('press', 'ios', (input) => {
-    sent.push(input);
-    return Promise.resolve({ targetKind: 'ref', message: 'ok' });
-  });
+  const press = wrapDeviceTool(
+    'press',
+    'ios',
+    (input) => {
+      sent.push(input);
+      return Promise.resolve({ targetKind: 'ref', message: 'ok' });
+    },
+    new Set(['target']),
+  );
 
   await press({ target: { kind: 'ref', ref: 'e4' } }, {});
   await press({ target: { kind: 'ref', ref: '@e7' } }, {});
@@ -525,12 +530,34 @@ test('a press naming a bare ref reaches the device with the @ the driver demands
   ]);
 });
 
+test('a key the pruned schema does not declare never reaches the device', async () => {
+  const sent: unknown[] = [];
+  const press = wrapDeviceTool(
+    'press',
+    'ios',
+    (input) => {
+      sent.push(input);
+      return Promise.resolve({ targetKind: 'ref', message: 'ok' });
+    },
+    new Set(['target']),
+  );
+
+  await press({ target: { kind: 'ref', ref: '@e4' }, daemonBaseUrl: 'http://x', cwd: '/' }, {});
+
+  expect(sent).toEqual([{ target: { kind: 'ref', ref: '@e4' } }]);
+});
+
 test('the snapshot the model asks for is the full tree, rendered', async () => {
   const sent: unknown[] = [];
-  const snapshot = wrapDeviceTool('snapshot', 'ios', (input) => {
-    sent.push(input);
-    return Promise.resolve({ nodes: [{ ref: 'e1', index: 0, type: 'Button', label: 'List' }] });
-  });
+  const snapshot = wrapDeviceTool(
+    'snapshot',
+    'ios',
+    (input) => {
+      sent.push(input);
+      return Promise.resolve({ nodes: [{ ref: 'e1', index: 0, type: 'Button', label: 'List' }] });
+    },
+    new Set(['depth']),
+  );
 
   expect(await snapshot({ depth: 3 }, {})).toBe('@e1 [button] "List"');
   expect(sent).toEqual([{ depth: 3, forceFull: true }]);
