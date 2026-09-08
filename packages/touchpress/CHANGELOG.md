@@ -1,5 +1,11 @@
 # touchpress
 
+## 0.1.2
+
+### Patch Changes
+
+- f555fa3: Confirm a fill into an Android password field, which is a plain `text-field` that reads back a mask.
+
 ## 0.1.1
 
 ### Patch Changes
