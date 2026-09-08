@@ -1,10 +1,10 @@
-import type { FlexibleSchema, LanguageModel, ToolSet } from 'ai';
 import type { Device } from '../core/device.ts';
 import { TouchpressError } from '../core/errors.ts';
 import type { ActionSink } from '../core/report.ts';
 import { renderScreen } from '../core/screen.ts';
 import type { DeviceSession } from '../core/session.ts';
 import { runAct, runExtract } from './act.ts';
+import type { AiModel } from './options.ts';
 import { createDeviceTools } from './tools.ts';
 
 const DEFAULT_ACT_TIMEOUT_MS = 120_000;
@@ -15,6 +15,22 @@ const DEFAULT_EXTRACT_TIMEOUT_MS = 60_000;
 export type ActOptions = { timeout?: number; maxSteps?: number };
 export type ExtractOptions = { timeout?: number };
 
+/**
+ * What `extract` accepts, spelled structurally so the main entry's declarations
+ * never import from `ai`. The first branch is a Standard Schema, which Zod
+ * 3.25+, Zod 4, and Valibot implement, with `T` read off its output type. The
+ * second is the AI SDK's own `Schema`, which `jsonSchema()` returns.
+ */
+export type ExtractSchema<T> =
+  | {
+      readonly '~standard': {
+        readonly version: 1;
+        readonly vendor: string;
+        readonly types?: { readonly output: T };
+      };
+    }
+  | { readonly jsonSchema: unknown; readonly _type?: T };
+
 export type AiDevice = {
   /**
    * Drives the app with a model until the instruction is satisfied. Resolves
@@ -23,7 +39,7 @@ export type AiDevice = {
    */
   act(instruction: string, options?: ActOptions): Promise<string>;
   /** Asks a model one question about the current screen and validates the answer against `schema`. */
-  extract<T>(question: string, schema: FlexibleSchema<T>, options?: ExtractOptions): Promise<T>;
+  extract<T>(question: string, schema: ExtractSchema<T>, options?: ExtractOptions): Promise<T>;
 };
 
 /**
@@ -38,11 +54,11 @@ export function withAi(
   device: Device,
   session: DeviceSession,
   sink: ActionSink,
-  model: LanguageModel | undefined,
+  model: AiModel | undefined,
 ): Device & AiDevice {
   let acts = 0;
-  let built: Promise<ToolSet> | null = null;
-  const tools = (): Promise<ToolSet> =>
+  let built: ReturnType<typeof createDeviceTools> | null = null;
+  const tools = (): ReturnType<typeof createDeviceTools> =>
     (built ??= createDeviceTools(session.name, session.options.platform));
 
   return {
@@ -81,7 +97,7 @@ export function withAi(
 }
 
 /** Checked before the queue, so a project that forgot the key fails at once rather than holding the session. */
-function configuredModel(model: LanguageModel | undefined): LanguageModel {
+function configuredModel(model: AiModel | undefined): AiModel {
   if (model === undefined) throw new TouchpressError({ kind: 'ai-not-configured' });
   return model;
 }
