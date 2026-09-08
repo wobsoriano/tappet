@@ -66,6 +66,19 @@ npx playwright test --project=ios
 
 `preflight` reads a project's options and reports whether the device they name is booted, so a missing simulator fails once, in about a second, instead of once per test after the launch timeout. Wire it as a setup project per platform that the device projects depend on. [Basics](https://github.com/wobsoriano/touchpress/blob/main/docs/basics.md) has the spec, and [`apps/e2e/e2e/preflight.setup.mts`](https://github.com/wobsoriano/touchpress/blob/main/apps/e2e/e2e/preflight.setup.mts) is a working one.
 
+### Drive a step with a model
+
+`device.act` takes an instruction in English and drives the app until it is satisfied. `device.extract` asks one question about the screen and returns a typed answer.
+
+```ts
+test('sign in', async ({ device }) => {
+  await device.act('Sign in with the email rob@example.com and the password hunter2');
+  await expect(device.getByTestId('greeting')).toHaveText('Hi, Rob');
+});
+```
+
+Set `use.aiModel` to a gateway model id or a provider model instance, and install `ai`, an optional peer dependency. A loop can run for minutes, so raise the test timeout on any spec that calls `act`. The example uses the sample app's fake account. Keep real credentials in deterministic `fill(text, { secret: true })` calls outside `act`, and assert deterministically afterwards. [AI](https://github.com/wobsoriano/touchpress/blob/main/docs/ai.md) covers `act`, `extract`, the tools the model gets, and the report.
+
 ## Run the sample project
 
 `apps/e2e` is an Expo app with a home, login, and profile route and a fake sign-in. It is the app touchpress is tested against. Build the library first with `vp run -r build` so the app can resolve `dist`, then run these from `apps/e2e`:
@@ -93,6 +106,7 @@ Leave Metro running for the whole suite. The first build takes several minutes.
 - [Configuration](https://github.com/wobsoriano/touchpress/blob/main/docs/configuration.md)
 - [Locators](https://github.com/wobsoriano/touchpress/blob/main/docs/locators.md)
 - [Assertions](https://github.com/wobsoriano/touchpress/blob/main/docs/assertions.md)
+- [AI](https://github.com/wobsoriano/touchpress/blob/main/docs/ai.md)
 - [Lifecycle](https://github.com/wobsoriano/touchpress/blob/main/docs/lifecycle.md)
 - [Continuous integration](https://github.com/wobsoriano/touchpress/blob/main/docs/ci.md)
 

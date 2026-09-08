@@ -4,6 +4,11 @@
  * wrapping something it adds nothing to.
  */
 
+import type { AiDevice } from './ai/device.ts';
+import type { AiOptions } from './ai/options.ts';
+import type { TouchpressOptions as CoreOptions } from './core/config.ts';
+import type { Device as CoreDevice } from './core/device.ts';
+
 export { setupTest, test } from './playwright/fixtures.ts';
 
 export { expect } from './playwright/expect.ts';
@@ -15,7 +20,18 @@ export type { ErrorInfo, ExpectedValue } from './core/errors.ts';
 export { preflight } from './preflight.ts';
 export type { PreflightDevice, PreflightReport } from './preflight.ts';
 
-export type { ReadyQuery, TouchpressOptions } from './core/config.ts';
-export type { Device, FilterOptions, Locator } from './core/device.ts';
+/**
+ * `Device` and `TouchpressOptions` carry the AI surface here and only here.
+ * `touchpress/core` exports the runner-independent pair without it, because
+ * nothing under `core/` may name an AI SDK type.
+ */
+export type TouchpressOptions = CoreOptions & AiOptions;
+export type Device = CoreDevice & AiDevice;
+
+export type { AiOptions } from './ai/options.ts';
+export type { ActOptions, AiDevice, ExtractOptions } from './ai/device.ts';
+
+export type { ReadyQuery } from './core/config.ts';
+export type { FilterOptions, Locator } from './core/device.ts';
 export type { Filter, Query, Role, TextMatch } from './core/query.ts';
 export type { Platform, Rect, Screen, ScreenNode } from './core/screen.ts';

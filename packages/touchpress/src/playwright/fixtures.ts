@@ -1,5 +1,7 @@
 import { test as base, type TestInfo } from '@playwright/test';
 import { parseDeviceOptions, TOUCHPRESS_DEFAULTS, type TouchpressOptions } from '../core/config.ts';
+import { withAi, type AiDevice } from '../ai/device.ts';
+import type { AiOptions } from '../ai/options.ts';
 import { createDevice, type Device } from '../core/device.ts';
 import { captureEvidence } from '../core/evidence.ts';
 import { silentSink, type ActionSink, type EvidenceFile } from '../core/report.ts';
@@ -20,7 +22,7 @@ const DEVICE_FIXTURE_TIMEOUT_MS = 120_000;
  * type, and `parseDeviceOptions` rejects `undefined` by name, so a config that
  * forgot a key and one that never set it fail the same way.
  */
-export const setupTest = base.extend<object, TouchpressOptions>({
+export const setupTest = base.extend<object, TouchpressOptions & AiOptions>({
   platform: [undefined, { option: true, scope: 'worker' }],
   app: [undefined, { option: true, scope: 'worker' }],
   readyWhen: [undefined, { option: true, scope: 'worker' }],
@@ -33,6 +35,8 @@ export const setupTest = base.extend<object, TouchpressOptions>({
   dismissDevOverlay: [TOUCHPRESS_DEFAULTS.dismissDevOverlay, { option: true, scope: 'worker' }],
   evidence: [TOUCHPRESS_DEFAULTS.evidence, { option: true, scope: 'worker' }],
   sessionPrefix: [TOUCHPRESS_DEFAULTS.sessionPrefix, { option: true, scope: 'worker' }],
+  // Unset rather than a plausible default, because there is no model this library could pick.
+  aiModel: [undefined, { option: true, scope: 'worker' }],
 });
 
 /** The worker session already opened the app with a relaunch, so the first test skips one. */
@@ -47,7 +51,7 @@ const startedTests = new WeakSet<DeviceSession>();
  * Importing and extending `test` launches no browser: `browser`, `context`, and
  * `page` are lazy and non-auto, and nothing here names them.
  */
-export const test = setupTest.extend<{ device: Device }, { session: DeviceSession }>({
+export const test = setupTest.extend<{ device: Device & AiDevice }, { session: DeviceSession }>({
   session: [
     async (
       {
@@ -100,14 +104,14 @@ export const test = setupTest.extend<{ device: Device }, { session: DeviceSessio
   ],
 
   device: [
-    async ({ session }, use, testInfo) => {
+    async ({ session, aiModel }, use, testInfo) => {
       const sink = playwrightSink();
       if (session.options.relaunch === 'per-test' && startedTests.has(session)) {
         await session.relaunch(sink);
       }
       startedTests.add(session);
 
-      await use(createDevice(session, sink));
+      await use(withAi(createDevice(session, sink), session, sink, aiModel));
 
       if (shouldCapture(testInfo, session.options.evidence)) await captureEvidence(session, sink);
     },
