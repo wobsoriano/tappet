@@ -44,6 +44,20 @@ use: {
 
 A string is a gateway model id, which the AI SDK resolves against `AI_GATEWAY_API_KEY`.
 
+```ts
+use: { app: 'com.example.app', aiModel: 'anthropic/claude-sonnet-5' }
+```
+
+A provider instance works the same way, for a project that already has its own credentials wired.
+
+```ts
+import { anthropic } from '@ai-sdk/anthropic';
+
+use: { app: 'com.example.app', aiModel: anthropic('claude-sonnet-5') }
+```
+
+Leave it unset and `act` and `extract` fail naming the key. Nothing else reads it, so a config that sets it costs nothing until a test calls one of them.
+
 Playwright reads no `.env` on its own. Load one from the config before `defineConfig`, as the sample app does, and keep the file out of git.
 
 ```ts
@@ -53,20 +67,6 @@ import path from 'node:path';
 const envFile = path.join(__dirname, '.env');
 if (existsSync(envFile)) process.loadEnvFile(envFile);
 ```
-
-```ts
-use: { app: 'com.example.app', aiModel: 'anthropic/claude-sonnet-4.5' }
-```
-
-A provider instance works the same way, for a project that already has its own credentials wired.
-
-```ts
-import { anthropic } from '@ai-sdk/anthropic';
-
-use: { app: 'com.example.app', aiModel: anthropic('claude-sonnet-4.5') }
-```
-
-Leave it unset and `act` and `extract` fail naming the key. Nothing else reads it, so a config that sets it costs nothing until a test calls one of them.
 
 ## `act`
 
@@ -84,7 +84,7 @@ act stopped without finishing: The list screen has no second item
 Instruction: Open the list and mark the second item done
 
 Screen:
-  @a1 [button] "List"
+  @e1 [button] "List"
 ```
 
 `{ timeout }` is the whole budget for the loop and defaults to 120000 milliseconds. `{ maxSteps }` caps how many turns the model gets and defaults to 25.
@@ -110,9 +110,9 @@ Ten commands, all of them agent-device's own, with their upstream descriptions.
 | `is`       | check a predicate against the screen          |
 | `alert`    | answer a system alert                         |
 
-`open`, `close`, and `screenshot` are not among them, because the session is the test's rather than the model's. Every key that names a device, a daemon, or a workspace is cut from each tool's input schema before the model sees it, so a command can only reach the device this worker opened. The one addressing key that survives is `target`, the snapshot ref the model took a moment earlier.
+`open`, `close`, and `screenshot` are not among them, because the session is the test's rather than the model's. Every key that names a device, a daemon, or a workspace is cut from each tool's input schema before the model sees it, so a command can only reach the device this worker opened. The one addressing key that survives is `target` on `press`, `fill`, and `get`, the ref from the model's last snapshot.
 
-What comes back is trimmed too. The snapshot the model reads is the same compact listing a failure message prints, one node per line, rather than the driver's node JSON. Every other command answers with its outcome, so a `press` reports what it pressed and whether the screen settled and drops the settle diff, the evidence paths, and the cost breakdown. Both keep the loop's context small enough that a long instruction fits in its steps.
+What comes back is trimmed too. The snapshot the model reads is the compact listing a failure message prints, one node per line, rather than the driver's node JSON. Every other command answers with its outcome. A `press` reports what it pressed and whether the screen settled, and drops the settle diff, the evidence paths, and the cost breakdown. On the captures in this repo the listing is three to seven times smaller than the JSON, which is what keeps a long instruction inside its step budget.
 
 ## Credentials
 
@@ -154,15 +154,15 @@ Any schema the AI SDK accepts works, so Zod, Valibot, and a plain JSON schema ar
 ```
 act "Sign in with the email rob@example.com"
   snapshot
-  press @a12
-  fill @a4
+  press @e12
+  fill @e4
     type "rob@example.com"
   snapshot
-  press @a9
+  press @e9
 extract "Is a user signed in?"
 ```
 
-Each `act` also attaches `ai-act-1.json` to the test. It holds the tool calls and their inputs, the results truncated to 2 KB each, the calls that errored with the message each came back with, the model's text, and the token usage for the run. Read it when a loop did something surprising.
+Each `act` also attaches `ai-act-1.json` to the test. It holds every tool call with its input, each result truncated to 2 KB, each errored call with its error message, the model's text, and the token usage for the run. Read it when a loop did something surprising.
 
 ## Test timeouts
 

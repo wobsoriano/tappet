@@ -77,7 +77,7 @@ test('sign in', async ({ device }) => {
 });
 ```
 
-Set `use.aiModel` to a gateway model id or a provider model instance, and install `ai`, an optional peer dependency. A loop can run for minutes, so raise the test timeout on any spec that calls `act`. Keep credentials in deterministic `fill(text, { secret: true })` calls outside `act`, and assert deterministically afterwards. [AI](https://github.com/wobsoriano/touchpress/blob/main/docs/ai.md) has the whole surface.
+Set `use.aiModel` to a gateway model id or a provider model instance, and install `ai`, an optional peer dependency. A loop can run for minutes, so raise the test timeout on any spec that calls `act`. The example uses the sample app's fake account. Keep real credentials in deterministic `fill(text, { secret: true })` calls outside `act`, and assert deterministically afterwards. [AI](https://github.com/wobsoriano/touchpress/blob/main/docs/ai.md) covers `act`, `extract`, the tools the model gets, and the report.
 
 ## Run the sample project
 
