@@ -600,14 +600,10 @@ function valueAt(screen: Screen, target: Query): string | null {
  *
  * A testId rarely names one node. SwiftUI puts one identifier on a field, its
  * placeholder, and the button under it, and the driver copies an ancestor's
- * identifier onto every descendant that inherits it. The role narrows those to
- * the field, and when that still is not unique, the field's position among the
- * nodes of its role stands in. The software keyboard inserts its windows at the
- * top of the tree, which shifts every raw index but adds no text field, so a
- * raw index is the one thing not to track by.
- *
- * Every identity carries the role, so a retry can only write to a node of the
- * kind that was written.
+ * identifier onto every inheriting descendant. The role narrows those to the
+ * field, and failing that the field's position among nodes of its role stands
+ * in. Never the raw tree index: the software keyboard inserts its windows at the
+ * top of the tree, which shifts every index but adds no text field.
  */
 function identityOf(screen: Screen, node: ScreenNode): Query {
   if (node.testId !== null) {
