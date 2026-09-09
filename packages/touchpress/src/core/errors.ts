@@ -148,11 +148,13 @@ function formatError(info: ErrorInfo): string {
       ].join('\n');
     case 'fill-unconfirmed':
       return [
-        `fill left the field holding something else after ${String(info.attempts)} attempts in ${String(info.timeoutMs)}ms.`,
+        info.actual === null
+          ? `fill lost the field after ${String(info.attempts)} attempts in ${String(info.timeoutMs)}ms.`
+          : `fill left the field holding something else after ${String(info.attempts)} attempts in ${String(info.timeoutMs)}ms.`,
         ``,
         `Locator: ${info.locator}`,
         `Expected value: ${describeValue(info.expected)}${info.expected.kind === 'masked' ? ' (a secure field reports a mask, not its contents)' : ''}`,
-        `Actual value: ${info.actual === null ? 'the locator stopped resolving' : describeValue(info.actual)}`,
+        `Actual value: ${info.actual === null ? 'unknown, the field no longer resolved after the write' : describeValue(info.actual)}`,
         ``,
         `Screen:`,
         info.screen,

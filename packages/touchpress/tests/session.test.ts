@@ -3,6 +3,7 @@ import { createDevice } from '../src/core/device.ts';
 import { parseDeviceOptions, type TouchpressOptions } from '../src/core/config.ts';
 import { TouchpressError } from '../src/core/errors.ts';
 import { silentSink } from '../src/core/report.ts';
+import type { RawSnapshot } from '../src/core/screen.ts';
 import { openSession } from '../src/core/session.ts';
 import { createFakeDriver, createRecordingSink, type FakeDriver } from './fake-driver.ts';
 
@@ -384,6 +385,96 @@ test('a fill whose label follows its contents still re-dispatches and still repo
   expect(error.info.kind).toBe('fill-unconfirmed');
   expect(error.message).toContain(`Locator: getByRole('text-field', { name: 'Email' })`);
   expect(error.message).toContain(`Actual value: "r@example.com"`);
+});
+
+type RawNode = RawSnapshot['nodes'][number];
+
+/** A flat tree in document order, so an inserted node shifts every index after it the way a real capture does. */
+function snapshot(nodes: readonly Omit<RawNode, 'index'>[]): RawSnapshot {
+  return { nodes: nodes.map((node, index) => ({ ...node, index })) };
+}
+
+const SHARED_ID = 'auth.start.identifier';
+const EMAIL = 'rob@example.com';
+
+/** SwiftUI copies one identifier onto the placeholder, the field, and the button under it. */
+const emailForm: readonly Omit<RawNode, 'index'>[] = [
+  { ref: 'e1', type: 'Window' },
+  { ref: 'e2', type: 'StaticText', label: 'Enter your email', identifier: SHARED_ID },
+  { ref: 'e3', type: 'TextField', identifier: SHARED_ID },
+  { ref: 'e4', type: 'Button', label: 'Continue', identifier: SHARED_ID },
+];
+
+const keyboard: readonly Omit<RawNode, 'index'>[] = [
+  { ref: 'k1', type: 'Window' },
+  { ref: 'k2', type: 'Other', label: 'Keyboard' },
+  { ref: 'k3', type: 'Other', label: 'Keys' },
+];
+
+test('a fill finds its field again after the keyboard shifts every index under a shared identifier', async () => {
+  const before = snapshot(emailForm);
+  const after = snapshot([...keyboard, ...emailForm]);
+  const driver = createFakeDriver({ screens: [before, before, after] });
+  const session = await open(driver, {
+    readyWhen: { text: 'Continue' },
+    actionTimeout: 1000,
+    settleQuietMs: 20,
+  });
+  const app = createDevice(session, silentSink);
+
+  await app.getByRole('text-field').fill(EMAIL);
+
+  expect(driver.calls.filter((call) => call.startsWith('fill'))).toEqual([`fill @e3 ${EMAIL}`]);
+});
+
+test('a fill whose field is gone after the write fails rather than writing to what took its index', async () => {
+  const before = snapshot(emailForm);
+  // The keyboard came up and the form advanced, so the Continue button now sits at the index the field had.
+  const after = snapshot([
+    { ref: 'k1', type: 'Window' },
+    { ref: 'e1', type: 'Window' },
+    { ref: 'e4', type: 'Button', label: 'Continue', identifier: SHARED_ID },
+  ]);
+  const driver = createFakeDriver({ screens: [before, before, after] });
+  // Room for a second attempt, so the test proves none is made rather than that none fits.
+  const session = await open(driver, {
+    readyWhen: { text: 'Continue' },
+    actionTimeout: 1000,
+    settleQuietMs: 20,
+  });
+  const app = createDevice(session, silentSink);
+
+  const error = await app
+    .getByRole('text-field')
+    .fill(EMAIL)
+    .catch((thrown: unknown) => thrown);
+
+  expect(driver.calls.filter((call) => call.startsWith('fill'))).toEqual([`fill @e3 ${EMAIL}`]);
+  expect(error).toBeInstanceOf(TouchpressError);
+  if (!(error instanceof TouchpressError)) return;
+  expect(error.info.kind).toBe('fill-unconfirmed');
+  expect(error.message).toContain('the field no longer resolved after the write');
+});
+
+test('a fill confirms on one dispatch when an Android field shares its identifier with its label', async () => {
+  const login = snapshot([
+    { ref: 'a1', type: 'android.widget.FrameLayout' },
+    { ref: 'a2', type: 'android.widget.TextView', label: 'Email', identifier: 'login.email' },
+    { ref: 'a3', type: 'android.widget.EditText', label: 'Email', identifier: 'login.email' },
+    { ref: 'a4', type: 'android.widget.Button', label: 'Sign in' },
+  ]);
+  const driver = createFakeDriver({ screens: [login] });
+  driver.contentsBecomeLabel = true;
+  const session = await open(driver, {
+    platform: 'android',
+    deviceName: 'Pixel 9',
+    readyWhen: { text: 'Sign in' },
+  });
+  const app = createDevice(session, silentSink);
+
+  await app.getByRole('text-field', { name: 'Email' }).fill(EMAIL);
+
+  expect(driver.calls.filter((call) => call.startsWith('fill'))).toEqual([`fill @a3 ${EMAIL}`]);
 });
 
 /** One bullet per character, which is the whole of what an iOS SecureTextField reports. */

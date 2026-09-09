@@ -13,6 +13,7 @@ import {
 import { createScrollSearch, type ScrollDevice } from './scroll.ts';
 import { renderTitle, type ActionRecord, type ActionSink, type Typed } from './report.ts';
 import {
+  matchesOf,
   pin,
   renderScreen,
   resolve,
@@ -288,6 +289,7 @@ function perform(
       let retriedStaleRef = false;
       let attempts = 0;
       let target: Query = record.query;
+      let written: Confirmation | null = null;
       let lastActual: string | null = null;
       let screen: Screen = await device.capture();
       const unconfirmed = (expected: ExpectedValue): TouchpressError =>
@@ -352,6 +354,7 @@ function perform(
           // Android reports a text field's accessible name as its contents, so the
           // author's locator stops matching once a write lands. Track the node instead.
           target = identityOf(screen, resolution.node);
+          written = confirmation;
 
           screen = await device.capture();
           lastActual = valueAt(screen, target);
@@ -372,6 +375,9 @@ function perform(
         }
         const remaining = deadline - Date.now();
         if (remaining <= 0) {
+          // The field was on screen when it was written, so what it holds is unknown
+          // rather than the field being absent.
+          if (written !== null) throw unconfirmed(expectedOf(written));
           throw new TouchpressError({
             kind: 'not-found',
             locator,
@@ -592,16 +598,21 @@ function valueAt(screen: Screen, target: Query): string | null {
 /**
  * How the written node is found again on the next snapshot.
  *
- * The driver copies an ancestor's identifier onto every descendant that
- * inherits it, so a testId names this node alone only when it resolves to this
- * node alone. Two inheriting siblings would otherwise turn a landed fill into a
- * strict-mode failure. Position in the tree is the fallback.
+ * A testId rarely names one node. SwiftUI puts one identifier on a field, its
+ * placeholder, and the button under it, and the driver copies an ancestor's
+ * identifier onto every inheriting descendant. The role narrows those to the
+ * field, and failing that the field's position among nodes of its role stands
+ * in. Never the raw tree index: the software keyboard inserts its windows at the
+ * top of the tree, which shifts every index but adds no text field.
  */
 function identityOf(screen: Screen, node: ScreenNode): Query {
   if (node.testId !== null) {
-    const byTestId: Query = { testId: textMatch(node.testId, true) };
+    const byTestId: Query = { role: node.role, testId: textMatch(node.testId, true) };
     const resolution = resolve(screen, byTestId);
     if (resolution.outcome === 'one' && resolution.node === node) return byTestId;
   }
-  return { where: (other) => other.index === node.index };
+  const byRole: Query = { role: node.role };
+  const index = matchesOf(screen, byRole).indexOf(node);
+  if (index === -1) throw new Error(`${node.ref} does not resolve under its own role`);
+  return { ...byRole, index };
 }
