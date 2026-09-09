@@ -268,7 +268,7 @@ export function resolve(screen: Screen, query: Query): Resolution {
  * and the `has` filters share it, so an inner query means what the same locator
  * would mean on its own.
  */
-function matchesOf(screen: Screen, query: Query): readonly ScreenNode[] {
+export function matchesOf(screen: Screen, query: Query): readonly ScreenNode[] {
   const matched = screen.nodes.filter(
     (node) =>
       matchesQuery(node, query) &&
